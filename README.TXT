@@ -1,4 +1,4 @@
-Welcome to DEVIL, the Descent Editor for Vertices, Items and Levels at all.
+Welcome to Devil, the Descent Editor for Vertices, Items and Levels at all.
 
   ____________________________________          _________________________
  /                /            /     /\        /\     \            \     \
@@ -13,14 +13,14 @@ Welcome to DEVIL, the Descent Editor for Vertices, Items and Levels at all.
       \_________________\____________\__________/____________/______________/
           (thanks to Catalin-Andrei Stefanescu for the new ASCII art)
 					
-                This is the README.TXT for version V2.00g
+                This is the README.TXT for version V2.10a
          For further info refer to readme20.txt and docs/userman.doc
 		
                 Mail address: ubdb@rz.uni-karlsruhe.de
        Home page: http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html 
 
-DEVIL is free software, and you are welcome to redistribute it under certain
-conditions, therefore DEVIL comes with ABSOLUTELY NO WARRANTY;
+Devil is free software, and you are welcome to redistribute it under certain
+conditions, therefore Devil comes with ABSOLUTELY NO WARRANTY;
 for details see the file 'COPYING'. Some things are copyright from DJ
 Delorie, for these see 'COPYING.DJ'. The graphics library is copyright
 by Csaba Biegel; see 'COPYING.CB'. The CWSDPMI is copyright by 
@@ -37,34 +37,36 @@ distributing the CWSDPMI.EXE file commercially which is needed to run Devil.
 Devil is sponsored by the german magazine "PC PLAYER". They are
 paying me some money to encourage further development of Devil :-)).
 In return they asked me to be allowed to show up in the new
-title screen. There is no other obligation. DEVIL IS STILL FREEWARE!
+title screen. There is no other obligation. Devil IS STILL FREEWARE!
 
-PC PLAYER can be reached by E-Mail at devil@pcplayer.mhs.compuserve.com
+PC PLAYER can be reached by E-Mail at Devil@pcplayer.mhs.compuserve.com
 
 ATTENTION:
- There is a Devil Mailing list, to subscribe send a mail with the
- subject DEVIL-FULL-SUB to sclouse@sky.net. I'm subscribed in this list, too,
- so please mail any questions about how to use Devil to this list and not
- directly to me. If you only want to get mails if a new version of Devil is
- released, send a mail with the subject DEVIL-ANNOUNCE-SUB to sclouse@sky.net.
- 
+There is a Devil Mailing list. Have a look at 
+ http://www.sky.net/~sclouse/Descent.html
+to subscribe.
+I'm subscribed in this list, too, so please mail any questions about how to 
+use Devil to this list and not directly to me. I WON'T ANSWER ANY MAILS
+EXCEPT FOR (USEFUL) BUG REPORTS!!! This is not very friendly but I get a lot 
+of mails like "I don't know how it works, please help me."...:-(
+
   CONTENTS:
   
   [0] THE VERSION NUMBERS.
   
-  [1] INSTALLING DEVIL
-      [1a] What do I need to run DEVIL ?
+  [1] INSTALLING Devil
+      [1a] What do I need to run Devil ?
       [1b] How to install this thing ?
-      [1c] DEVIL crashes before the titlescreen appears. 
-      [1d] DEVIL crashes after the titlescreen has appeared.
-      [1e] Using a higher resolution
+      [1c] Change your configuration
+      [1d] Devil crashes before the titlescreen appears. 
+      [1e] Devil crashes after the titlescreen has appeared.
 
   [2] BUILDING LEVELS
       [2a] Building a level.
-      [2b] Including the level in descent (easy way).
-      [2c] Including the level in descent/Compiling your own HOG-files.
+      [2b] Including the level in Descent (easy way).
+      [2c] Including the level in Descent/Compiling your own HOG-files.
       [2d] Extracting the original levels.
-      [2e] Restoring the original descent.
+      [2e] Restoring the original Descent.
       [2f] Copying macros.
 
   [3] BUGS AND OTHER WELL KNOWN FEATURES
@@ -77,26 +79,26 @@ ATTENTION:
       [4c] Never.
       
   [5] ONE OR TWO WORDS TO THE SOURCECODE
-      [5a] Why is DEVIL.INI so long?
+      [5a] Why is Devil.INI so long?
       [5b] Sourcecode itself.
-      [5c] Extending DEVIL.
-      [5d] Recompiling DEVIL.
+      [5c] Extending Devil.
+      [5d] Recompiling Devil.
 
   [A] UPDATES
   
 [0] THE VERSION NUMBERS.
- Since version V1.0a DEVIL is numbered in the following way:
+ Since version V1.0a Devil is numbered in the following way:
  The full working, official release is called V1.0, V1.1 and so on.
  The beta-testing versions are called V1.0a, V1.0b, V1.0c and so on.
  Please spread this thing as wide as you can.
  Minor updates and bugfixes will be called V1.01, V1.02...
 
-[1] INSTALLING DEVIL
+[1] INSTALLING Devil
 
- [1a] What do I need to run DEVIL ?
-  To run DEVIL you need the following things: 
-   1. DESCENT 1 registered version (I won't release a editor for the shareware
-      version because the guys from Parallax don't want this).
+ [1a] What do I need to run Devil ?
+  To run Devil you need the following things: 
+   1. Descent 1 or 2 registered version (I won't release a editor for the 
+      shareware version because the guys from Parallax don't want this).
    2. A fast computer with coprocessor (the program isn't optimized in
       any way yet, especially I do all the calculations needed for
       plotting with floating point, so without a copro it's very very very
@@ -105,14 +107,19 @@ ATTENTION:
    3. A VESA-compatible graphics card.
       
  [1b] How to install this thing ?
-  If you have the devilXXX.zip file just pkunzip it with '-d' (IMPORTANT!!)
-  in the descent directory. In your DESCENT directory is now a directory 
-  called DEVIL with the two subdirectories LEVELS and MACROS. 
+  If you have the DevilXXX.zip file just pkunzip it with '-d' (IMPORTANT!!)
+  anywhere you want. This will create a directory Devil with several
+  subdirectories. Then start the editor from the Devil directory with
+  "Devil". Then you get in a self-explaining (well, at least I hope it)
+  configuration routine where you must enter your Descent 1/2 path and
+  choose your graphics card/resolution.
   
-  The resolution which is used by Devil you can set in the devil.ini file.
+ [1c] Change your configuration
+  To change the resolution and the other settings, start Devil with
+  "Devil /config".
   
- [1c] DEVIL crashes before the titlescreen appears. Help?
-  If DEVIL crashes with a message like General Protection Fault or something
+ [1d] Devil crashes before the titlescreen appears. Help?
+  If Devil crashes with a message like General Protection Fault or something
   like this, try a clean configuration only with HIMEM.SYS from MSDOS. This
   should work. 
   
@@ -122,7 +129,7 @@ ATTENTION:
   
   If you get no message and Devil just quits after you started it, it is
   possible that Devil couldn't initialize the graphics mode. Then have a
-  look at the DEVIL.BAT file. There are some drivers mentioned. Perhaps you
+  look at the Devil.BAT file. There are some drivers mentioned. Perhaps you
   can find one with a name which is similar to your card. Then change the line
     set grx20drv=vesa
   into
@@ -132,37 +139,34 @@ ATTENTION:
   You can try to load a resident VESA-bios, too.
   
   It is also possible that your graphics card cannot handle the resolution
-  which is currently set in the devil.ini file.
+  which is currently set in the Devil.ini file.
 
- [1d] DEVIL crashes after the screen has appeared.
-  Perhaps your level-file is corrupted. Try starting devil with
-   devil /nocfg
+ [1e] Devil crashes after the screen has appeared.
+  Perhaps your level-file is corrupted. Try starting Devil with
+   Devil /new
 
- [1e] Using a higher resolution
-  Just change the line in the devil.ini file, where 640 and 480 stands
-  in 800, 600 or 1024, 768.
-  
 [2] BUILDING LEVELS
  [2a] Building a level.
-  Start devil.bat. If it does some output and then returns to the DOS-prompt
+  Start Devil.bat. If it does some output and then returns to the DOS-prompt
   see the previous sections. 
   
-  If DEVIL has started, build an level. This is not an easy task, but 
+  If Devil has started, build an level. This is not an easy task, but 
   I'm sure you will see how it works.
   See the doc-files for documentation. You can find them in the Docs 
   directory. The saved levels will be in the levels-directory (that's not very
   surprising, I suppose).
 
- [2b] Including the level in DESCENT (easy way).
-  Just copy your levelfile in the DESCENT directory and name it
-  LEVEL01.RDL (the 01 can be replaced by 01-27,S1-S3). DESCENT will
-  load this level automatically and replace the original level. 
+ [2b] Including the level in Descent (easy way).
+  Just copy your levelfile in the Descent directory and name it
+  LEVEL01.RDL (the 01 can be replaced by 01-27,S1-S3) (D2LEVA-1.RL2
+  for Descent 2). Descent will load this level automatically and replace 
+  the original level. 
   
- [2c] Including the level in descent/Compiling your own HOG-files.
+ [2c] Including the level in Descent/Compiling your own HOG-files.
   If you want to produce your own missions (compilations of levels) you can
-  do your own HOG-files with the Mission Manager in Devil. You must store
-  the MSN/HOG-file produced from Devil in your DESCENT directory.
-  DESCENT will recognize these files and ask you which mission you want to
+  make your own HOG-files with the Mission Manager in Devil. You must store
+  the MSN/HOG-file produced from Devil in your Descent directory.
+  Descent will recognize these files and ask you which mission you want to
   play.
   
  [2d] Extracting the original levels.
@@ -170,7 +174,7 @@ ATTENTION:
 
  [2e] Copying macros.
   If your friend has build some macros you want to include, just copy
-  them in your macros directory and start DEVIL.
+  them in your macros directory and start Devil.
 
 [3] BUGS AND OTHER WELL KNOWN FEATURES
  
@@ -178,11 +182,11 @@ ATTENTION:
   Tip: Save early and save often (as you know it from several games)
   and sometimes with different filenames. 
   I hope there are not so many bugs that are destroying your savefile or
-  make DEVIL not to read saved files, but I guarantee for nothing. If
+  make Devil not to read saved files, but I guarantee for nothing. If
   you've a really, really great level that you've build for hours and hours
-  and DEVIL won't load him anymore, send me an EMail with a short message
-  what you've done last and what's in the file devil.err. It's always
-  a good idea to look in the file devil.err, perhaps you can do
+  and Devil won't load him anymore, send me an EMail with a short message
+  what you've done last and what's in the file Devil.err. It's always
+  a good idea to look in the file Devil.err, perhaps you can do
   some repair for yourself.
   
  [3b] Report a bug.
@@ -203,7 +207,7 @@ ATTENTION:
   A cube move mode.
   An Undo feature (perhaps this goes together with some sort of programming
    language)
-  A setup program for DEVIL.INI, so you can change keys and menus and so on. 
+  A setup program for Devil.INI, so you can change keys and menus and so on. 
   
  [4c] Never
   A bitmap editor.
@@ -212,13 +216,14 @@ ATTENTION:
   
 [5] ONE OR TWO WORDS TO THE SOURCECODE
 
- [5a] Why is DEVIL.INI so long?
+ [5a] Why is Devil.INI so long?
   I've tried to keep as much data as possible out of the real sourcecode,
   especially the data which refers to the keys, the menustructure and
-  the DESCENT data, so you can edit or complete it without compiling
-  DEVIL once again. I will release a setup program for adding something
-  to DEVIL.INI but if you're a tough guy, you can try to understand and
-  modify it with a normal editor (there are some comments in it).
+  the Descent data, so you can edit or complete it without compiling
+  Devil once again. I will release a setup program for adding something
+  to Devil.INI in a few years :-) but if you're a tough guy, you can try to
+  understand and modify it with a normal editor (there are some comments in
+  it).
   
  [5b] Sourcecode itself.
   If you're trying to understand the sourcecode I must give you one hint:
@@ -229,38 +234,38 @@ ATTENTION:
   not with a switch() because I think in this way it's easier to extend.
   Just put your procedure name at the end of this array, an corresponding
   entry in the enum evcodes in do_event.h, and the number of this
-  evcode as an entry in DEVIL.INI/MENU.INI.
+  evcode as an entry in Devil.INI/MENU.INI.
   
- [5c] Extending DEVIL.  
-  In my opinion, the best way to extend DEVIL is to send me your sourcecode
-  (of course). I will put a node in the credits and make an event in
-  DEVIL for it.
+ [5c] Extending Devil.  
+  In my opinion, the best way to extend Devil is to send me your sourcecode
+  (of course). I will put a node in the credits etc.
   
- [5d] Recompiling DEVIL.
-  If you want to recompile DEVIL on another compiler, just have a look at
-  the w_system.c/w_system.h files. They contain all non-ANSI-C-routines DEVIL
-  needs. The rest of DEVIL is strict ANSI-C. The only non-ANSI-C
+ [5d] Recompiling Devil.
+  If you want to recompile Devil on another compiler, just have a look at
+  the w_system.c/w_system.h files. They contain all non-ANSI-C-routines Devil
+  needs. The rest of Devil is strict ANSI-C. The only non-ANSI-C
   convention is that an 'int' is 4 bytes long.
-  Please send me an E-Mail if you recompile DEVIL on another compiler so
+  Please send me an E-Mail if you recompile Devil on another compiler so
   I can always give you the newest source-code.
   
 [A] UPDATES
  The latest release is always available at
   http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html (my site)
-  http://www.interplay.com/website/devil.html (official US site)
+  http://www.interplay.com/website/Devil.html (official US site)
+  http://www.sky.net/~sclouse/Descent.html (faster updated than Interplay)
   US: The Integrated Connection BBS: 317-921-8619
   UK: The Shed BBS: 
   Australia: Southern Acces BBS: 61-53-428357
   
  0.95b - first release, a bit chaotic, COPYING files missing (in some cases),
 	 wrong DOC file.
- 0.96b - Changed tiny bug with alternate exit, switch for doors in devil.ini
+ 0.96b - Changed tiny bug with alternate exit, switch for doors in Devil.ini
 	 renamed, correct DOC file, complete README.TXT.
  0.96b2  Fixed a lot of bugs: 
        - Connecting cube with itself is no longer possible.
        - Killing the status line sometimes.
        - Choosing does not implement beaming anymore.
-       - Default filename (also change in devil.ini)
+       - Default filename (also change in Devil.ini)
        - Deleting is now possible with the current object if it's tagged.
 	 The current object is just set to the previous (or next) object.
        - Saving is no longer aborted, if a thing is out of bounds, but
@@ -279,7 +284,7 @@ ATTENTION:
        - Numlock on/off with keyboard LED does not work (look at the screen)
        - Saving the same macro under several filenames will rename the first
 	 saved macro (but on the disk there are two files, I hope). 
-	 Try exiting and loading devil again.
+	 Try exiting and loading Devil again.
  0.97  - Fixed the damned bug with the macros.
        - In wallmode now the texture for the wall side is shown.
        - Fixed the "General Protection Fault" bug with producers that
@@ -363,7 +368,7 @@ ATTENTION:
        - Added tag box for tagging several objects
        - Saving now checks for duplicate reactors and keys and starts with
          illegal numbers. Also for reactors in no 'reactor'-cubes.
-       - You can change the level-name shown in DESCENT.
+       - You can change the level-name shown in Descent.
        - Light shading feature added.
        - Insert points.
        - Insert&Delete sides with tagged walls.
@@ -373,9 +378,9 @@ ATTENTION:
        - Fit bitmap is now with&without tagged sides.
        - Size of things is now correct (you won't see a difference).
        - You can use the cube/side tags in side/point mode.
-       - If you leave DEVIL it starts with the same level on the same
+       - If you leave Devil it starts with the same level on the same
          position.
-       - You're asked is you want to leave DEVIL without saving changed
+       - You're asked is you want to leave Devil without saving changed
          you've made.
        - The play level feature is added.
  1.0b  - Fixed little bug with text in the left upper corner by fit bitmap.
@@ -398,7 +403,7 @@ ATTENTION:
        - Devil now changes to cube mode after making a macro.
        - Devil works with DPMI
        - S3 cards can use the accelerated line function of the card
-         (have a look in the devil.bat file)
+         (have a look in the Devil.bat file)
        - Fit bitmap in VGA mode won't work.
  1.01  - fixed some more bugs with tagging (when connecting cubes,
          light shading and align bitmaps).
@@ -425,12 +430,16 @@ ATTENTION:
          and the white lines.
        - now Devil know the Descent limits and gives warnings.
        - hope I fixed the bug with the play-level feature.
- 2.00 (not yet completed, only major changes are listed)
+ 2.00 (never completed, only major changes are listed)
        - new graphics interface
        - macro viewer & changer
        - loading&handling several levels        
        - mine illuminating
        - Mission Manager
+ 2.10 (not yet completed)
+       - Descent 2 support
+       - Texture List
+       - Configuration utility
        
 Have a good time, build many levels, bomb all enemies and send me an email
 

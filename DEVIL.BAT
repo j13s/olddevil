@@ -1,31 +1,29 @@
 @echo off
-rem Available values are
-rem vesa  --  This is the mode which should work everywhere
-rem et4000  --  Tseng ET4000 chipset
-rem cl5426  --  Cirrus Logic chipset
-rem mach64  --  ATI
-rem s3vesa  --  This is accelerated. If you've a S3-card give it a chance.
-rem I don't know if they all will work, I've only tested vesa and s3vesa
-set grx20drv=vesa
+if exist config\cfg.bat call config\cfg.bat
 rem This is for fast key moving
-mode CON: Rate=32 Delay=1
-copy >nul config\tmpdevil.msn .. 
-config\d %1 %2
+mode CON: Rate=28 Delay=1
+config\d %1 %2 %3
 if errorlevel 1 goto done
 :loop
-copy >nul config\tmpdevil.rdl ..\tmpdevil.rdl 
-cd ..
-call descent
-cd devil20h
+cd %DESCENTPATH%
+call %DESCENTSTART%
+cd %DEVILPATH%
 config\d /NOTITLE
 if not errorlevel 1 goto loop
 :done
 if not errorlevel 2 goto ok
 echo Devil ended with an error. Here's the file devil.err:
 type devil.err |more
+if exist config\last.cfg del >nul config\last.cfg
 :ok
-if exist config\tmpdevil.rdl del >nul config\*.rdl
-if exist ..\tmpdevil.rdl del ..\tmpdevil.rdl 
-if exist ..\tmpdevil.msn del ..\tmpdevil.msn >NUL
+if not exist %MISSIONPATH%\tmpdevil.msn goto no_d1_files
+del %MISSIONPATH%\tmpdevil.msn >nul
+del config\*.rdl >nul 
+:no_d1_files 
+if not exist %MISSIONPATH%\tmpdevil.mn2 goto no_d2_files
+del %MISSIONPATH%\tmpdevil.mn2 >nul
+del config\*.rl2 >nul
+:no_d2_files
+if exist %MISSIONPATH%\tmpdevil.hog del %MISSIONPATH%\tmpdevil.hog >nul
 rem This is that you can type in the normal way
 mode CON: Rate=21 Delay=2

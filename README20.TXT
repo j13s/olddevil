@@ -4,58 +4,25 @@ This is a short remark to well experienced Devil V2.0? + V1.02 users.
 For further documentation look at the file readme.txt and the file
 docs/userman.doc.
 
-This is the full version of Devil V2.0h (V2.0g lived only one day).
-This will be the final V2.00 release when all new/old bugs are removed.
+This is the full version of Devil V2.1a. There will be no final
+V2.00 release...
  
-Fixed problems/changes (V2.0f->V2.0h):
--The Mission Manager (finally replaced extract.exe/hogfile.exe):
-  Well, this is some sort of HOG/MSN-file-generator. It should be quite
-  clear how to use it.
-  Two remarks: 
-   -The level is always inserted before the first marked level in the 
-    hog-file, if no level is marked, the level is inserted before the first
-    secret level or at the end.
-   -To insert a secret level, type the number of the level which has the
-    alternate exit in the field 'Secret' and press return.
-  I will modify it in the next version, so you can extract also the
-  other files from the DESCENT.HOG file (in the moment you can only
-  extract levels).
--Smoothing light works now like it should be. Fixed a few things
- with mine illuminating.
--Fixed problems with macro inserting and 'not find cubes' (wondering
- why this was doing anything of worth).
--The problem with texture2 and the huge number when you save the level.
--The statistics includes now the things dropped by robots (esp. the keys).
--Doors on a side of a cube which is deleted are now deleted automatically.
--Still must choose a texture that is one location above or below to insert
- onto multiple sides->Fixed.
--Deleting an cube inserted in the Side mode is now possible (->the cube
- is correct inserted)
--You can know insert a first wall/thing in a level by pressing 'Insert' in
- the window.
--Right click in a level window without a current level won't crash Devil
- anymore.
--Hopefully fixed the problems with the names of the macros. 
--Illuminating feature has now one more parameter: The minimal value for
- the light for one corner. If you want to have some sort of 'overall'
- brightness in your level, you can increase this value.
--It is possible to calculate inner cube and corner light seperate.
--You can now change the coordinates of several tagged points at once.
--When you change the mode via keyboard the window of the old mode is closed.
--A new menupoint for moving the current thing in the current cube exists.
--You can change the path while loading/saving.
--Fixed the thing with the right mouse button in the 'Move Buttons'-Window.
+Fixed problems/changes (V2.0i->V2.1a):
+-Descent 2 support
+-Texture Lists
+-fixed the bug with "delete cubes" (I hope)
  
 A BIG thanks to all guys at the mailing list and all others for bug reporting
 and making suggestions.
 
 This is still a prerelease, so be careful and make backups of your levels. 
 
-If you have any questions, please mail them NOT to me directly but to the 
-Devil Mailing List (sclouse@aol.com with subject starting with "DEVIL:") -
-thanks to Steven P. Clouse. I am subscribed in this mailing list, too, so I
-will receive everything you send to it (and a lot of other guys will receive
-it also and can answer your questions).
+If you have any questions, please mail them NOT to me directly but to the NEW
+Devil Mailing List (see readme.txt), a thanks to Steven P. Clouse who
+maintained the old mailing list and to Joi Ellis who tried to establish a new
+mailing list. I am subscribed in the new mailing list, too, so I will receive 
+everything you send to it (and a lot of other people will receive it, too, and
+can answer your questions).
 
 The hotkeys:
  shift+esc: fast quit
@@ -121,8 +88,9 @@ The hotkeys:
 Have a good time,
 Achim
 
-PS: Next major new feature: Texture mapping (on one side) but this will take
- a while.
-PSPS.: Searching someone who can translate a German manual in a English
- manual.
+PS: Next version:
+ - bug fixes
+ - completing the Texture List feature.
+ - don't know. Still a lot of things to do, like a corridor generator,
+  a tag filter, undo, texture mapping etc.
 
