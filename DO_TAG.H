@@ -5,4 +5,5 @@
 void dec_tagspecial(int ec);
 void dec_usecubetag(int ec);
 void dec_usesidetag(int ec);
+void dec_usepnttag(int ec);
 void dec_tagflatsides(int ec);

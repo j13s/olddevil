@@ -22,7 +22,7 @@ struct ws_bitmap *drawbitmap;
      for(cur_pos=cur_line+ps_x,i=(NUM_PIXELS);i>0;i--)\
       {\
       *(cur_pos++)=*(colors+\
-       *(txt_data+((txt_u>>16)&0x3f)+((txt_v>>16)&(0x3f*TXTSIZE)))); \
+       *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE)))); \
       txt_u+=add_txt_u; txt_v+=add_txt_v; light+=d_light;\
       if(light>c_light) { c_light+=d_x; colors+=add_colors; }\
       }   \
@@ -45,7 +45,7 @@ struct ws_bitmap *drawbitmap;
       for(cur_pos=cur_line+e_r_ps_x,i=e_rest;i>0;i--) \
        { \
        *(cur_pos++)=*(colors+ \
-        *(txt_data+((txt_u>>16)&0x3f)+((txt_v>>16)&(0x3f*TXTSIZE)))); \
+        *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE)))); \
        txt_u+=add_txt_u; txt_v+=add_txt_v; light+=d_light;\
        if(light>c_light) { c_light+=d_x; colors+=add_colors; } \
        } \
@@ -58,7 +58,7 @@ struct ws_bitmap *drawbitmap;
    
 #define SYS_SCANLINE(NUM_PIXELS,ADD_F1,ADD_F2,ADD_F3) {\
      txt_u=n_txt_u; txt_v=n_txt_v; \
-     run_f1+=ADD_F1; f1=1.0/run_f1; \
+     run_f1+=ADD_F1;  f1=1.0/run_f1; \
      run_f2+=ADD_F2; run_f3+=ADD_F3; f2=f1*run_f2; f1=f1*run_f3; \
      n_txt_u=p->a_txt.x[0]+(f1*p->r_txt.x[0])+(f2*p->s_txt.x[0]); \
      n_txt_v=p->a_txt.x[1]+(f1*p->r_txt.x[1])+(f2*p->s_txt.x[1]);\
@@ -67,7 +67,7 @@ struct ws_bitmap *drawbitmap;
      for(cur_pos=cur_line+ps_x,i=(NUM_PIXELS);i>0;i--)\
       {\
       *(cur_pos++)=*(colors+\
-       *(txt_data+((txt_u>>16)&0x3f)+((txt_v>>16)&(0x3f*TXTSIZE)))); \
+       *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE)))); \
       txt_u+=add_txt_u; txt_v+=add_txt_v; \
       }   \
      ps_x+=(NUM_PIXELS); \
@@ -89,7 +89,7 @@ struct ws_bitmap *drawbitmap;
       for(cur_pos=cur_line+e_r_ps_x,i=e_rest;i>0;i--) \
        { \
        *(cur_pos++)=*(colors+ \
-        *(txt_data+((txt_u>>16)&0x3f)+((txt_v>>16)&(0x3f*TXTSIZE)))); \
+        *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE)))); \
        txt_u+=add_txt_u; txt_v+=add_txt_v; \
        } \
       } \
@@ -202,7 +202,7 @@ void psys_plottxt(struct polygon *p,struct render_point *start,
      for(cur_pos=cur_line+ps_x,i=(NUM_PIXELS);i>0;i--)\
       {\
       if((pixel=\
-       *(txt_data+((txt_u>>16)&0x3f)+((txt_v>>16)&(0x3f*TXTSIZE))))!= \
+       *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE))))!= \
        TRANSPARENT_COLOR) \
        *(cur_pos++)=*(colors+pixel); \
       else cur_pos++; \
@@ -228,7 +228,7 @@ void psys_plottxt(struct polygon *p,struct render_point *start,
       for(cur_pos=cur_line+e_r_ps_x,i=e_rest;i>0;i--) \
        { \
        if((pixel= \
-        *(txt_data+((txt_u>>16)&0x3f)+((txt_v>>16)&(0x3f*TXTSIZE))))!= \
+        *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE))))!= \
 	TRANSPARENT_COLOR) \
         *(cur_pos++)=*(colors+pixel); \
        else cur_pos++; \
@@ -253,7 +253,7 @@ void psys_plottxt(struct polygon *p,struct render_point *start,
      for(cur_pos=cur_line+ps_x,i=(NUM_PIXELS);i>0;i--)\
       {\
       if((pixel= \
-       *(txt_data+((txt_u>>16)&0x3f)+((txt_v>>16)&(0x3f*TXTSIZE))))!= \
+       *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE))))!= \
        TRANSPARENT_COLOR) \
        *(cur_pos++)=*(colors+pixel); \
       else cur_pos++; \
@@ -278,7 +278,7 @@ void psys_plottxt(struct polygon *p,struct render_point *start,
       for(cur_pos=cur_line+e_r_ps_x,i=e_rest;i>0;i--) \
        { \
        if((pixel= \
-        *(txt_data+((txt_u>>16)&0x3f)+((txt_v>>16)&(0x3f*TXTSIZE)))) \
+        *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE)))) \
         !=TRANSPARENT_COLOR) \
         *(cur_pos++)=*(colors+pixel); \
        else cur_pos++; \

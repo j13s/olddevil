@@ -98,7 +98,8 @@ struct clickhit *checkclick(struct point *p,int clickradius,
  struct pixel pix;
  struct clickhit *ch;
  float d;
- if(!in_getpixelcoords(p,&pix) || pix.d>view.maxvisibility*1.1) return NULL;
+ if(!in_getpixelcoords(p,&pix) || 
+  (pix.d>view.maxvisibility*1.1 && wall!=7)) return NULL;
  if((d=(float)(x-pix.x)*(x-pix.x)+(float)(y-pix.y)*(y-pix.y))<=
   clickradius*clickradius)
   { checkmem(ch=MALLOC(sizeof(struct clickhit)));
@@ -165,6 +166,28 @@ void run_wallloop(struct clickhit **hits,int clickradius,int x,int y)
    }
  }
 
+void run_edgeloop(struct clickhit **hits,int clickradius,int x,int y)
+ {
+ struct node *n;
+ struct clickhit *ch;
+ int w,e,i,j;
+ struct point p,c;
+ for(n=l->cubes.head;n->next!=NULL;n=n->next)
+  for(w=0;w<6;w++) if(!n->d.c->nc[w] || n->d.c->nc[w]->no>n->no) 
+   {
+   for(i=0;i<3;i++)
+    { c.x[i]=0.0;
+      for(j=0;j<4;j++) c.x[i]+=n->d.c->p[wallpts[w][j]]->d.p->x[i]/4.0; }
+   for(e=0;e<4;e++)
+    { 
+    for(i=0;i<3;i++)
+     p.x[i]=c.x[i]*0.4+n->d.c->p[wallpts[w][e]]->d.p->x[i]*0.6;
+    if((ch=checkclick(&p,clickradius,x,y,n,w*4+e+100))!=NULL)
+     add_clickhit(hits,ch); 
+    }
+   }
+ }
+
 void run_cubeloop(struct clickhit **hits,int clickradius,int x,int y)
  {
  struct node *n;
@@ -198,16 +221,26 @@ void plotclickmarker(int lr,struct clickhit *ch,int color,int xor)
      view.color[color],xor);
   }
  else if(ch->wall>=0 && ch->wall<6) /* wall */
+  {
   for(i=0;i<4;i++)
    if(getscreencoords(lr,&ch->p,ch->data->d.c->p[wallpts[ch->wall][i]]->d.p,
     &spix,&epix,0))
     ws_drawline(w_xwinincoord(l->w,spix.x),w_ywinincoord(l->w,spix.y),
      w_xwinincoord(l->w,epix.x),w_ywinincoord(l->w,epix.y),
      view.color[color],xor);
+  }
+ else if(ch->wall>=100) /* edge */
+  for(i=0;i<4;i++) if(i!=(((ch->wall-100)%4+2)&3))
+   if(getscreencoords(lr,&ch->p,
+    ch->data->d.c->p[wallpts[(ch->wall-100)/4][i]]->d.p,&spix,&epix,0))
+    ws_drawline(w_xwinincoord(l->w,spix.x),w_ywinincoord(l->w,spix.y),
+     w_xwinincoord(l->w,epix.x),w_ywinincoord(l->w,epix.y),
+     view.color[color],xor);
  }
  
 void (*run_loop[tt_number])(struct clickhit **hits,int cr,int x,
- int y)={ run_cubeloop,run_wallloop,run_pntloop,run_thingloop,run_doorloop };
+ int y)={ run_cubeloop,run_wallloop,run_edgeloop,run_pntloop,run_thingloop,
+  run_doorloop };
  
 struct track *check_for_corr(struct w_window *w,int sx,int sy)
  {
@@ -304,7 +337,7 @@ void click_in_level(struct w_window *w,struct w_event *we)
   if(t==0 && (ws.kbstat&ws_ks_ctrl)!=0)
    ctrl_pressed=nearest[0] ? nearest[0]->data : NULL;
   if((ws.kbstat&ws_ks_ctrl)==0 && t==1 && nearest[0] && 
-   nearest[0]->data==ctrl_pressed && nearest[0]->wall<7 /* no corr */)
+   nearest[0]->data==ctrl_pressed && nearest[0]->wall!=7 /* no corr */)
    { 
    ctrl_pressed=NULL;
    switch(view.currmode)
@@ -312,6 +345,8 @@ void click_in_level(struct w_window *w,struct w_event *we)
     case tt_cube: case tt_thing: case tt_door: case tt_pnt:
      switch_tag(view.currmode,nearest[0]->data); break;
     case tt_wall: switch_tag(tt_wall,nearest[0]->data,nearest[0]->wall);break;
+    case tt_edge: switch_tag(tt_edge,nearest[0]->data,
+     (nearest[0]->wall-100)/4,(nearest[0]->wall-100)%4); break;
     default: my_assert(0);
     }    
    scan_setclipping(w,0); plotlevel(); drawopt(view.currmode);
@@ -337,9 +372,11 @@ void click_in_level(struct w_window *w,struct w_event *we)
      ((ws.kbstat&ws_ks_alt)!=0 ? 2 : 0),w_xscreencoord(w,ws.x),
      w_yscreencoord(w,ws.y),nearest[0]->data,nearest[0]->wall);
    plotlevel();
-   if(view.currmode==tt_thing) drawopt(in_thing);
-   else if(view.currmode==tt_cube || view.currmode==tt_wall || 
-    view.currmode==tt_pnt) { drawopt(in_wall); drawopt(in_point); }
+   if(nearest[0]->wall!=7)
+    if(view.currmode==tt_thing) drawopt(in_thing);
+    else if(view.currmode==tt_cube || view.currmode==tt_wall || 
+     view.currmode==tt_pnt)
+     { drawopt(in_wall); drawopt(in_edge); drawopt(in_pnt); }
    return;
    }
   if(ws.buttons!=ws_bt_none)
@@ -354,26 +391,30 @@ void click_in_level(struct w_window *w,struct w_event *we)
   }
  while(ws.buttons!=ws_bt_none);
  scan_setclipping(w,0);
- if(nearest[0]==NULL) return;
+ if(nearest[0]==NULL || nearest[0]->wall==7) return;
  /* OK. The user has released the button. If the right button wasn't pressed
   then click the current thing */
  switch(view.currmode)
   {
   case tt_cube:
-   view.pcurrcube=nearest[0]->data; view.currwall=0; view.currpnt=0; 
+   view.pcurrcube=nearest[0]->data; view.currwall=0; view.curredge=0; 
    printmsg(TXT_CLICKEDCUBE,view.pcurrcube->no);
-   drawopt(in_wall); drawopt(in_point);
+   drawopt(in_wall); drawopt(in_edge);
    break;
   case tt_wall: 
    view.pcurrcube=nearest[0]->data; view.currwall=nearest[0]->wall;
-   view.currpnt=0; 
+   view.curredge=0; 
    printmsg(TXT_CLICKEDWALL,view.pcurrcube->no,view.currwall);
-   drawopt(in_point);
+   drawopt(in_edge);
+   break;
+  case tt_edge: 
+   view.pcurrcube=nearest[0]->data; view.currwall=(nearest[0]->wall-100)/4;
+   view.curredge=(nearest[0]->wall-100)%4;
+   printmsg(TXT_CLICKEDEDGE,view.pcurrcube->no,view.currwall,view.curredge);
    break;
   case tt_pnt: 
-   view.pcurrcube=nearest[0]->data->d.lp->c.head->d.n;
-   view.currwall=wallno[nearest[0]->data->d.lp->c.head->no][0][0];
-   view.currpnt=wallno[nearest[0]->data->d.lp->c.head->no][1][0];
+   view.pcurrpnt=nearest[0]->data;
+   printmsg(TXT_CLICKEDPNT,view.pcurrpnt->no);
    break;
   case tt_thing:
    view.pcurrthing=nearest[0]->data; 

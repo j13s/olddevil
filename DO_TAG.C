@@ -28,13 +28,19 @@
 void dec_usecubetag(int ec)
  {
  struct node *n;
- int i;
- if(view.currmode!=tt_wall && view.currmode!=tt_pnt)
+ int i,j;
+ if(view.currmode!=tt_wall && view.currmode!=tt_pnt && view.currmode!=tt_edge)
   { printmsg(TXT_MODEUSECUBETAG); return; }
  untagall(view.currmode);
  for(n=l->tagged[tt_cube].head;n->next!=NULL;n=n->next)
-  if(view.currmode==tt_wall) for(i=0;i<6;i++) tag(tt_wall,n->d.n,i);
-  else for(i=0;i<8;i++) tag(tt_pnt,n->d.n->d.c->p[i]);
+  switch(view.currmode)
+   {
+   case tt_wall: for(i=0;i<6;i++) tag(tt_wall,n->d.n,i); break;
+   case tt_edge: for(i=0;i<6;i++) for(j=0;j<4;j++) tag(tt_edge,n->d.n,i,j);
+    break;
+   case tt_pnt: for(i=0;i<8;i++) tag(tt_pnt,n->d.n->d.c->p[i]); break;
+   default: my_assert(0);
+   }
  plotlevel(); drawopt(view.currmode);
  }
  
@@ -42,53 +48,56 @@ void dec_usesidetag(int ec)
  {
  struct node *n;
  int j;
- if(view.currmode!=tt_pnt) { printmsg(TXT_MODEUSESIDETAG); return; }
- untagall(tt_pnt);
+ if(view.currmode!=tt_pnt&&view.currmode!=tt_edge)
+  { printmsg(TXT_MODEUSESIDETAG); return; } 
+ untagall(view.currmode);
  for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
-  for(j=0;j<4;j++) tag(tt_pnt,n->d.n->d.c->p[wallpts[n->no%6][j]]);
- plotlevel(); drawopt(in_point);
+  for(j=0;j<4;j++) 
+   if(view.currmode==tt_pnt) tag(tt_pnt,n->d.n->d.c->p[wallpts[n->no%6][j]]);
+   else tag(tt_edge,n->d.n,n->no%6,j);
+ plotlevel(); drawopt(view.currmode);
+ }
+
+void dec_usepnttag(int ec)
+ {
+ struct node *n,*n2;
+ int j;
+ if(view.currmode!=tt_edge)
+  { printmsg(TXT_MODEUSEPNTTAG); return; } 
+ untagall(view.currmode);
+ for(n=l->tagged[tt_pnt].head;n->next!=NULL;n=n->next)
+  for(n2=n->d.n->d.lp->c.head;n2->next!=NULL;n2=n2->next)
+   for(j=0;j<3;j++) tag(tt_edge,n2->d.n,wallno[n2->no][0][j],
+    wallno[n2->no][1][j]);
+ plotlevel(); drawopt(view.currmode);
  }
 
 void dec_tagspecial(int ec)
  {
  struct node *n;
- int i,tst;
- fprintf(errf,"KUCKUCK\n");
+ int i,p;
  if(!view.pcurrcube) { printmsg(TXT_NOCURRCUBE); return; }
- if(view.currmode!=tt_wall)
+ switch(view.currmode)
   {
-  if(ec==ec_tagspecialall)
-   {
-   if(l->tagged_corners.size>0)
-    for(n=l->tagged_corners.head->next;n!=NULL;n=n->next)
-     untagcorner(n->prev->d.n,(n->prev->no%24)/4,(n->prev->no%24)%4);
-   else
-    for(n=l->cubes.head;n->next!=NULL;n=n->next)
-     for(i=0;i<6;i++)
-      if(n->d.c->walls[i]) for(tst=0;tst<4;tst++) tagcorner(n,i,tst);
-   }
-  else
-   {
-   if(view.pcurrcube->d.c->walls[view.currwall]->tagged[view.currpnt])
-    untagcorner(view.pcurrcube,view.currwall,view.currpnt);
-   else
-    tagcorner(view.pcurrcube,view.currwall,view.currpnt);
-   }
-  }
- else
-  if(ec==ec_tagspecialall)
-   {
-   for(n=l->cubes.head,tst=1;n->next!=NULL && tst;n=n->next)
-    for(i=0;i<6 && tst;i++) 
-     if(n->d.c->walls[i] && n->d.c->walls[i]->locked) tst=0;
-   for(n=l->cubes.head;n->next!=NULL;n=n->next)
-    for(i=0;i<6;i++) 
-     if(n->d.c->walls[i]) n->d.c->walls[i]->locked=tst;
-   }
-  else
+  case tt_edge: 
+   p=wallpts[view.currwall][view.curredge];
+   for(i=0;i<3;i++)
+    if(view.pcurrcube->d.c->walls[wallno[p][0][i]])
+     switch_tag(tt_edge,view.pcurrcube,wallno[p][0][i],wallno[p][1][i]);
+   break;
+  case tt_pnt:
+   for(n=view.pcurrpnt->d.lp->c.head;n->next!=NULL;n=n->next)
+    for(i=0;i<3;i++)
+     if(n->d.n->d.c->walls[wallno[n->no][0][i]])
+      switch_tag(tt_edge,n->d.n,wallno[n->no][0][i],wallno[n->no][1][i]);
+   break;
+  case tt_wall:
    if(view.pcurrcube->d.c->walls[view.currwall]) 
     view.pcurrcube->d.c->walls[view.currwall]->locked^=1;
- plotlevel(); drawopt(in_wall); drawopt(in_point);
+   break;
+  default: ;
+  }
+ plotlevel(); drawopt(in_wall); drawopt(in_edge);
  }
 
 void dec_tagflatsides(int ec)

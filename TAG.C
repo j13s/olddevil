@@ -23,23 +23,25 @@
 #include "options.h"
 #include "tools.h"
 
-int tagcorner(struct node *nc,int wno,int pno)
+int tagedge(struct node *nc,va_list args)
  {
- if(nc==NULL || nc->d.c->walls[wno]==NULL || nc->d.c->walls[wno]->tagged[pno])
-  return 0;
- checkmem(nc->d.c->walls[wno]->tagged[pno]=addnode(&l->tagged_corners,
+ int wno,pno;
+ wno=va_arg(args,int); pno=va_arg(args,int);
+ if(nc==NULL || nc->d.c->walls[wno]==NULL) return 1;
+ if(nc->d.c->walls[wno]->tagged[pno]) return 0;
+ checkmem(nc->d.c->walls[wno]->tagged[pno]=addnode(&l->tagged[tt_edge],
   nc->no*24+wno*4+pno,nc));
  return 1;
  }
 
-int untagcorner(struct node *nc,int wno,int pno)
+void untagedge(struct node *nc,va_list args)
  {
- if(nc==NULL || nc->d.c->walls[wno]==NULL || 
-  !nc->d.c->walls[wno]->tagged[pno])
-  return 0;
- freenode(&l->tagged_corners,nc->d.c->walls[wno]->tagged[pno],NULL);
+ int wno,pno;
+ wno=va_arg(args,int); pno=va_arg(args,int);
+ if(nc==NULL && nc->d.c->walls[wno]==NULL) return;
+ if(nc->d.c->walls[wno]->tagged[pno])
+  freenode(&l->tagged[tt_edge],nc->d.c->walls[wno]->tagged[pno],NULL);
  nc->d.c->walls[wno]->tagged[pno]=NULL;
- return 1;
  }
  
 int tagcube(struct node *nc,va_list args)
@@ -134,7 +136,7 @@ void untagdoor(struct node *tn,va_list args)
  }
  
 int (*tag_something[tt_number])(struct node *n,va_list arg)=
- { tagcube,tagwall,tagpnt,tagthing,tagdoor };
+ { tagcube,tagwall,tagedge,tagpnt,tagthing,tagdoor };
  
 int tag(enum tagtypes tt,struct node *data,...)
  {
@@ -147,7 +149,7 @@ int tag(enum tagtypes tt,struct node *data,...)
  }
 
 void (*untag_something[tt_number])(struct node *tn,va_list args)={ untagcube,
- untagwall,untagpnt,untagthing,untagdoor };
+ untagwall,untagedge,untagpnt,untagthing,untagdoor };
 
 void untag(enum tagtypes tt,struct node *tn,...)
  { 
@@ -161,7 +163,7 @@ void untag(enum tagtypes tt,struct node *tn,...)
 int tagall(enum tagtypes tt)
  {
  struct node *cn;
- int i;
+ int i,j;
  switch(tt)
   {
   case tt_cube:
@@ -171,6 +173,10 @@ int tagall(enum tagtypes tt)
   case tt_wall:
    for(cn=l->cubes.head;cn->next!=NULL;cn=cn->next)
     for(i=0;i<6;i++) if(!tag(tt_wall,cn,i)) return 0;
+   break;
+  case tt_edge:
+   for(cn=l->cubes.head;cn->next!=NULL;cn=cn->next)
+    for(i=0;i<6;i++) for(j=0;j<4;j++) if(!tag(tt_edge,cn,i,j)) return 0;
    break;
   case tt_pnt:
    for(cn=l->pts.head;cn->next!=NULL;cn=cn->next)
@@ -198,6 +204,7 @@ void untagall(enum tagtypes tt)
    case tt_cube: case tt_pnt: case tt_door: case tt_thing:
     untag(tt,n->d.n); break;
    case tt_wall: untag(tt,n->d.n,n->no%6); break;
+   case tt_edge: untag(tt,n->d.n,(n->no%24)/4,(n->no%24)%4); break;
    default: waitmsg("Unknown tagtype in untagall."); 
    }
  }
@@ -212,6 +219,9 @@ int testtag(enum tagtypes tt,struct node *n,...)
   {
   case tt_cube: ret=n->d.c->tagged!=NULL; break;
   case tt_wall: ret=n->d.c->tagged_walls[va_arg(args,int)]!=NULL; break;
+  case tt_edge: ret=va_arg(args,int);
+   ret=n->d.c->walls[ret]!=NULL && 
+    n->d.c->walls[ret]->tagged[va_arg(args,int)]!=NULL; break;
   case tt_pnt: ret=n->d.lp->tagged!=NULL; break;
   case tt_thing: ret=n->d.t->tagged!=NULL; break;
   case tt_door: ret=n->d.d->tagged!=NULL; break;
@@ -232,7 +242,8 @@ int tag_testfunc(int lr,struct point *p,int x1,int y1,
 void tagbox(int lr,int dx1,int dy1,int dx2,int dy2,int op)
  {
  struct node *n;
- int i,j;
+ int i,j,k;
+ struct point c,p;
  my_assert(l!=NULL);
  switch(view.currmode)
   {
@@ -244,14 +255,31 @@ void tagbox(int lr,int dx1,int dy1,int dx2,int dy2,int op)
     if(i==8) if(op) tag(view.currmode,n); else untag(view.currmode,n);
     }
    break;
-  case tt_wall:
+  case tt_wall: 
+   for(n=l->cubes.head;n->next!=NULL;n=n->next)
+    for(j=0;j<6;j++) 
+     {
+     for(i=0;i<4;i++) 
+      if(!tag_testfunc(lr,n->d.c->p[wallpts[j][i]]->d.p,dx1,dy1,dx2,dy2))
+       break;
+     if(i==4) if(op) tag(view.currmode,n,j); else untag(view.currmode,n,j);
+     }
+   break;
+  case tt_edge:
    for(n=l->cubes.head;n->next!=NULL;n=n->next)
     for(j=0;j<6;j++)
      {
+     for(k=0;k<3;k++) 
+      { c.x[k]=0.0; 
+        for(i=0;i<4;i++) c.x[k]+=n->d.c->p[wallpts[j][i]]->d.p->x[k]/4.0; }
      for(i=0;i<4;i++) 
-      if(!tag_testfunc(lr,n->d.c->p[wallpts[j][i]]->d.p,dx1,dy1,dx2,dy2))  
-       break;
-     if(i==4) if(op) tag(view.currmode,n,j); else untag(view.currmode,n,j);
+      {
+      for(k=0;k<3;k++) 
+       p.x[k]=c.x[k]*0.4+n->d.c->p[wallpts[j][i]]->d.p->x[k]*0.6;
+      if(tag_testfunc(lr,&p,dx1,dy1,dx2,dy2) &&
+       tag_testfunc(lr,n->d.c->p[wallpts[j][i]]->d.p,dx1,dy1,dx2,dy2))
+       if(op) tag(view.currmode,n,j,i); else untag(view.currmode,n,j,i);
+      }
      }
    break;
   case tt_pnt:
@@ -289,8 +317,12 @@ void tagobject(enum infos what)
    break;
   case tt_pnt:
    if(!view.pcurrcube) return;
-   if(!tag(what,view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]))
-    untag(what,view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]); 
+   if(!tag(what,view.pcurrpnt)) untag(what,view.pcurrpnt);
+   break;
+  case tt_edge:
+   if(!view.pcurrcube) return;
+   if(!tag(what,view.pcurrcube,view.currwall,view.curredge))
+    untag(what,view.pcurrcube,view.currwall,view.curredge);
    break;
   case tt_thing: 
    if(!view.pcurrthing) return;
@@ -310,7 +342,7 @@ void tagobject(enum infos what)
 void switch_tag(enum infos what,struct node *n,...)
  {
  va_list args;
- int w;
+ int w,e;
  va_start(args,n);
  my_assert(l!=NULL);
  if(n==NULL) return;
@@ -321,6 +353,9 @@ void switch_tag(enum infos what,struct node *n,...)
   case tt_wall: 
    w=va_arg(args,int);
    if(testtag(what,n,w)) untag(what,n,w); else tag(what,n,w); break;
+  case tt_edge: 
+   w=va_arg(args,int); e=va_arg(args,int);
+   if(testtag(what,n,w,e)) untag(what,n,w,e); else tag(what,n,w,e); break;
   default: my_assert(0);
   }
  va_end(args);
@@ -350,7 +385,7 @@ void tagfilter(struct infoitem *i,int op,void *data)
  my_assert(i!=NULL && data!=NULL);
  if(i->tagnr>=tt_number) return;
  if(i->type==it_cubelight || i->type==it_sidelight || i->type==it_thingcoord
-  || i->tagnr==tt_pnt)
+  || i->tagnr==tt_pnt || i->tagnr==tt_edge)
   { printmsg(TXT_CANTUSETAGFILTER); return; }
  switch(i->tagnr)
   {
@@ -378,7 +413,7 @@ void tagfilter(struct infoitem *i,int op,void *data)
        { tagged+=testtag(i->tagnr,n,w) ? -op : !op; found++;
          if(op) untag(i->tagnr,n,w); else tag(tt_wall,n,w);  }
    drawopt(in_wall); break;
-  case tt_pnt: found=tagged=0; break;
+  case tt_pnt: case tt_edge: found=tagged=0; break;
   default: fprintf(errf,"Unknown tagnr: %d\n",i->tagnr); my_assert(0);
   }
  if(op) printmsg(TXT_TAGFILTERUNTAGGED,-tagged,found+tagged);

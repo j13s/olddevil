@@ -29,9 +29,6 @@
 #include "do_event.h"
 #include "do_opts.h"
 
-extern struct w_window *optionwins[in_number];
-extern struct w_button *b_optwins[in_internal][8]; 
-
 static void wi_changeobject(struct w_button *b,int dowhat)
  {
  enum infos what;
@@ -45,6 +42,7 @@ static void wi_changeobject(struct w_button *b,int dowhat)
   case in_cube: n=&view.pcurrcube; ls=&l->cubes; break;
   case in_thing: n=&view.pcurrthing;ls=&l->things; break;
   case in_door: n=&view.pcurrdoor; ls=&l->doors; break;
+  case in_pnt: n=&view.pcurrpnt; ls=&l->pts; break;
   case in_wall: 
    if(view.pcurrcube!=NULL) 
     {
@@ -62,19 +60,20 @@ static void wi_changeobject(struct w_button *b,int dowhat)
     }
    else sprintf(b->d.str->str,"----");
    break;
-  case in_point:
-   if(view.pcurrcube!=NULL)
+  case in_edge: 
+   if(view.pcurrcube!=NULL) 
     {
     switch(dowhat)
      {
-     case -4: view.currpnt=0; break;
-     case -3: view.currpnt--; break;
-     case -2: view.currpnt++; break;
-     case -1: view.currpnt=3; break;
-     default: view.currpnt=dowhat;
+     case -4: view.curredge=0; break;
+     case -3: view.curredge--; break;
+     case -2: view.curredge++; break;
+     case -1: view.curredge=3; break;
+     default: view.curredge=dowhat;
      }
-    view.currpnt&=3;
-    sprintf(b->d.str->str,"%.4d",view.currpnt);
+    if(view.curredge>3) view.curredge=0;
+    else if(view.curredge<0) view.curredge=3;
+    sprintf(b->d.str->str,"%.4d",view.curredge);
     }
    else sprintf(b->d.str->str,"----");
    break;
@@ -100,7 +99,8 @@ static void wi_changeobject(struct w_button *b,int dowhat)
   {
   case in_cube: drawopt(in_cube);
   case in_wall: drawopt(in_wall);
-  case in_point: drawopt(in_point); break;
+  case in_edge: drawopt(in_edge); break;
+  case in_pnt: drawopt(in_pnt); break;
   case in_thing: drawopt(in_thing); break;
   case in_door: drawopt(in_door); break;
   default: waitmsg("Unknown infotype in changeobject %d",what); return;
@@ -164,6 +164,32 @@ void b_l_defaultobject(struct w_button *b)
 void b_r_defaultobject(struct w_button *b)
  { drawopt((enum infos)b->data); } /* to let the button pop out */
 
+void b_l_lockwall(struct w_button *b) 
+ {
+ if(!view.pcurrcube || !view.pcurrcube->d.c->walls[view.currwall])
+  { printmsg(TXT_EMPTYWALLNOTLOCK); drawopt(in_wall); return; }
+ view.pcurrcube->d.c->walls[view.currwall]->locked^=1;
+ plotlevel();
+ }
+
+void b_r_lockwall(struct w_button *b)
+ {
+ struct node *n;
+ int i;
+ if(!view.pcurrcube || !view.pcurrcube->d.c->walls[view.currwall])
+  { printmsg(TXT_EMPTYWALLNOTLOCK); drawopt(in_wall); return; }
+ view.pcurrcube->d.c->walls[view.currwall]->locked^=1;
+ for(i=1,n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
+  if(n->d.n->d.c->walls[n->no%6]!=NULL)
+   { n->d.n->d.c->walls[n->no%6]->locked=
+      view.pcurrcube->d.c->walls[view.currwall]->locked;
+     i++; }
+ if(view.pcurrcube->d.c->walls[view.currwall]->locked)
+  printmsg(TXT_LOCKEDTAGGEDSIDES,i);
+ else printmsg(TXT_UNLOCKEDTAGGEDSIDES,i);
+ plotlevel();
+ }
+  
 void b_selectmacro(struct w_button *b)
  {
  struct node *n;
@@ -192,7 +218,7 @@ struct w_b_press b_next = { 25,5,b_nextobj,NULL,b_nextobj,b_lastobj };
 int init_prev_no_next(enum infos what)
  {
  struct w_b_string *b_no,*b_tagcount;
- struct w_b_switch *b_tag,*b_default;
+ struct w_b_switch *b_tag,*b_default,*b_locked;
  struct w_b_press *b_ins,*b_del;
  int y;
  checkmem(b_no=MALLOC(sizeof(struct w_b_string)));
@@ -237,17 +263,20 @@ int init_prev_no_next(enum infos what)
   w_xwininsize(optionwins[what])-b_optwins[what][3]->xpos-
   b_optwins[what][3]->xsize,b_optwins[what][1]->ysize,NULL,b_tagcount,0));
  w_dontchangebutton(b_optwins[what][7]);
- checkmem(b_optwins[what][4]=w_addstdbutton(optionwins[what],w_b_press,
-  0,b_optwins[what][2]->ypos+b_optwins[what][2]->ysize,
-  w_xwininsize(optionwins[what])/(what==in_point ? 1 : 2),-1,TXT_INSERT,
-  b_ins,0));
- if(what!=in_point) 
-  { checkmem(b_optwins[what][5]=w_addstdbutton(optionwins[what],w_b_press,
-     w_xwininsize(optionwins[what])/2,b_optwins[what][2]->ypos+
-     b_optwins[what][2]->ysize,w_xwininsize(optionwins[what])-
-     w_xwininsize(optionwins[what])/2,-1,TXT_DELETE,b_del,0)); }
- else b_optwins[what][5]=b_optwins[what][4]; /* NULL would be true,but
-  difficult to handle */
+ if(what!=in_pnt) 
+  { checkmem(b_optwins[what][4]=w_addstdbutton(optionwins[what],w_b_press,
+     0,b_optwins[what][2]->ypos+b_optwins[what][2]->ysize,
+     w_xwininsize(optionwins[what])/(what==in_edge ? 1 : 2),-1,TXT_INSERT,
+     b_ins,0));
+    if(what!=in_edge)
+     { checkmem(b_optwins[what][5]=w_addstdbutton(optionwins[what],w_b_press,
+        w_xwininsize(optionwins[what])/2,b_optwins[what][2]->ypos+
+        b_optwins[what][2]->ysize,w_xwininsize(optionwins[what])-
+        w_xwininsize(optionwins[what])/2,-1,TXT_DELETE,b_del,0)); }
+    else b_optwins[what][5]=b_optwins[what][4]; /* see below */ }
+ else 
+  { b_optwins[what][5]=b_optwins[what][4]=b_optwins[what][3]; }
+    /* NULL would be true,but difficult to handle */
  b_optwins[what][2]->data=b_optwins[what][0]->data=
   b_optwins[what][1];
  b_optwins[what][1]->data=b_optwins[what][3]->data=
@@ -271,14 +300,23 @@ int init_prev_no_next(enum infos what)
    b_default->on=0;
    b_default->l_routine=b_l_defaultobject;
    b_default->r_routine=b_r_defaultobject;
+   checkmem(b_locked=MALLOC(sizeof(struct w_b_switch)));
+   b_locked->on=0;
+   b_locked->l_routine=b_l_lockwall;
+   b_locked->r_routine=b_r_lockwall;
    checkmem(b_optwins[what][6]=w_addstdbutton(optionwins[what],w_b_switch,
     0,b_optwins[what][5]->ypos+b_optwins[what][5]->ysize,
-    w_xwininsize(optionwins[what]),-1,TXT_DEFAULT,b_default,0));
+    w_xwininsize(optionwins[what])/2,-1,TXT_DEFAULT,b_default,0));
    b_optwins[what][6]->data=(void *)what;
+   checkmem(b_optwins[what][8]=w_addstdbutton(optionwins[what],w_b_switch,
+    w_xwininsize(optionwins[what])/2,b_optwins[what][5]->ypos+
+    b_optwins[what][5]->ysize,(w_xwininsize(optionwins[what])+1)/2,-1,
+    TXT_LOCKED,b_locked,0));
+   b_optwins[what][6]->data=b_optwins[what][8]->data=(void *)what;
    y=b_optwins[what][6]->ypos+b_optwins[what][6]->ysize;  
    break;
   default:
-   b_optwins[what][6]=NULL;
+   b_optwins[what][6]=NULL; b_optwins[what][8]=NULL;
    y=b_optwins[what][5]->ypos+b_optwins[what][5]->ysize; 
   }
  return y;

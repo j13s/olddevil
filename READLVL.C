@@ -328,6 +328,8 @@ int D2_REG_readlvldata(FILE *lf,struct leveldata *ld,int version)
  strcpy(ld->pigname,buffer);
  if(fread(&lfh.reactor_time,sizeof(unsigned long),2,lf)!=2)
   { fclose(lf); return 0; }
+ ld->reactor_time=lfh.reactor_time;
+ ld->reactor_strength=lfh.reactor_strength;
  if(version>=LEVVER_D2_11_REG)
   {
   if(fread(&lfh.flickering_lights,sizeof(unsigned long),1,lf)!=1)
@@ -500,7 +502,8 @@ int initlevel(struct leveldata *ld)
    VECTOR(&ld->e[2],&ld->e[0],&ld->e[1]);
    }
   }
- ld->currwall=ld->currpnt=0;
+ ld->currwall=ld->curredge=0;
+ ld->pcurrpnt=(ld->pts.size>0) ? ld->pts.head : NULL;
  ld->pcurrcube=(ld->cubes.size>0) ? ld->cubes.head : NULL;
  ld->pcurrthing=(ld->things.size>0) ? ld->things.head : NULL;
  ld->pcurrwall=(ld->pcurrcube!=NULL) ? ld->pcurrcube->d.c->walls[0] : NULL;
@@ -539,21 +542,23 @@ void in_changecurrentlevel(struct leveldata *ld)
   {
   l->pcurrcube=view.pcurrcube; l->pcurrthing=view.pcurrthing;
   l->pcurrdoor=view.pcurrdoor; l->pcurrwall=view.pcurrwall;
-  l->currpnt=view.currpnt; l->currwall=view.currwall;
+  l->pcurrpnt=view.pcurrpnt;
+  l->curredge=view.curredge; l->currwall=view.currwall;
   l->e0=view.e0; for(i=0;i<3;i++) l->e[i]=view.e[i];
   }
  if(ld!=NULL)
   {
   view.pcurrcube=ld->pcurrcube; view.pcurrthing=ld->pcurrthing;
   view.pcurrdoor=ld->pcurrdoor; view.pcurrwall=ld->pcurrwall;
-  view.currpnt=ld->currpnt; view.currwall=ld->currwall;
+  view.pcurrpnt=ld->pcurrpnt;
+  view.curredge=ld->curredge; view.currwall=ld->currwall;
   view.e0=ld->e0; for(i=0;i<3;i++) view.e[i]=ld->e[i];
   }
  else
   {
-  view.pcurrthing=view.pcurrcube=view.pcurrdoor=NULL;
+  view.pcurrthing=view.pcurrcube=view.pcurrdoor=view.pcurrpnt=NULL;
   view.pcurrwall=NULL;
-  view.currpnt=view.currwall=0; 
+  view.curredge=view.currwall=0; 
   }
  l=ld;
  if(l) init_rendercube(); 
@@ -587,7 +592,6 @@ struct leveldata *emptylevel(void)
  int i;
  if((ld=MALLOC(sizeof(struct leveldata)))==NULL) return NULL;
  for(i=0;i<tt_number;i++) initlist(&ld->tagged[i]);
- initlist(&ld->tagged_corners);
  initlist(&ld->cubes); initlist(&ld->things);
  initlist(&ld->doors); initlist(&ld->pts);
  initlist(&ld->sdoors); initlist(&ld->producers);
@@ -604,9 +608,9 @@ struct leveldata *emptylevel(void)
  ld->w=NULL; ld->exitcube=NULL; ld->exitwall=0;
  ld->levelsaved=1; ld->levelillum=0; ld->secretcube=ld->secretstart=NULL; 
  for(i=0;i<9;i++) ld->secret_orient[i]=stdorientation[i];
- ld->pcurrcube=ld->pcurrthing=ld->pcurrdoor=ld->rendercube=NULL;
+ ld->pcurrpnt=ld->pcurrcube=ld->pcurrthing=ld->pcurrdoor=ld->rendercube=NULL;
  ld->inside=0; ld->pcurrwall=NULL;
- ld->currpnt=ld->currwall=0; ld->n=NULL;
+ ld->curredge=ld->currwall=0; ld->n=NULL;
  ld->whichdisplay=view.whichdisplay; ld->cur_corr=NULL;
  for(i=0;i<3;i++) 
   { ld->e0.x[i]=i==2 ? -655360.0 : 0.0;
@@ -736,7 +740,6 @@ int closelevel(struct leveldata *ld,int warn)
   if(ld->n) killnode(&view.levels,ld->n);
   }
  for(i=0;i<tt_number;i++) freelist(&ld->tagged[i],free);
- freelist(&ld->tagged_corners,free);
  freelist(&ld->lines,free);
  freelist(&ld->pts,free);
  freelist(&ld->cubes,freecube);
@@ -1053,6 +1056,8 @@ int D2_REG_savelevel(FILE *f,struct leveldata *ld)
  if(fwrite(ld->pigname,strlen(ld->pigname),1,f)!=1)
   { fclose(f); return 0; }
  if(fwrite("\x0A",1,1,f)!=1) { fclose(f); return 0; }
+ lh.reactor_time=ld->reactor_time;
+ lh.reactor_strength=ld->reactor_strength;
  if(fwrite(&lh.reactor_time,sizeof(unsigned long),2,f)!=2)
   { fclose(f); return 0; }
  if(lh.fh.version>=LEVVER_D2_11_REG)

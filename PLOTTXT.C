@@ -62,9 +62,9 @@ void pol_init_rscoords(struct polygon *p)
  if(p->pnts[0].corner!=NULL)
   {
   for(i=0;i<2;i++) 
-   { p->a_txt.x[i]=p->pnts[0].corner->x[i]<<11;
-     u.x[i]=(p->pnts[1].corner->x[i]<<11)-p->a_txt.x[i];
-     v.x[i]=(p->pnts[p->num_pnts-1].corner->x[i]<<11)-p->a_txt.x[i]; }
+   { p->a_txt.x[i]=p->pnts[0].corner->x[i]<<7;
+     u.x[i]=(p->pnts[1].corner->x[i]<<7)-p->a_txt.x[i];
+     v.x[i]=(p->pnts[p->num_pnts-1].corner->x[i]<<7)-p->a_txt.x[i]; }
   /* we need to stretch r_txt and s_txt */
   for(i=0;i<2;i++) 
    { p->r_txt.x[i]=-u.x[i]/lr;
@@ -419,16 +419,19 @@ unsigned char *gettexture(int rdlno,char txt1or2)
  return pig.rdl_txts[rdlno].pig->data;
  }
  
+/* I think I have some trouble with too big stacks, so I make as much 
+ variables as possible static and/or global */
 static struct render_point render_pnts[MAX_RENDERDEPTH][MAX_RENDERPNTS];
 static unsigned char buffer[64*64];
-static int renderdepth=MAX_RENDERDEPTH;
-void render_cube(int lr,int depth,struct node *from,struct node *cube,
- struct render_point *bounds,int drawwhat)
+static int renderdepth=MAX_RENDERDEPTH,render_drawwhat,render_lr;
+void render_cube(int depth,struct node *from,struct node *cube,
+ struct render_point *bounds)
  {
- int w,j,x,y;
- struct render_point *render_start,*rp;
- struct point_2d m1,m2;
- unsigned char *txt1,*txt2,*txt;
+ unsigned char w,j,x,y;
+ static struct render_point *render_start,*rp;
+ static struct point_2d m1,m2;
+ static unsigned char *txt1,*txt2,*txt; /* static because I need to 
+  save mem on the stack */
  struct node *n;
  if(depth>=renderdepth) return;
  for(w=0;w<6;w++) 
@@ -467,7 +470,7 @@ void render_cube(int lr,int depth,struct node *from,struct node *cube,
      while(rp!=render_start);
      if(DEBUG) { fprintf(errf,"\n"); fflush(errf); }
      if(render_start->next!=render_start->prev) 
-      render_cube(lr,depth+1,cube,cube->d.c->nc[w],render_start,drawwhat);
+      render_cube(depth+1,cube,cube->d.c->nc[w],render_start);
      }
     }
   if(cube->d.c->walls[w] && (!cube->d.c->d[w] ||
@@ -509,19 +512,19 @@ void render_cube(int lr,int depth,struct node *from,struct node *cube,
     if(cube->d.c->polygons[w*2+j] && 
      (render_start=pol_clip_pnts(cube->d.c->polygons[w*2+j],
       render_pnts[depth],bounds,scr_xsize,scr_ysize))!=NULL)
-     render_filled_polygon(lr,cube->d.c->polygons[w*2+j],render_start,txt,
-      cube->d.c->nc[w]!=NULL); 
+     render_filled_polygon(render_lr,cube->d.c->polygons[w*2+j],render_start,
+      txt,cube->d.c->nc[w]!=NULL); 
     }
    }
   }
  /* Now check if we should draw more than the textures */
- if((drawwhat&DW_CUBES)!=0) in_plotcube(lr,cube,0,0,0,1,1);
- if((drawwhat&DW_DOORS)!=0) 
+ if((render_drawwhat&DW_CUBES)!=0) in_plotcube(render_lr,cube,0,0,0,1,1);
+ if((render_drawwhat&DW_DOORS)!=0) 
   for(w=0;w<6;w++)
-   if(cube->d.c->d[w]) in_plotdoor(lr,cube->d.c->d[w],0,0,0);
- if((drawwhat&DW_THINGS)!=0) 
+   if(cube->d.c->d[w]) in_plotdoor(render_lr,cube->d.c->d[w],0,0,0);
+ if((render_drawwhat&DW_THINGS)!=0) 
   for(n=cube->d.c->things.head;n->next!=NULL;n=n->next)
-   in_plotthing(lr,n->d.t,0);
+   in_plotthing(render_lr,n->d.t,0);
  }
  
 void render_level(int lr,struct node *start_cube,int drawwhat,
@@ -547,7 +550,8 @@ void render_level(int lr,struct node *start_cube,int drawwhat,
  for(i=0;i<4;i++)
   { screen_bounds[i].prev=&screen_bounds[i==0 ? 3 : i-1];
     screen_bounds[i].next=&screen_bounds[i==3 ? 0 : i+1]; }
- render_cube(lr,0,start_cube,start_cube,screen_bounds,drawwhat);
+ render_drawwhat=drawwhat; render_lr=lr;
+ render_cube(0,start_cube,start_cube,screen_bounds);
  }
  
 void init_txtgrfx(void) { psys_initdrawbuffer(); }

@@ -94,21 +94,15 @@ int dsc_change_pnt_coord(struct infoitem *i,void *d,struct node *n,
   { p->d.p->x[0]=oldx; p->d.p->x[1]=oldy; p->d.p->x[2]=oldz; }
  else
   newcorners(n->d.c->p[wallpts[wallno][pntno]]);
- if(!tagged) { plotlevel(); drawopt(in_point); }
+ if(!tagged) { plotlevel(); drawopt(in_pnt); }
  return 1;
  }
  
 int dsc_set_uvl(struct infoitem *i,void *d,struct node *n,int wallno,
  int pntno,int tagged)
  { 
- int offset;
- /* this is all a bit clumsy because we need ds_wall to print the
-    correct data but we need ds_corner to run through the correct
-    taglist */
- if(n==NULL || n->d.c->walls[wallno]==NULL) return 0;
- offset=((i->offset-4)%6)/2;
- *((unsigned short *)(&n->d.c->walls[wallno]->corners[pntno])+offset)=
-  *(unsigned short *)d;
+ int r=setno(i,d,n,wallno,pntno);
+ if(!r) return 0;
  initfilledside(n->d.c,wallno); 
  if(!tagged) 
   { plotlevel(); drawopt(in_wall); drawopt(in_cube); }  
@@ -412,13 +406,13 @@ int dsc_flythrough(struct infoitem *i,void *d,struct node *n,int wallno,
  else view.drawwhat|=DW_CUBES;
  view.render=nft;
  if(!view.pcurrcube) return 1;
- for(j=0;j<3;j++)
-  {
-  view.e0.x[j]=0.0;
-  for(k=0;k<8;k++) 
-   view.e0.x[j]+=
-    (l->rendercube ? l->rendercube:view.pcurrcube)->d.c->p[k]->d.p->x[j]/8.0;
-  }
+ if(view.render==3)
+  for(j=0;j<3;j++)
+   {
+   view.e0.x[j]=0.0;
+   for(k=0;k<8;k++) 
+    view.e0.x[j]+=view.pcurrcube->d.c->p[k]->d.p->x[j]/8.0;
+   }
  init_rendercube();
  w_refreshwin(l->w);
  return 1;

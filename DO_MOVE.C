@@ -212,7 +212,7 @@ void pr_cube(struct list *nl,int x,int y,int z,int dir)
  if(view.gridonoff && view.warn_gridrot && !yesnomsg(TXT_GRIDROT))
   return;
  initlist(&lp);
- turningcoords(&offset,coords,x==1 ? view.currpnt : -1);
+ turningcoords(&offset,coords,x==1 ? view.curredge : -1);
  /* add current cube to tag list */
  if(x==0 || x==1) /* banking */
   { if((currcubeins=((cn=findnode(nl,view.pcurrcube->no))==NULL))==1)
@@ -266,7 +266,7 @@ void b_move(int axis,int dir)
    break;
   default: printmsg("Movemode %d not implemented",view.movemode);
   }
- plotlevel(); if(view.movemode==mt_obj) drawopt(in_point);
+ plotlevel(); if(view.movemode==mt_obj) drawopt(in_pnt);
  }
 
 void b_turn(int x,int y,int z,int dir)
@@ -295,7 +295,7 @@ void b_turn(int x,int y,int z,int dir)
    break;
   default: printmsg("Turnmode %d not implemented",view.movemode);
   }
- plotlevel(); if(view.movemode==mt_obj) drawopt(in_point);
+ plotlevel(); if(view.movemode==mt_obj) drawopt(in_pnt);
  }
 
 void dec_move0(int ec) { b_move(2,-1); }
@@ -318,7 +318,7 @@ void dec_beam(int ec)
  switch(view.currmode)
   {
   case tt_pnt: if(!view.pcurrcube) { printmsg(TXT_NOCURRPNT); return; }
-   p=*view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p;
+   p=*view.pcurrpnt->d.p;
    break;
   case tt_cube: if(!view.pcurrcube) { printmsg(TXT_NOCURRCUBE); return; }
    for(j=0;j<3;j++)
@@ -350,7 +350,7 @@ void dec_gowall(int ec)
  if(!view.pcurrdoor) { printmsg(TXT_NOCURRWALL); return; }
  view.pcurrcube=view.pcurrdoor->d.d->c; 
  view.currwall=view.pcurrdoor->d.d->w->no; 
- plotcurrent(); drawopt(in_cube); drawopt(in_wall); drawopt(in_point);
+ plotcurrent(); drawopt(in_cube); drawopt(in_wall); drawopt(in_edge);
  }  
  
 void dec_sidecube(int ec)
@@ -360,7 +360,7 @@ void dec_sidecube(int ec)
   { printmsg(TXT_SIDECUBENONEIGHBOUR); return; }
  view.pcurrcube=view.pcurrcube->d.c->nc[view.currwall]; 
  view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
- plotcurrent(); drawopt(in_cube); drawopt(in_wall); drawopt(in_point);
+ plotcurrent(); drawopt(in_cube); drawopt(in_wall); drawopt(in_edge);
  }
 
 struct point align_xaxis[3]={{{0.0,0.0,-1.0}},{{0.0,1.0,0.0}},
@@ -401,6 +401,8 @@ void dec_prevthing(int ec) { prevobject(tt_thing); }
 void dec_nextthing(int ec) { nextobject(tt_thing); }
 void dec_prevwall(int ec) { prevobject(tt_door); }
 void dec_nextwall(int ec) { nextobject(tt_door); }
+void dec_prevedge(int ec) { prevobject(tt_edge); }
+void dec_nextedge(int ec) { nextobject(tt_edge); }
 
 void plotpntcubelist(struct list *lp,int hilight,int xor,int start)
  {
@@ -765,8 +767,7 @@ void redrawcubes(struct list *pntpl,struct list *cubepl)
  {
  struct node *n;
  plotcurrent(); 
- plotmarker(view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p,
-  -2);
+ plotmarker(view.pcurrpnt->d.p,-2);
  for(n=pntpl->head;n->next!=NULL;n=n->next)
   if(testtag(tt_pnt,n)) plotmarker(n->d.p,-3);
  plotpntcubelist(cubepl,256,0,1); 
@@ -930,7 +931,7 @@ void moveobj_mouse(int withtagged,int wx,int wy,struct node *nc,int wall)
       FREE(lockedsides); }
    for(i=0;i<6;i++)
     if(nc->d.c->walls[i]) nc->d.c->walls[i]->locked=curlocked[i];
-   drawopt(in_point); drawopt(in_wall); plotlevel();
+   drawopt(in_edge); drawopt(in_wall); plotlevel();
    break;
   case tt_wall:
    if((withtagged&2)==0)
@@ -954,7 +955,7 @@ void moveobj_mouse(int withtagged,int wx,int wy,struct node *nc,int wall)
      { if(n->d.n==nc || testtag(tt_cube,n->d.n)) continue;
        for(i=0;i<6;i++) recalcwall(n->d.n->d.c,i); }
     killlist(cubepl); killlist(pntpl);
-    drawopt(in_point);
+    drawopt(in_edge);
     }
    else /* move texture of wall */
     move_texture_with_mouse(l->w,wx,wy,nc,wall,withtagged&1);
@@ -972,7 +973,7 @@ void moveobj_mouse(int withtagged,int wx,int wy,struct node *nc,int wall)
    moving_with_mouse(l->w,wx,wy,movepnt,rotatepnt,np->d.p,&params);
    for(n=pntpl->head;n->next!=NULL;n=n->next) newcorners(n);
    killlist(cubepl); killlist(pntpl);
-   drawopt(in_point); drawopt(in_wall); plotlevel();
+   drawopt(in_edge); drawopt(in_wall); plotlevel();
    break;
   case tt_thing: 
    plotcurrent(); 

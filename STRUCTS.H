@@ -77,17 +77,17 @@
 
 #define MAX_OBJSTR_LENGTH 15
 
-enum tagtypes { tt_cube,tt_wall,tt_pnt,tt_thing,tt_door,tt_number };
+enum tagtypes { tt_cube,tt_wall,tt_edge,tt_pnt,tt_thing,tt_door,tt_number };
 enum movetypes { mt_you,mt_obj,mt_number };
-enum infos { in_cube,in_wall,in_point,in_thing,in_door,in_internal,
+enum infos { in_cube,in_wall,in_edge,in_pnt,in_thing,in_door,in_internal,
  in_number };
 enum datastructs { ds_cube,ds_wall,ds_corner,ds_thing,ds_door,ds_internal,
  ds_leveldata,ds_sdoor,ds_producer,ds_point,ds_turnoff,ds_changedlight,
  ds_flickeringlight,ds_number };
 enum infotype { it_selbutton,it_markbutton,it_light,it_size,it_coord,
  it_degree,it_float,it_int,it_cubelight,it_sidelight,it_texture,
- it_dooranim,it_thingtexture,it_thingcoord,it_uvl,it_fl_mask,
- it_fl_delay };
+ it_dooranim,it_thingtexture,it_thingcoord,it_fl_mask,it_fl_delay,
+ it_uvcoord };
 
 struct point {float x[3];};
 struct pixel {int x,y; float d;};
@@ -439,6 +439,7 @@ struct saved_position
  };
 struct leveldata
  {
+ long reactor_time,reactor_strength;
  struct list pts,cubes,things,doors,sdoors,producers,turnoff,changedlights,
   lightsources,flickeringlights;
  struct edoor *edoors;
@@ -450,12 +451,12 @@ struct leveldata
  long secret_orient[9];
  struct node *exitcube;
  int exitwall;
- struct node *pcurrcube,*pcurrthing,*pcurrdoor;
+ struct node *pcurrcube,*pcurrthing,*pcurrdoor,*pcurrpnt;
  struct wall *pcurrwall;
- int currpnt,currwall; /* 0..3 currpnt of currwall / 0..5 cwall of ccube */
+ int curredge,currwall; /* 0..3 curredge of currwall / 0..5 cwall of ccube */
  struct node *rendercube;  /* the cube where the rendering starts */
  int inside; /* are we inside or outside of the level (left window) */
- struct list tagged[tt_number],tagged_corners; /* cubes,walls,pts,things */
+ struct list tagged[tt_number]; /* cubes,walls,pts,edges,things */
  struct list lines;
  int whichdisplay; /* ==0 one display, ==1 two for each level */
  struct point e0,e[3];
@@ -573,9 +574,9 @@ struct viewdata
  /* these things should only be in the level structure but I started
   with these things in here and had no sense to change this in the
   whole program */
- struct node *pcurrcube,*pcurrthing,*pcurrdoor;
+ struct node *pcurrcube,*pcurrthing,*pcurrdoor,*pcurrpnt;
  struct wall *pcurrwall;
- int currpnt,currwall;
+ int curredge,currwall;
  /* 0..3 currpnt of currwall / 0..5 cwall of ccube */
  /* the opened levels&macros */
  struct w_button *levelbutton;

@@ -212,6 +212,8 @@ void dec_sidemode(int ec)
  { shrinkopt_win(tt_wall); changecurrmode(tt_wall); }
 void dec_pntmode(int ec) 
  { shrinkopt_win(tt_pnt); changecurrmode(tt_pnt); }
+void dec_edgemode(int ec) 
+ { shrinkopt_win(tt_edge); changecurrmode(tt_edge); }
 void dec_thingmode(int ec) 
  { shrinkopt_win(tt_thing); changecurrmode(tt_thing); }
 void dec_wallmode(int ec)
@@ -377,12 +379,22 @@ void dec_reinitgrfx(int ec)
    plotlevel(); }
 
 void dec_render(int ec)
- { if(!l) { printmsg(TXT_NOLEVEL); return; }
-   view.render=ec-ec_render_0;
-   if(view.render>1)
-    { l->whichdisplay=view.whichdisplay=0; }
-   else view.drawwhat|=DW_CUBES;
-   init_rendercube(); drawopt(in_internal); w_refreshwin(l->w); }
+ {
+ int j,k;
+ if(!l) { printmsg(TXT_NOLEVEL); return; }
+ view.render=ec-ec_render_0;
+ if(view.render>1)
+  { l->whichdisplay=view.whichdisplay=0; }
+ else view.drawwhat|=DW_CUBES;
+ if(view.render==3)
+  for(j=0;j<3;j++)
+   {
+   view.e0.x[j]=0.0;
+   for(k=0;k<8;k++) 
+    view.e0.x[j]+=view.pcurrcube->d.c->p[k]->d.p->x[j]/8.0;
+   }
+ init_rendercube(); drawopt(in_internal); w_refreshwin(l->w); 
+ }
    
 void dec_changeview(int ec)
  { if(!l) { printmsg(TXT_NOLEVEL); return; }
@@ -422,5 +434,5 @@ void (*do_event[ec_num_of_codes])(int ec)=
    dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,
    dec_savewinpos,dec_loadwinpos,dec_reinitgrfx,dec_changeview,
    dec_render,dec_render,dec_render,dec_render,dec_tagflatsides,
-   dec_tagspecial };
+   dec_usepnttag,dec_nextedge,dec_prevedge,dec_edgemode };
 

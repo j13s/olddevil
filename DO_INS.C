@@ -30,14 +30,14 @@
 
 void dec_newlevel(int ec)
  {
- struct leveldata *ld;
+ struct leveldata *ld,*old_l;
  const char *pigname=init.d_ver>=d2_10_sw ? "GROUPA.256" : "DESCENT.256";
  ld=emptylevel(); 
  checkmem(ld->fullname=MALLOC(strlen(TXT_STDLEVELNAME)+1));
  strcpy(ld->fullname,TXT_STDLEVELNAME);
  checkmem(ld->pigname=MALLOC(strlen(pigname)+1));
  strcpy(ld->pigname,pigname);
- ld->pcurrcube=newcube(ld);
+ old_l=l; l=ld; ld->pcurrcube=newcube(ld); l=old_l;
  ld->currwall=3; ld->pcurrwall=ld->pcurrcube->d.c->walls[ld->currwall];
  newlevelwin(ld,0);
  view.pcurrthing=insertthing(view.pcurrcube,NULL);
@@ -143,18 +143,18 @@ void dec_insert(int ec)
    drawopt(in_wall); l->levelsaved=l->levelillum=0;
    if(l->pts.size>MAX_DESCENT_VERTICES && warn) waitmsg(TXT_INSTOOMANYPTS);
    break;
-  case tt_pnt: 
+  case tt_edge: 
    warn=(l->pts.size<=MAX_DESCENT_VERTICES);
    view.drawwhat|=DW_ALLLINES;
    if(fast)
-    for(n=l->tagged[tt_pnt].head;n->next!=NULL;n=n->next)
+    for(n=l->tagged[tt_edge].head;n->next!=NULL;n=n->next)
      {
      pn=wallpts[(n->no%24)/4][(n->no%24)%4];
      for(i=0;i<3;i++)
       if(n->d.n->d.c->d[wallno[pn][0][i]]!=NULL) break;
      if(i==3) insertpnt(n->d.n,pn);
      }
-   pn=wallpts[view.currwall][view.currpnt];
+   pn=wallpts[view.currwall][view.curredge];
    for(i=0;i<3;i++)
     if(view.pcurrcube->d.c->d[wallno[pn][0][i]]!=NULL) 
      { if(!fast)
@@ -163,9 +163,10 @@ void dec_insert(int ec)
    if(i==3) insertpnt(view.pcurrcube,pn);
    if(fast) printmsg(TXT_TAGGEDPOINTSINSERTED);
    else 
-    printmsg(TXT_POINTINSERTED,view.currpnt,view.pcurrcube->no,view.currwall);
+    printmsg(TXT_POINTINSERTED,view.curredge,view.pcurrcube->no,
+     view.currwall);
    if(l->pts.size>MAX_DESCENT_VERTICES && warn) waitmsg(TXT_INSTOOMANYPTS);
-   drawopt(in_wall); drawopt(in_point); l->levelsaved=l->levelillum=0;
+   drawopt(in_wall); drawopt(in_edge); l->levelsaved=l->levelillum=0;
    break;
   case tt_thing:
    if(l->things.size==MAX_DESCENT_OBJECTS && !yesnomsg(TXT_INSTOOMANYTHINGS))
@@ -241,7 +242,7 @@ void dec_delete(int ec)
     else if(ec!=ec_deletefast) printmsg(TXT_CANTKILLLASTCUBE);
     }
    else if(ec!=ec_deletefast) printmsg(TXT_NOCURRCUBE);
-   plotlevel(); drawopt(in_cube); drawopt(in_wall); drawopt(in_point);
+   plotlevel(); drawopt(in_cube); drawopt(in_wall); drawopt(in_edge);
    break;
   case tt_wall:
    if(!view.pcurrcube) { printmsg(TXT_NOCURRCUBE); return; }
@@ -259,7 +260,7 @@ void dec_delete(int ec)
    else if(ec!=ec_deletefast)
     { printmsg(TXT_CUBEALREADYCONN,view.currwall,view.pcurrcube->no);return;}
    l->levelsaved=l->levelillum=0;
-   drawopt(in_wall); drawopt(in_point); plotlevel();
+   drawopt(in_wall); drawopt(in_edge); plotlevel();
    break;
   case tt_thing:
    if(ec==ec_deletefast)
@@ -345,7 +346,7 @@ void dec_deletespecial(int ec)
     else printmsg(TXT_CUBEALREADYCONN,view.currwall,view.pcurrcube->no);
     }
    else printmsg(TXT_NOCURRCUBE);
-   plotlevel(); drawopt(in_wall); drawopt(in_point);
+   plotlevel(); drawopt(in_wall); drawopt(in_edge);
    break;
   default: printmsg(TXT_NOSDELETEMODE,init.bnames[view.currmode]);
   }
@@ -411,5 +412,5 @@ void dec_splitcube(int ec)
    if(i!=wno[j] && i!=oppwalls[wno[j]] && newc[j]->d.c->nc[i]==NULL)
     if(!connectsides(newc[j],i))
      waitmsg(TXT_SPLITCANTCONNECT2,newc[j]->no,i);
- plotlevel(); drawopt(in_cube); drawopt(in_wall); drawopt(in_point);
+ plotlevel(); drawopt(in_cube); drawopt(in_wall); drawopt(in_edge);
  }

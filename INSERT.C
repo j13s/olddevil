@@ -362,6 +362,7 @@ void deletecube(struct list *cubes,struct list *pts,struct node *n)
    my_assert(w!=-1 && c->nc[k]->d.c->walls[w]==NULL);
    nc->nc[w]=NULL; insertwall(c->nc[k],w,-1,-1,-1);
    }
+  for(m=0;m<4;m++) untag(tt_edge,n,k,m);
   untag(tt_wall,n,k);
   }
  for(k=0;k<8;k++)
@@ -596,7 +597,9 @@ int initcube(struct node *n)
  {
  int j,k;
  struct listpoint *lp;
- struct cube *c=n->d.c;
+ struct cube *c;
+ my_assert(n!=NULL && l!=NULL);
+ c=n->d.c;
  initlist(&c->sdoors); initlist(&c->things);
  for(j=0;j<8;j++)
   {
@@ -819,7 +822,8 @@ struct node *newcube(struct leveldata *ld)
  nc->type=0; nc->prodnum=-1; nc->value=0; initlist(&nc->sdoors);
  nc->cp=NULL; nc->tagged=NULL; initlist(&nc->things);
  for(j=0;j<6;j++) 
-  { nc->nc[j]=NULL; nc->d[j]=NULL; nc->tagged_walls[j]=NULL; }
+  { nc->nc[j]=NULL; nc->d[j]=NULL; nc->tagged_walls[j]=NULL;
+    nc->nextcubes[j]=0xffff; nc->doors[j]=0xff; }
  checkmem(nnc=addnode(&ld->cubes,-1,nc));
  for(j=0;j<8;j++) 
   {
@@ -827,6 +831,7 @@ struct node *newcube(struct leveldata *ld)
   checkmem(nlp=addnode(&ld->pts,-1,lp)); initlist(&lp->c); lp->tagged=NULL;
   checkmem(addnode(&lp->c,j,nnc)); nc->p[j]=nlp;
   lp->p=stdcubepts[j];
+  nc->pts[j]=nc->p[j]->no;
   }
  /* and now make the walls */
  for(i=0;i<6;i++)
@@ -841,6 +846,7 @@ struct node *newcube(struct leveldata *ld)
   nc->walls[i]->no=i; nc->walls[i]->locked=0; nc->walls[i]->ls=NULL;
   nc->walls[i]->fl=NULL;
   }
+ initcube(nnc);
  return nnc;
  }
 

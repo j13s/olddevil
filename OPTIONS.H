@@ -11,4 +11,7 @@ void changedata(struct infoitem *i,int withtagged,void *data);
 void drawoptbuttons(struct infoitem *i);
 #define MWT(b,lr) (lr+(((b->event.kbstat&ws_ks_ctrl)!=0) ? 2 : 0))
 
+extern struct w_window *optionwins[in_number];
+extern struct w_button *b_optwins[in_internal][9];
+
 extern int txtpos[4][2];

@@ -2,10 +2,8 @@
     Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de) 
     Further info see .c-files. */
 int tag(enum tagtypes tt,struct node *data,...);
-int tagcorner(struct node *c,int wall,int pnt);
 int tagall(enum tagtypes tt);
 int untag(enum tagtypes tt,struct node *n,...);
-int untagcorner(struct node *c,int wall,int pnt);
 int untagall(enum tagtypes tt);
 int testtag(enum tagtypes tt,struct node *n,...);
 void tagobject(enum infos what);

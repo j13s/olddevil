@@ -484,28 +484,28 @@ void plottagwall(struct cube *c,int wno,int hilight,int xor)
    if(view.whichdisplay)
     { makeview(1); in_plottagwall(1,c,wno,hilight,xor); } }
 
-struct node *oldpcurrcube,*oldpcurrthing,*oldpcurrdoor;
-int oldcurrwall,oldcurrpnt;
+struct node *oldpcurrcube,*oldpcurrthing,*oldpcurrdoor,*oldpcurrpnt;
+int oldcurrwall,oldcurredge;
 
 void in_plotcurrent(int w)
  {
  if(!view.pcurrcube || !l) return;
  if(oldpcurrdoor) in_plotdoor(w,oldpcurrdoor,-1,-1,0);
  if(oldpcurrthing) in_plotthing(w,oldpcurrthing->d.t,257);
+ if(oldpcurrpnt) in_plotmarker(w,oldpcurrpnt->d.p,-2);
  if(oldpcurrcube) 
-  { if(oldcurrpnt>=0) in_plotmarker(w,
-     oldpcurrcube->d.c->p[wallpts[oldcurrwall][oldcurrpnt]]->d.p,-2);
+  { if(oldcurredge>=0) in_plotpnt(w,oldpcurrcube->d.c,oldcurrwall,
+     oldcurredge,-2);
     in_plotcube(w,oldpcurrcube,oldpcurrcube->d.c->tagged ? 3 : -1,1,0,1,1); }
  else
-  if(oldcurrpnt>=0) 
-   in_plotmarker(w,
-    view.pcurrcube->d.c->p[wallpts[oldcurrwall][oldcurrpnt]]->d.p,-2);
+  if(oldcurredge>=0) 
+   in_plotpnt(w,view.pcurrcube->d.c,oldcurrwall,oldcurredge,-2);
  if(view.pcurrthing) in_plotthing(w,view.pcurrthing->d.t,1);
  if(view.pcurrdoor) in_plotdoor(w,view.pcurrdoor,1,1,0);
+ if(view.pcurrpnt) in_plotmarker(w,view.pcurrpnt->d.p,-2);
  in_plotcube(w,view.pcurrcube,1,1,0,1,1);
  in_plotwall(w,view.pcurrcube->d.c,view.currwall,2,0);
- in_plotmarker(w,
-  view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p,-2);
+ in_plotpnt(w,view.pcurrcube->d.c,view.currwall,view.curredge,-2);
  }
 
 void plotcurrent(void)
@@ -515,8 +515,8 @@ void plotcurrent(void)
  copytoscreen();
  w_refreshend(l->w);
  oldpcurrthing=view.pcurrthing; oldpcurrdoor=view.pcurrdoor;
- oldpcurrcube=view.pcurrcube; 
- oldcurrpnt=view.currpnt; oldcurrwall=view.currwall;
+ oldpcurrcube=view.pcurrcube;  oldpcurrpnt=view.pcurrpnt;
+ oldcurredge=view.curredge; oldcurrwall=view.currwall;
  }
  
 /* plot coordinate axis at view.e0 */
@@ -567,8 +567,8 @@ void plotlevel(void)
  w_refreshstart(l->w); 
  /* kill oldpicture */
  clearlevelwin();
- oldpcurrcube=oldpcurrthing=oldpcurrdoor=NULL;
- oldcurrwall=oldcurrpnt=-1;
+ oldpcurrcube=oldpcurrthing=oldpcurrdoor=oldpcurrpnt=NULL;
+ oldcurrwall=oldcurredge=-1;
  for(lr=0;lr<=l->whichdisplay;lr++)
   {
   makeview(lr);
@@ -616,15 +616,15 @@ void plotlevel(void)
    in_plotthing(lr,n->d.n->d.t,0);
   for(n=l->tagged[tt_door].head;n->next!=NULL;n=n->next)
    in_plotdoor(lr,n->d.n,3,0,0);
-  for(n=l->tagged_corners.head;n->next!=NULL;n=n->next)
+  for(n=l->tagged[tt_edge].head;n->next!=NULL;n=n->next)
    in_plotpnt(lr,n->d.n->d.c,(n->no%24)/4,(n->no%24)%4,3);
   in_plotcurrent(lr);  
   in_plotcoordaxis(lr);
   }
  copytoscreen();
  oldpcurrthing=view.pcurrthing; oldpcurrdoor=view.pcurrdoor;
- oldpcurrcube=view.pcurrcube; 
- oldcurrpnt=view.currpnt; oldcurrwall=view.currwall;
+ oldpcurrcube=view.pcurrcube; oldpcurrpnt=view.pcurrpnt;
+ oldcurredge=view.curredge; oldcurrwall=view.currwall;
  w_refreshend(l->w);
  }
  

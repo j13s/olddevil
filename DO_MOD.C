@@ -599,12 +599,12 @@ int make_start_corridor(struct corridor *c)
  struct point a,m1,m2,nv;
  struct cube *cube=view.pcurrcube->d.c;
  untagall(tt_cube);
- a=*cube->p[wallpts[view.currwall][view.currpnt]]->d.p;
+ a=*cube->p[wallpts[view.currwall][view.curredge]]->d.p;
  for(i=0;i<3;i++)
   {
-  m1.x[i]=cube->p[wallpts[view.currwall][(view.currpnt+1)&3]]->d.p->x[i]-
+  m1.x[i]=cube->p[wallpts[view.currwall][(view.curredge+1)&3]]->d.p->x[i]-
    a.x[i];
-  m2.x[i]=cube->p[wallpts[view.currwall][(view.currpnt-1)&3]]->d.p->x[i]-
+  m2.x[i]=cube->p[wallpts[view.currwall][(view.curredge-1)&3]]->d.p->x[i]-
    a.x[i]; 
   }
  normalize(&m1); normalize(&m2); VECTOR(&nv,&m1,&m2);
@@ -759,10 +759,10 @@ void corr_setend(struct w_button *b)
   end->x.x[j]=0.0; 
   for(i=0;i<4;i++) end->x.x[j]+=c->p[wallpts[view.currwall][i]]->d.p->x[j];
   end->x.x[j]/=4;
-  e1.x[j]=c->p[wallpts[view.currwall][(view.currpnt+1)&3]]->d.p->x[j]-
-   c->p[wallpts[view.currwall][view.currpnt]]->d.p->x[j];
-  e2.x[j]=c->p[wallpts[view.currwall][(view.currpnt-1)&3]]->d.p->x[j]-
-   c->p[wallpts[view.currwall][view.currpnt]]->d.p->x[j];
+  e1.x[j]=c->p[wallpts[view.currwall][(view.curredge+1)&3]]->d.p->x[j]-
+   c->p[wallpts[view.currwall][view.curredge]]->d.p->x[j];
+  e2.x[j]=c->p[wallpts[view.currwall][(view.curredge-1)&3]]->d.p->x[j]-
+   c->p[wallpts[view.currwall][view.curredge]]->d.p->x[j];
   }
  normalize(&e1); normalize(&e2); f=SCALAR(&e1,&e2);
  end->coords[0]=e1;
@@ -938,6 +938,7 @@ void dec_makecorridor(int ec)
  struct node *n; 
  struct point ref_coords[2];
  if(!l || !view.pcurrcube) { printmsg(TXT_NOLEVEL); return; }
+ if(view.render>1) { view.render=1; plotlevel(); drawopt(in_internal); }
  if(l->cur_corr!=NULL) { w_wintofront(l->cur_corr->win); return; }
  cube=view.pcurrcube->d.c; w=view.currwall; 
  if(cube->nc[w]) { printmsg(TXT_CUBETAGGEDON); return; }

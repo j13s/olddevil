@@ -213,7 +213,7 @@ struct leveldata *buildmacro(struct list *l,struct list *tl)
  m->filename=NULL; 
  m->exitcube=(m->cubes.size>0) ? m->cubes.head : NULL;
  m->exitwall=view.currwall;
- m->currwall=m->currpnt=0;
+ m->currwall=m->curredge=0;
  initlevel(m);
  m->levelsaved=0;
  for(i=0;i<3;i++)
@@ -252,7 +252,7 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
   return 0;
  untagall(tt_cube); untagall(tt_door); untagall(tt_thing);
  /* the translation */
- offset=view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p;
+ offset=view.pcurrcube->d.c->p[wallpts[view.currwall][view.curredge]]->d.p;
  eoffset=m->exitcube->d.c->p[wallpts[m->exitwall][0]]->d.p;
  /* ok: insert macro in plot:
     adding on the current wall, point 0 on current point.
@@ -266,7 +266,7 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
     everything clear? */
  /* getting the transformation matrix */
  getcubecoords(m->exitcube->d.c,m->exitwall,0,eaxis,0);
- getcubecoords(view.pcurrcube->d.c,view.currwall,view.currpnt,naxis,1);
+ getcubecoords(view.pcurrcube->d.c,view.currwall,view.curredge,naxis,1);
  /* now we have the three basis vectors of the macro-coord-system
     in the normal coord-system that means we have the 
     transformation matrix */

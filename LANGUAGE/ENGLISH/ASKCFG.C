@@ -84,7 +84,7 @@ void testscreen(int grfxdrv,int res)
  int xs,ys;
  if(grfxdrv<0 || grfxdrv>=NUM_GRFXDRVS || res<0 || res>=NUM_RESOLUTIONS)
   return;
-/* ws_setdriver(grfxdrvs[grfxdrv]); */
+ ws_setdriver(grfxdrvs[grfxdrv]);
  printf("Testing graphics driver %s with resolution %dx%d:\n"\
   "You must see a big white cross, a blue rectangle in the middle\n"\
   "and some red text above the rectangle.\n"\
@@ -216,7 +216,7 @@ int askconfigdata(int *d_ver,char *devilpath,char *d1path,char *d2path,
  }
  
 /* for a list of keycodes see file do_event.c, function dec_help. */
-#define NUM_HOTKEYS 95
+#define NUM_HOTKEYS 98
 struct hotkey { int kbstat,key,event; const char *txt; } 
 hotkeys[NUM_HOTKEYS]={ 
 { 0x01, 27, 59, "fast quit" },
@@ -228,7 +228,8 @@ hotkeys[NUM_HOTKEYS]={
 { 0x00,319, 23, "all lines on/off" },
 { 0x01,271, 84, "wireframe on/off" },
 { 0x05, 32,116, "reinit graphics" },
-{ 0x00,  9,117, "change single/double" },
+{ 0x00,  9, 58, "change movemode" },
+{ 0x00,100,117, "change single/double" },
 { 0x01,'!',118, "rendering off" },
 { 0x01,'"',119, "render current cube" },
 { 0x01,245,120, "fly through" },
@@ -237,7 +238,6 @@ hotkeys[NUM_HOTKEYS]={
 { 0x00, 53, 28, "beam to current object" },
 { 0x00, 55, 29, "goto wall" },
 { 0x00, 57, 30, "goto side cube" },
-{ 0x03, 32,123, "tag special all" },
 { 0x02, 32, 20, "tag special" },
 { 0x01, 32, 72, "tag all" },
 { 0x00, 32, 73, "tag" },
@@ -254,6 +254,7 @@ hotkeys[NUM_HOTKEYS]={
 { 0x04, 99, 53, "mode: cube" },
 { 0x04,115, 54, "mode: side" },
 { 0x04,112, 55, "mode: point" },
+{ 0x04,101,126, "mode: edge" },
 { 0x04,116, 56, "mode: thing" },
 { 0x04,119, 57, "mode: wall" },
 { 0x01, 76, 82, "previous level" },
@@ -262,6 +263,8 @@ hotkeys[NUM_HOTKEYS]={
 { 0x00, 99, 63, "next cube" },
 { 0x01, 83, 64, "previous side" },
 { 0x00,115, 65, "next side" },
+{ 0x01, 69,125, "previous edge" },
+{ 0x00,101,124, "next edge" },
 { 0x01, 80, 66, "previous point" },
 { 0x00,112, 67, "next point" },
 { 0x01, 84, 68, "previous thing" },

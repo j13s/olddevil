@@ -48,9 +48,9 @@ int savelvlconfig(FILE *f,struct leveldata *ld,int no)
   ld->filename!=NULL ? ld->filename : "")<0) return 0;
  if(fprintf(f,"%d * Level properly illuminated?\n",ld->levelillum)<0) 
   return 0;
- if(fprintf(f,"%d %d %d %d %d * current objects\n",
-  CUROBJNO(ld->pcurrcube),ld->currwall,ld->currpnt,CUROBJNO(ld->pcurrthing),
-  CUROBJNO(ld->pcurrdoor))<0) return 0;
+ if(fprintf(f,"%d %d %d %d %d %d * current objects\n",
+  CUROBJNO(ld->pcurrcube),CUROBJNO(ld->pcurrpnt),ld->currwall,ld->curredge,
+  CUROBJNO(ld->pcurrthing),CUROBJNO(ld->pcurrdoor))<0) return 0;
  if(fprintf(f,"%g %g %g * position of the user\n",ld->e0.x[0],ld->e0.x[1],
   ld->e0.x[2])<0) return 0;
  for(i=0;i<3;i++)
@@ -71,16 +71,14 @@ int savelvlconfig(FILE *f,struct leveldata *ld,int no)
   for(n=ld->tagged[i].head;n->next!=NULL;n=n->next)
    switch(i)
     {
+    case tt_edge: if(fprintf(f,"%d ",(n->d.n->no)*24+(n->no%24)/4+
+     (n->no%24)%4)<0) return 0; break;
     case tt_wall: if(fprintf(f,"%d ",(n->d.n->no)*6+n->no%6)<0) return 0;
      break;
     default: if(fprintf(f,"%d ",n->d.n->no)<0) return 0;
     }
   if(fprintf(f,"\n")<0) return 0;
   }
- if(fprintf(f,"%d * Number of tagged corners\n",ld->tagged_corners.size)<0)
-  return 0;
- for(n=ld->tagged_corners.head;n->next!=NULL;n=n->next)
-  if(fprintf(f,"%d ",(n->d.n->no)*24+n->no%24)<0) return 0;
  if(fprintf(f,"\n")<0) return 0;
  return 1;
  }
@@ -182,10 +180,11 @@ int readlvlconfig(FILE *f,struct leveldata *ld)
   }
  if(fscanf(f,"%d",&ld->levelillum)!=1) return 0;
  skipline(f);
- if(fscanf(f,"%d%d%d%d%d",&n1,&ld->currwall,&ld->currpnt,&n2,&n3)!=5) 
+ if(fscanf(f,"%d%d%d%d%d%d",&n0,&n1,&ld->currwall,&ld->curredge,&n2,&n3)!=6) 
   return 0;
  skipline(f);
- if(n1>0) ld->pcurrcube=findnode(&ld->cubes,n1);
+ if(n0>0) ld->pcurrcube=findnode(&ld->cubes,n0);
+ if(n1>0) ld->pcurrpnt=findnode(&ld->pts,n1);
  if(!ld->pcurrcube && ld->cubes.size) ld->pcurrcube=ld->cubes.head;
  ld->pcurrwall=ld->pcurrcube==NULL ? NULL : 
   ld->pcurrcube->d.c->walls[ld->currwall];
@@ -225,6 +224,10 @@ int readlvlconfig(FILE *f,struct leveldata *ld)
     case tt_wall:
      if((n=findnode(&ld->cubes,n3/6))!=NULL) tag(tt_wall,n,n3%6);
      break;
+    case tt_edge:
+     if((n=findnode(&ld->cubes,n3/24))!=NULL) tag(tt_edge,n,(n3%24)/4,
+      (n3%24)%4);
+     break;
     case tt_pnt:
      if((n=findnode(&ld->pts,n3))!=NULL) tag(tt_pnt,n);
      break;
@@ -239,14 +242,6 @@ int readlvlconfig(FILE *f,struct leveldata *ld)
    }
   skipline(f);
   }
- if(fscanf(f,"%d",&n1)!=1) return 0;
- skipline(f);
- for(n2=0;n2<n1;n2++)
-  { 
-  if(fscanf(f,"%d",&n3)!=1) return 0;
-  if((n=findnode(&ld->cubes,n3/24))!=NULL) tagcorner(n,(n3%24)/4,(n3%24)%4);
-  }
- skipline(f);
  return 1;
  }
  
@@ -345,7 +340,7 @@ const char *txtgroup_txt[11]={NULL,TXT_TOP,TXT_UP,TXT_DOWN,TXT_LIST,TXT_TXT1,
  TXT_TOP,TXT_UP,TXT_DOWN,TXT_LIST,TXT_TXT2 };
 int initinforead(FILE *f,struct infoitem **is,int num,enum infos infonr)
  {
- int a,b,iinr=0,read_txt=0,read_uvl=0;
+ int a,b,iinr=0,read_txt=0;
  struct infoitem *i2;
  if(num==0) *is=NULL; 
  else if((*is=MALLOC(sizeof(struct infoitem)*num))==NULL)
@@ -364,25 +359,16 @@ int initinforead(FILE *f,struct infoitem **is,int num,enum infos infonr)
    if(++read_txt==(i2->type==it_texture ? 11 : 
     (i2->type==it_thingtexture ? 6 : 5))) read_txt=0; 
    }
-  else if(read_uvl>0)
-   {
-   b=0; 
-   *i2=*(i2-read_uvl);
-   i2->multifuncnr=read_uvl; 
-   i2->offset+=2*read_uvl;
-   if(++read_uvl==3) read_uvl=0; 
-   }
   else b=iniread(f,"i",i2);
   i2->tagnr=infonr;
-  if((i2->type==it_texture||i2->type==it_dooranim||i2->type==it_thingtexture||
-   i2->type==it_uvl) && i2->multifuncnr==0)
+  if((i2->type==it_texture||i2->type==it_dooranim||i2->type==it_thingtexture)
+   && i2->multifuncnr==0)
    {
    switch(i2->type)
     {
     case it_texture: num+=10; break;
     case it_thingtexture: num+=5; break;
     case it_dooranim: num+=4; break;
-    case it_uvl: num+=2; break;
     default: my_assert(0);
     }
    a=i2-*is;
@@ -390,7 +376,7 @@ int initinforead(FILE *f,struct infoitem **is,int num,enum infos infonr)
     { printf("No mem for extra info entries.\n"); exit(2); }
    i2=*is+a;
    i2->od=NULL;
-   if(i2->type==it_uvl) read_uvl=1; else { read_txt=1; i2->txt=NULL; }
+   read_txt=1; i2->txt=NULL;
    }
   if(init_test&1)
    fprintf(errf,"Header: %s offset=%d numchild=%d numdesc=%d\n",

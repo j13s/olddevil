@@ -108,10 +108,10 @@ struct thing *changething(struct thing *t,struct thing *clone,int newtype,
   {
   for(j=0;j<3;j++)
    {
-   coords[0].x[j]=c->p[wallpts[view.currwall][(view.currpnt-1)&3]]->d.p->x[j]-
-    c->p[wallpts[view.currwall][view.currpnt]]->d.p->x[j];
-   coords[2].x[j]=c->p[wallpts[view.currwall][(view.currpnt+1)&3]]->d.p->x[j]-
-    c->p[wallpts[view.currwall][view.currpnt]]->d.p->x[j];
+   coords[0].x[j]=c->p[wallpts[view.currwall][(view.curredge-1)&3]]->d.p->x[j]
+    -c->p[wallpts[view.currwall][view.curredge]]->d.p->x[j];
+   coords[2].x[j]=c->p[wallpts[view.currwall][(view.curredge+1)&3]]->d.p->x[j]
+    -c->p[wallpts[view.currwall][view.curredge]]->d.p->x[j];
    }
   normalize(&coords[0]);
   for(j=0;j<3;j++)
@@ -365,7 +365,7 @@ struct node *getnode(enum datastructs it)
  }
  
 /* gives data for infoitem it. only uses pcurrcube, pcurrdoor, currwall,
- currpnt and  pcurrthing (because of changevalue) */
+ curredge and  pcurrthing (because of changevalue) */
 unsigned char *vl_getdata(enum datastructs it,struct node *n,va_list args)
  {
  void *data=NULL;
@@ -384,7 +384,7 @@ unsigned char *vl_getdata(enum datastructs it,struct node *n,va_list args)
    if(n!=NULL) data=n->d.d;
    break;
   case ds_corner: 
-   if(n==NULL) { n=view.pcurrcube; a=view.currwall; b=view.currpnt; }
+   if(n==NULL) { n=view.pcurrcube; a=view.currwall; b=view.curredge; }
    else { a=va_arg(args,int); b=va_arg(args,int); }
    if(n!=NULL && n->d.c->walls[a]!=NULL) data=&n->d.c->walls[a]->corners[b];
    break;
@@ -402,9 +402,8 @@ unsigned char *vl_getdata(enum datastructs it,struct node *n,va_list args)
    if(n!=NULL && n->d.c->cp!=NULL) data=n->d.c->cp->d.cp; 
    break;
   case ds_point:
-   if(n==NULL) { n=view.pcurrcube; a=view.currwall; b=view.currpnt; }
-   else { a=va_arg(args,int); b=va_arg(args,int); }
-   if(n!=NULL) data=n->d.c->p[wallpts[a][b]]->d.p;
+   if(n==NULL) n=view.pcurrpnt; 
+   if(n!=NULL) data=n->d.p;
    break;
   case ds_flickeringlight:
    if(n==NULL) { n=view.pcurrcube; a=view.currwall; }

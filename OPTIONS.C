@@ -33,7 +33,7 @@ void drawoptbuttons(struct infoitem *i);
 void undrawoptbuttons(struct infoitem *i);
 
 struct w_window *optionwins[in_number];
-struct w_button *b_optwins[in_internal][8];
+struct w_button *b_optwins[in_internal][9];
 
 int getthingcoord(float *dno,int axis)
  {
@@ -79,10 +79,9 @@ void changedata(struct infoitem *i,int withtagged,void *data)
  /* first the tagged objects. */
  if(withtagged && i->tagnr<in_internal) 
   {
-  for(n=i->type==it_uvl ? l->tagged_corners.head : l->tagged[i->tagnr].head,
-   no_obj=0;n->next!=NULL;n=n->next)
+  for(n=l->tagged[i->tagnr].head,no_obj=0;n->next!=NULL;n=n->next)
    {
-   switch(i->type==it_uvl ? ds_corner : i->infonr)
+   switch(i->infonr)
     {
     case ds_wall: case ds_flickeringlight:
      if(view.pcurrcube!=n->d.n || view.currwall!=n->no%6)
@@ -90,9 +89,9 @@ void changedata(struct infoitem *i,int withtagged,void *data)
        no_obj+=do_sideeffect(i->sidefuncnr,i,data,n->d.n,(int)(n->no%6),0,1);
       else no_obj+=setno(i,data,n->d.n,n->no%6);
      break;
-    case ds_corner:  case ds_point:
+    case ds_corner:
      if(view.pcurrcube!=n->d.n || view.currwall!=(n->no%24)/4 || 
-      view.currpnt!=(n->no%24)%4)
+      view.curredge!=(n->no%24)%4)
       if(i->sidefuncnr>=0 && i->sidefuncnr<sc_number)
        no_obj+=do_sideeffect(i->sidefuncnr,i,data,n->d.n,(n->no%24)/4,
         (n->no%24)%4,1);
@@ -123,6 +122,7 @@ void changedata(struct infoitem *i,int withtagged,void *data)
       case tt_cube: cn=view.pcurrcube; break;
       case tt_thing: cn=view.pcurrthing; break;
       case tt_door: cn=view.pcurrdoor; break;
+      case tt_pnt: cn=view.pcurrpnt; break;
       default: my_assert(0);
       }
      if(cn!=n->d.n)
@@ -136,7 +136,7 @@ void changedata(struct infoitem *i,int withtagged,void *data)
   }
  if(i->sidefuncnr>=0 && i->sidefuncnr<sc_number)
   do_sideeffect(i->sidefuncnr,i,data,getnode(i->infonr),view.currwall,
-   view.currpnt,0);
+   view.curredge,0);
  else 
   {
   setno(i,data,NULL);
@@ -197,9 +197,9 @@ void l_size_entered(struct w_button *b)
 void r_size_entered(struct w_button *b)
  { float_entered(b,MWT(b,1),65536.0,"%10.4f",1,0.0,100.0); }
 void l_uvcoord_entered(struct w_button *b)
- { float_entered(b,MWT(b,0),2048,"%4.2f",1,-16.0,16.0); }
+ { float_entered(b,MWT(b,0),32.0,"%10.4f",1,-16.0*64,16.0*64); }
 void r_uvcoord_entered(struct w_button *b)
- { float_entered(b,MWT(b,1),2048,"%4.2f",1,-16.0,16.0); }
+ { float_entered(b,MWT(b,1),32.0,"%10.4f",1,-16.0*64,16.0*64); }
 void int_entered(struct w_button *b,int withtagged)
  {
  struct infoitem *i=(struct infoitem *)b->data;
@@ -311,7 +311,6 @@ int makeoptbuttons(struct w_window *w,int num,struct infoitem *is,int y)
  float dno;
  char helptxt[100];
  unsigned char *data;
- struct ws_bitmap *corner_bm;
  for(i=is,maxy=0;i-is<num;i++)
   {
   activate=1; no=0; dno=0; sno=0;
@@ -367,60 +366,32 @@ int makeoptbuttons(struct w_window *w,int num,struct infoitem *is,int y)
     checkmem(i->b=w_addstdbutton(w,w_b_string,0,y,w_xwininsize(w),-1,i->txt,
      b_string,0));
     break;
-   case it_uvl:
-    activate=getno(i,&sno,NULL); 
-    if(i->type==it_uvl && i->multifuncnr<2) sno=(long)*(short *)&sno<<5;
-    checkmem(b_string=MALLOC(sizeof(struct w_b_string)));
-    b_string->max_length=4;    
-    checkmem(b_string->str=MALLOC(sizeof(char)*(b_string->max_length+1)));
-    b_string->allowed_char=isfloat;
-    b_string->l_char_entered=b_string->r_char_entered=NULL;
-    if(i->multifuncnr==2) /* light */
-     { sprintf(b_string->str,"%3.0f%%",no/327.67);
-       b_string->l_string_entered=left_light_entered;
-       b_string->r_string_entered=right_light_entered; }
-    else /* uv-coords */
-     { sprintf(b_string->str,"%4.2f",sno/65536.0);
-       b_string->l_string_entered=l_uvcoord_entered;
-       b_string->r_string_entered=r_uvcoord_entered; }
-    if(i->multifuncnr==0) 
-     { 
-     corner_bm=ws_createbitmap(5,10,NULL);
-     switch(i->txt[0])
-      {
-      case '0': n=4; k=3; break;
-      case '1': n=3; k=1; break;
-      case '2': n=k=1; break;
-      case '3': n=1; k=4; break;
-      default: my_assert(0);
-      }
-     ws_bmdrawline(corner_bm,1,1,1,8,view.color[HILIGHTCOLORS+n],0);
-     ws_bmdrawline(corner_bm,3,1,3,8,view.color[HILIGHTCOLORS+k],0);
-     oldy=y; x=0; n=(w_xwininsize(w)-12)/3+12; 
-     checkmem(i->b=w_addimagebutton(w,w_b_string,x,y,n,-1,corner_bm,corner_bm,
-      b_string,1,0));
-     }
-    else
-     {
-     y=oldy; x=12+(w_xwininsize(w)-12)/3*i->multifuncnr; 
-     n=(w_xwininsize(w)-12)/3; 
-     checkmem(i->b=w_addstdbutton(w,w_b_string,x,y,n,-1,NULL,b_string,0));
-     }
-    break;
    case it_coord: case it_size: case it_thingcoord: case it_fl_delay:
-    activate=getno(i,i->type==it_size||i->type==it_fl_delay ? (void *)&sno :
-     (void *)&dno,NULL); 
+   case it_uvcoord:
+    activate=getno(i,i->type==it_size||i->type==it_fl_delay||
+     i->type==it_uvcoord ? (void *)&sno : (void *)&dno,NULL); 
     checkmem(b_string=MALLOC(sizeof(struct w_b_string)));
     b_string->max_length=10;
     checkmem(b_string->str=MALLOC(sizeof(char)*11));
-    sprintf(b_string->str,"%10.4f",(i->type==it_size||i->type==it_fl_delay ?
-     sno : dno)/65536.0);
     b_string->allowed_char=isfloat;
     b_string->l_char_entered=b_string->r_char_entered=NULL;
-    b_string->l_string_entered=i->type!=it_size&&i->type!=it_fl_delay ? 
-     left_coord_entered : l_size_entered;
-    b_string->r_string_entered=i->type!=it_size&&i->type!=it_fl_delay ? 
-     right_coord_entered : r_size_entered;
+    switch(i->type)
+     {
+     case it_size: case it_fl_delay: 
+      sprintf(b_string->str,"%10.4f",sno/65536.0); 
+      b_string->l_string_entered=l_size_entered;
+      b_string->r_string_entered=r_size_entered;
+      break;
+     case it_uvcoord:
+      sprintf(b_string->str,"%10.4f",sno/32.0);
+      b_string->l_string_entered=l_uvcoord_entered;
+      b_string->r_string_entered=r_uvcoord_entered;
+      break;
+     default:
+      sprintf(b_string->str,"%10.4f",dno/65536.0); 
+      b_string->l_string_entered=left_coord_entered;
+      b_string->r_string_entered=right_coord_entered;
+     }
     checkmem(i->b=w_addstdbutton(w,w_b_string,0,y,w_xwininsize(w),-1,i->txt,
      b_string,0));
     break;
@@ -623,17 +594,13 @@ void drawoptbuttons(struct infoitem *i)
    if((activate=getno(i,&dno,NULL))!=0)
     sprintf(i->b->d.str->str,"%10.4f",dno/65536.0);
    break;
+  case it_uvcoord: 
+   if((activate=getno(i,&sno,NULL))!=0)
+    sprintf(i->b->d.str->str,"%10.4f",sno/32.0);
+   break;
   case it_size: 
    if((activate=getno(i,&sno,NULL))!=0)
     sprintf(i->b->d.str->str,"%10.4f",sno/65536.0);
-   break;
-  case it_uvl: 
-   if(i->multifuncnr==2) /* light */
-    { if((activate=getno(i,&no,NULL))!=0)
-       sprintf(i->b->d.str->str,"%3.0f%%",no/327.67); }
-   else
-    if((activate=getno(i,&sno,NULL))!=0)
-     sprintf(i->b->d.str->str,"%4.2f",((long)*((short *)&sno)<<5)/65536.0);
    break;
   case it_degree: 
    if((activate=getno(i,&dno,NULL))!=0)
@@ -752,23 +719,46 @@ void drawopt(enum infos what)
    if(l==NULL) act=0;
    else switch(what)
     {
-    case in_cube: case in_wall: case in_point:
+    case in_cube: 
+     act=l->cubes.size; 
+     if(act && view.pcurrcube) 
+      { i=view.pcurrcube->no;
+        b_optwins[what][3]->d.s->on=testtag(what,view.pcurrcube);
+        b_refreshtagno(what); }
+     break;
+    case in_wall: 
      act=l->cubes.size; 
      if(act && view.pcurrcube) 
       { 
-      i=what==in_cube ? view.pcurrcube->no : (what==in_wall ? 
-       view.currwall : view.currpnt);
-      b_optwins[what][3]->d.s->on=
-       what==in_cube ? testtag(what,view.pcurrcube) :
-       (what==in_wall ? testtag(what,view.pcurrcube,view.currwall) :
-        testtag(what,
-	 view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]));
+      i=view.currwall;
+      b_optwins[what][3]->d.s->on=testtag(what,view.pcurrcube,view.currwall);
       b_refreshtagno(what);
-      if(what==in_wall && b_optwins[what][6])
+      if(b_optwins[what][6])
        b_optwins[what][6]->d.s->on=view.pdefcube==view.pcurrcube &&
         view.defwall==view.currwall && 
         view.pdefcube->d.c->walls[view.defwall];
+      if(b_optwins[what][8])
+       b_optwins[what][8]->d.s->on=
+        view.pcurrcube->d.c->walls[view.currwall]!=NULL &&
+        view.pcurrcube->d.c->walls[view.currwall]->locked;
       }
+     break;
+    case in_edge:     
+     act=l->cubes.size!=0 && view.pcurrcube!=NULL && 
+      view.pcurrcube->d.c->walls[view.currwall]!=NULL; 
+     if(act)
+      { i=view.curredge;
+        b_optwins[what][3]->d.s->on=testtag(what,view.pcurrcube,view.currwall,
+         view.curredge);
+        b_refreshtagno(what); }
+     break;
+    case in_pnt:
+     act=l->doors.size;
+     if(act && view.pcurrpnt)
+      { i=view.pcurrpnt->no; 
+        b_optwins[what][3]->d.s->on=testtag(tt_pnt,view.pcurrpnt);
+        b_refreshtagno(what); }
+      break;
      break;
     case in_door: 
      act=l->doors.size;
@@ -789,14 +779,20 @@ void drawopt(enum infos what)
    if(i>9999) sprintf(b_optwins[what][1]->d.str->str,"****");
    else if(i<0) sprintf(b_optwins[what][1]->d.str->str,"----");
    else sprintf(b_optwins[what][1]->d.str->str,"%.4d",i);
-   for(i=0;i<8;i++)  
+   for(i=0;i<9;i++)  
     if(b_optwins[what][i])
      {
-     if(act || (i==4 && (what==in_door || what==in_thing) && l!=NULL)) 
-      w_activatebutton(b_optwins[what][i]);
+     if(act) w_activatebutton(b_optwins[what][i]);
      else w_deactivatebutton(b_optwins[what][i]);
-     w_drawbutton(b_optwins[what][i]);
      }
+   if((what==in_door || what==in_thing) && l!=NULL)
+    if(b_optwins[what][4]) w_activatebutton(b_optwins[what][4]);
+   if(what==in_wall && act)
+    if(view.pcurrcube->d.c->walls[view.currwall]==NULL)
+     { if(b_optwins[what][6]) w_deactivatebutton(b_optwins[what][6]);
+       if(b_optwins[what][8]) w_deactivatebutton(b_optwins[what][8]); }
+   for(i=0;i<9;i++)
+    if(b_optwins[what][i]) w_drawbutton(b_optwins[what][i]);
    }
   for(i=0;i<init.infonum[what];i++) drawoptbuttons(&init.info[what][i]);
   w_refreshend(optionwins[what]);

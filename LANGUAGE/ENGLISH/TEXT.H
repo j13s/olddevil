@@ -72,8 +72,9 @@
  "Do this now?"
 #define TXT_CLICKEDTHING "Clicked thing %d"
 #define TXT_CLICKEDDOOR "Clicked wall %d"
-#define TXT_CLICKEDPNT "Clicked cube %d, side %d, point %d"
+#define TXT_CLICKEDPNT "Clicked point %d"
 #define TXT_CLICKEDWALL "Clicked cube %d, side %d"
+#define TXT_CLICKEDEDGE "Clicked cube %d, side %d, edge %d"
 #define TXT_CLICKEDCUBE "Clicked cube %d"
 #define TXT_NOSIDE "No side at cube %d, side %d but there should be one."
 #define TXT_NOSWITCHDATA "No switchdata for wall %d."
@@ -251,12 +252,16 @@
 /* do_opts.c */
 #define TXT_DOORNOTDEFWALL "Can't use a wall as a default side."
 #define TXT_EMPTYNOTDEFWALL "Can't use a empty side as a default side."
+#define TXT_EMPTYWALLNOTLOCK "Can't lock a side without a texture."
+#define TXT_LOCKEDTAGGEDSIDES "Locked %d sides."
+#define TXT_UNLOCKEDTAGGEDSIDES "Unlocked %d sides."
 #define TXT_TAG "Tag/Untag"
 #define TXT_INSERT "Insert"
 #define TXT_DELETE "Delete"
 #define TXT_NONE "None"
 #define TXT_MACRO "Insert:"
 #define TXT_DEFAULT "Default"
+#define TXT_LOCKED "Locked"
 /* askcfg.c */
 #define TXT_CANTWRITECFG "Can't write cfg-file %s?!\n"
 #define TXT_CFGFILENOTWRITTEN "Aborted. CFG-file not written.\n"\
@@ -364,8 +369,9 @@
  "From cube %d to cube %d or cube %d?"
 #define TXT_CANTFINDARRCUBE "Can't find arrange cube!?"
 /* do_tag.c */
-#define TXT_MODEUSECUBETAG "Only in side- or pointmode."
-#define TXT_MODEUSESIDETAG "Only in pointmode."
+#define TXT_MODEUSECUBETAG "Only in side-,point- or edgemode."
+#define TXT_MODEUSESIDETAG "Only in point- or edgemode."
+#define TXT_MODEUSEPNTTAG "Only in edgemode."
 #define TXT_FLATTAGGED "%d sides tagged."
 /* initio.c */
 #define TXT_CANTFINDAPIGFILE "Can't find a .PIG-file in path %s.\n"
