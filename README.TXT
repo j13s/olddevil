@@ -56,6 +56,7 @@ of mails like "I don't know how it works, please help me."...:-(
       [1c] Change your configuration
       [1d] Devil crashes before the titlescreen appears. 
       [1e] Devil crashes after the titlescreen has appeared.
+      [1f] Virus Warnings with D.EXE.
 
   [2] BUILDING LEVELS
       [2a] Building a level.
@@ -140,6 +141,14 @@ of mails like "I don't know how it works, please help me."...:-(
  [1e] Devil crashes after the screen has appeared.
   Perhaps your level-file is corrupted. Try starting Devil with
    Devil /new
+
+ [1f] Virus Warnings with D.EXE.
+  If you scan D.exe with a heuristic virus scanner it will detect something
+  (not a virus but code that might be used to program a virus). This is
+  NOT a virus but code inherent to the GNU compiler.
+  You can safely ignore this, it is not a virus. But if your virus scanner
+  detects a virus with normal (not heuristic) scanning the file is 
+  infected and you have a problem.
 
 [2] BUILDING LEVELS
  [2a] Building a level.
