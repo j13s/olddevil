@@ -29,6 +29,8 @@
 #include "opt_txt.h"
 #include "options.h"
 
+#include "lac_cfg.h"
+
 void drawoptbuttons(struct infoitem *i);
 void undrawoptbuttons(struct infoitem *i);
 
@@ -156,7 +158,7 @@ void light_entered(struct w_button *b,int withtagged)
   if(dno>200) dno=200; else if(dno<0) dno=0;
   no=(unsigned short)(dno*327.67);
   }
- if(no>MAX_LIGHT) no=MAX_LIGHT;
+ if(no>theMaxLight) no=theMaxLight;
  sprintf(b->d.str->str,"%3.2f%%",no/327.67);
  if(withtagged<2) changedata(i,withtagged,&no);
  else tagfilter(i,withtagged-2,&no);

@@ -100,12 +100,12 @@ void *D1_REG_readsdoor(FILE *lf)
  sd->num=D1_sd.num; sd->flags=0;
  for(i=0;i<10;i++) 
   { sd->cubes[i]=D1_sd.cubes[i]; sd->walls[i]=D1_sd.walls[i]; }
- switch(D1_sd.flags)
+ switch(D1_sd.flags & 0x149)
   {
-  case 0: sd->type=switch_nothing; break;
-  case 1: sd->type=switch_opendoor; break;
+  case 0x00: sd->type=switch_nothing; break;
+  case 0x01: sd->type=switch_opendoor; break;
   case 0x40: sd->type=switch_producer; break;
-  case 0x8: sd->type=switch_exit; break;
+  case 0x08: sd->type=switch_exit; break;
   case 0x100: sd->type=switch_secretexit; break;
   default: fprintf(errf,"Unknown sdoor %lx: %x\n",ftell(lf),D1_sd.flags); 
    my_assert(0);

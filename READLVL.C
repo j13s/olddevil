@@ -1202,8 +1202,12 @@ void createturnoff(struct leveldata *ld,struct lightsource *ls,
  for(n=ls->effects.head;n->next!=NULL;n=n->next)
   {
   for(i=0;i<6;i++)
+  /* LAC 980402 
    if((n->d.lse->add_light[i*4]>>10)+(n->d.lse->add_light[i*4+1]>>10)+
     (n->d.lse->add_light[i*4+2]>>10)+(n->d.lse->add_light[i*4+3]>>10)>0)
+  */
+   if((n->d.lse->add_light[i*4]>>10)+(n->d.lse->add_light[i*4+1]>>10)+
+    (n->d.lse->add_light[i*4+2]>>10)+(n->d.lse->add_light[i*4+3]>>10)>5)
     {
     checkmem(lc=MALLOC(sizeof(struct changedlight)));
     lc->cube=n->d.lse->cube->no; lc->side=i;

@@ -24,6 +24,8 @@
 #include "in_plot.h"
 #include "plottxt.h"
 
+#include "lac_cfg.h"
+
 #define DEBUG 0
 
 #include "plotmath.c"
@@ -487,7 +489,7 @@ void render_cube(int depth,struct node *from,struct node *cube,
         for(x=0;x<4;x++)
 	 {
 	 overflow=(long)wall->corners[x].light+ne->d.lse->add_light[w*4+x];
-	 wall->corners[x].light=overflow>MAX_LIGHT ? MAX_LIGHT : overflow;
+         wall->corners[x].light=overflow>theMaxLight ? theMaxLight : overflow;
 	 }
       }
      else
@@ -620,8 +622,8 @@ void render_resetlights(struct leveldata *ld)
      {
      overflow=(long)ne->d.lse->cube->d.c->walls[w]->corners[c].light+
       ne->d.lse->add_light[w*4+c];
-     ne->d.lse->cube->d.c->walls[w]->corners[c].light=overflow>MAX_LIGHT ?
-      MAX_LIGHT : overflow;
+     ne->d.lse->cube->d.c->walls[w]->corners[c].light=overflow>theMaxLight ?
+      theMaxLight : overflow;
      }
     }
    }

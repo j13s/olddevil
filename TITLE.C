@@ -396,7 +396,7 @@ int titlescreen(void)
  char *gifplanes[4];
  GrContext *gifpic;
  int i;
- if((gifplanes[0]=readgif("title.pic",palette))==NULL)
+ if((gifplanes[0]=readgif("titlex.gif",palette))==NULL)
   { printf("Can't load Title Screen.\n"); return 0; }
  for(i=0;i<256;i++) 
   {GrFreeColor(i); GrSetColor(i,palette[i*3],palette[i*3+1],palette[i*3+2]);}

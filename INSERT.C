@@ -325,6 +325,56 @@ void deletelistpnt(struct list *pts,struct node *nlp)
  freenode(pts,nlp,freelistpnt);
  }
 
+/* Delete all lightsources referencing the cube */
+void delete_ref_ls(struct node* c)
+{
+    struct node* p;
+    struct node* pe;
+    struct node* nlse;
+    struct lightsource* ls;
+    int flag;
+    int w,co;
+    long overflow;
+
+    for(p=l->lightsources.head; p->next!=NULL; p=p->next)
+    {
+        if(p->d.ls)
+        {
+            ls = p->d.ls;
+            flag = 0;
+
+            for(pe=ls->effects.head; pe!=NULL; pe=pe->next)
+            {
+                if(pe->d.lse!=NULL)
+                {
+                    if(pe->d.lse->cube == c)
+                        flag = 1;
+                }
+            }
+            if(flag)
+            {
+               for(nlse=ls->effects.head->next;nlse!=NULL;nlse=nlse->next)
+               {
+                   for(w=0;w<6;w++)
+                   {
+                       if(nlse->prev->d.lse->cube->d.c->walls[w])
+                       {
+                           for(co=0;co<4;co++)
+                           {
+                              overflow=nlse->prev->d.lse->cube->d.c->walls[w]->corners[co].light-
+                                 nlse->prev->d.lse->add_light[w*4+co];
+                              nlse->prev->d.lse->cube->d.c->walls[w]->corners[co].light=
+                                 overflow<view.illum_minvalue ? view.illum_minvalue : overflow;
+                           }
+                       }
+                   }
+                   freenode(&ls->effects,nlse->prev,free);
+               }
+            }
+        }
+    }
+}
+
 /* deletes cube n. if cubes==NULL || pts==NULL the cube is deleted
  in the current level */
 void deletecube(struct list *pcubes,struct list *ppts,struct node *n)
@@ -365,6 +415,7 @@ void deletecube(struct list *pcubes,struct list *ppts,struct node *n)
         if(view.pcurrpnt->next==NULL) view.pcurrpnt=l->pts.head; } }
   while(k<8);
   }
+ delete_ref_ls(n);
  for(k=0;k<6;k++)
   {
   if(c->walls[k]!=NULL && c->walls[k]->ls!=NULL)
@@ -484,7 +535,7 @@ int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
   }
  /* connection is correct: let's kill all old things */
  for(j=0;j<4;j++)
-  { untag(tt_edge,nc1,w1,j); untag(tt_edge,nc2,w2,j); } 
+  { untag(tt_edge,nc1,w1,j); untag(tt_edge,nc2,w2,j); }
  c2->nc[w2]=nc1; freewall(pts==NULL ? l : NULL,c2,w2);
  c1->nc[w1]=nc2; freewall(pts==NULL ? l : NULL,c1,w1);
  /* free old points and calculate new textures  */
@@ -881,8 +932,10 @@ void freewall(struct leveldata *ld,struct cube *c,int w)
  my_assert(c->walls[w]!=NULL && c->nc[w]!=NULL);
  if(c->walls[w]->ls)
   {
-  my_assert(ld!=NULL);
-  freenode(&ld->lightsources,c->walls[w]->ls,freelightsource);
+  if(ld)
+      freenode(&ld->lightsources,c->walls[w]->ls,freelightsource);
+  else
+      freenode(&l->lightsources,c->walls[w]->ls,freelightsource);
   }
  FREE(c->walls[w]); c->walls[w]=NULL;
  }

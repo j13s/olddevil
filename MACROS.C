@@ -276,6 +276,7 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
  int i,j;
  struct cube *c;
  struct node *n,**cubes;
+ struct node *connect_cube = NULL;
  my_assert(m!=NULL && l!=NULL);
  if(view.pcurrcube->d.c->nc[view.currwall]!=NULL)
   { printmsg(TXT_CUBETAGGEDON); return 0; }
@@ -380,6 +381,8 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
     }
    }
   checkmem(addheadnode(&l->cubes,n->no,c));
+  if(n == m->exitcube)
+      connect_cube = l->cubes.head;
   }
  for(n=l->cubes.head;n->no<m->cubes.size;n=n->next)
   if(!initcube(n))
@@ -412,9 +415,12 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
   copy_lightsource(l,cubes,m->cubes.size,n->d.ls,0);
  /* now connect the current cube with the cube 0 of the macro */
  if(connectnow)
-  if(!connectcubes(NULL,view.pcurrcube,view.currwall,l->cubes.head,
-   m->exitwall))
-   return -1; 
+ {
+    my_assert(connect_cube!=NULL);
+    if(!connectcubes(NULL,view.pcurrcube,view.currwall,connect_cube,
+        m->exitwall))
+   return -1;
+ }
  return 1;
  } 
  

@@ -61,7 +61,14 @@ void my_exit(void)
     savestatus(-1);
     fprintf(errf,"Done. Maybe you are a lucky guy.\n"); }
  ws_textmode(); releasetimer();
- printf("Severe bug. Please have a look in the devil.err and try to\n");
+ printf("Severe bug.\n");
+ printf("This is the modified version of Devil made by\n");
+ printf("Lars Christensen. Try to redo your last operation with\n");
+ printf("the original version of Devil. If the problem persists then\n");
+ printf("follow the instructions below, if not then don't bother Achim\n");
+ printf("with this bug, it's probably introduced by me (Lars).\n");
+ printf("------------------------------------------------------------\n");
+ printf("Please have a look in the devil.err and try to\n");
  printf("reconstruct how this happened and mail your bug report to the\n");
  printf("Descent Designer Mailing List (see http://www.warpcore.org)\n");
  printf("If you're lucky, your current work will be restored when you\n");
@@ -100,9 +107,10 @@ int main(int argn,char *argc[])
  int i,j,title=1;
  long int with_cfg=1,reconfig=0;
  char buffer[128];
+ char* load_file_name = NULL;
  signal(SIGFPE,my_abort); signal(SIGILL,my_abort);
  signal(SIGSEGV,my_abort); signal(SIGTERM,my_abort);
- printf("Devil %s\nCompiler: %s\nCompiled: %s %s\n",VERSION,
+ printf("Devil %sc1\nCompiler: %s\nCompiled: %s %s\n",VERSION,
   SYS_COMPILER_NAME,__DATE__,__TIME__);
  if(sizeof(float)!=4 || sizeof(long int)!=4 || sizeof(short int)!=2 ||
   sizeof(int)!=4 || sizeof(char)!=1)
@@ -136,6 +144,10 @@ int main(int argn,char *argc[])
     exit(1);
     }
    }
+   else
+   {
+       load_file_name = argc[j];
+   }
   }
  initeditor(INIFILE,title);
  if(!readconfig()) writeconfig(0);
@@ -143,8 +155,16 @@ int main(int argn,char *argc[])
  initgrph(title); 
  ws_disablectrlc();
  l=NULL;
- if(with_cfg) readstatus();
+ if(with_cfg) readstatus(load_file_name);
  else printmsg(TXT_NOCFGFILE);
+ /*
+ if(strlen(load_file_name))
+ {
+     for(n=view.levels.head;n->next!=NULL;n=n->next)
+        closelevel(n->d.lev,1);
+     openlevel(load_file_name);
+ }
+ */
  w_handleuser(0,NULL,0,NULL,view.num_keycodes,view.ec_keycodes,do_event);
  return 1;
  }

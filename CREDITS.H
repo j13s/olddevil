@@ -23,7 +23,8 @@
 #include "version.h"    
 
 const char *cred_txt[] = {
- "DEVIL - Version "VERSION" - Date: "__DATE__" Time: "__TIME__,
+ "------------------------- !! MODIFIED VERSION !! -------------------------",
+ "DEVIL - Version "VERSION"c1 - Date: "__DATE__" Time: "__TIME__,
  "DESCENT Editor for Vertices,Items and Levels at all",
  "For the latest release (with source code) try:",
  " http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html",
@@ -41,4 +42,6 @@ const char *cred_txt[] = {
  "--------------------------------------------------------------------------",
  "If debugging is the procedure to fix bugs in a program,",
  "then programming is the procedure to create bugs.",
+ "------------------------- !! MODIFIED VERSION !! -------------------------",
+ "See README.X for more info.",
  NULL };

@@ -3,6 +3,6 @@
     Further info see .c-files. */
 
 int savestatus(int playlevel);
-void readstatus(void);
+void readstatus(char* lfname);
 int readconfig(void);
 int saveplaymsn(int savetoddir);
