@@ -1,0 +1,5 @@
+name = DEVIL Play Level	;any name you want
+num_levels = 1		;number of normal levels
+tmpdevil.rdl 		;level filename 1
+
+

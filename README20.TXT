@@ -1,71 +1,63 @@
 Hi.
 
-This is the full version of Devil V2.0c. 
+This is a short remark to well experienced Devil V2.0? + V1.02 users.
+For further documentation look at the file readme.txt and the file
+docs/userman.doc.
+
+This is the full version of Devil V2.0h (V2.0g lived only one day).
+This will be the final V2.00 release when all new/old bugs are removed.
  
-New features (V2.0b->V2.0c):
--Play level feature & Config-File
--Reading old Devil V1.02 macros.
--More than one macro is possible and you can modify&view macros.
+Fixed problems/changes (V2.0f->V2.0h):
+-The Mission Manager (finally replaced extract.exe/hogfile.exe):
+  Well, this is some sort of HOG/MSN-file-generator. It should be quite
+  clear how to use it.
+  Two remarks: 
+   -The level is always inserted before the first marked level in the 
+    hog-file, if no level is marked, the level is inserted before the first
+    secret level or at the end.
+   -To insert a secret level, type the number of the level which has the
+    alternate exit in the field 'Secret' and press return.
+  I will modify it in the next version, so you can extract also the
+  other files from the DESCENT.HOG file (in the moment you can only
+  extract levels).
+-Smoothing light works now like it should be. Fixed a few things
+ with mine illuminating.
+-Fixed problems with macro inserting and 'not find cubes' (wondering
+ why this was doing anything of worth).
+-The problem with texture2 and the huge number when you save the level.
+-The statistics includes now the things dropped by robots (esp. the keys).
+-Doors on a side of a cube which is deleted are now deleted automatically.
+-Still must choose a texture that is one location above or below to insert
+ onto multiple sides->Fixed.
+-Deleting an cube inserted in the Side mode is now possible (->the cube
+ is correct inserted)
+-You can know insert a first wall/thing in a level by pressing 'Insert' in
+ the window.
+-Right click in a level window without a current level won't crash Devil
+ anymore.
+-Hopefully fixed the problems with the names of the macros. 
+-Illuminating feature has now one more parameter: The minimal value for
+ the light for one corner. If you want to have some sort of 'overall'
+ brightness in your level, you can increase this value.
+-It is possible to calculate inner cube and corner light seperate.
+-You can now change the coordinates of several tagged points at once.
+-When you change the mode via keyboard the window of the old mode is closed.
+-A new menupoint for moving the current thing in the current cube exists.
+-You can change the path while loading/saving.
+-Fixed the thing with the right mouse button in the 'Move Buttons'-Window.
+ 
+A BIG thanks to all guys at the mailing list and all others for bug reporting
+and making suggestions.
 
-This is a prerelease. It has all functions from V1.02 and some minor
-extensions.
+This is still a prerelease, so be careful and make backups of your levels. 
 
-This is a non-tested (well, nearly) version at all. Also there is no new
-documentation material except for this file and I will only explain the new
-things but I think every experienced Devil V1.02 user shouldn't have great
-problems. If you have any questions, please mail them NOT to me directly but
-to the new Devil Mailing List (DevilML@aol.com) - thanks to Steven P. Clouse.
-I am subscribed in this mailing list, too, so I will receive everything
-you send to it (and a lot of other guys will receive it also and can
-answer your questions).
+If you have any questions, please mail them NOT to me directly but to the 
+Devil Mailing List (sclouse@aol.com with subject starting with "DEVIL:") -
+thanks to Steven P. Clouse. I am subscribed in this mailing list, too, so I
+will receive everything you send to it (and a lot of other guys will receive
+it also and can answer your questions).
 
-The basics of V2.0:
-
-1. This thing is window-driven. Each window has two buttons in its headline:
-a small one left (closebutton) and a large one right (dragbutton) with the
-following functions which don't work all on every window but you'll see:
-closebutton, left mouse button: close this window
-closebutton, right mouse button: enlarge/shrink this window
-dragbutton, left mouse button: move window
-dragbutton, right mouse button: resize window
-You can get a window to front with clicking on it.
-
-2. The option windows replace the text on the right upper side in Devil V1.02.
-If you press the left mousebutton you change the current object, if you
-press the right mousebutton you change the tagged objects (without
-the current object). In the textbuttons you can delete the contents of
-this button with Shift+Del, the other keys work as you would expect (I hope).
-The bitmap in the Side window is also a button. It activates the Fit Bitmap
-function.
-
-3. The Fit Bitmap functions: Try the movekeys with movemode 'texture', you 
-will see what happens. Try also left and right mouseclick in the 
-Fit Bitmap window.
-
-4. The current level is shown in the upper right corner. You always move
-yourself or an object in the current level. You can change the current level
-with clicking on it or by pressing L or l. You select the current
-object with click on the left button and you can tag several things with the
-right button and dragging the tag box.
-
-5. You change the current button (marked with a red edge) with the cursor
-up and cursor down keys. Pressing return=left mouse button, pressing
-shift+return=right mouse button. You can change the window with
-'ctrl+the first letter of the title of the window'. You can use the
-alt-key to gain access to the menu via the keyboard.
-
-6. The macros: The new macros are used the same way as the macros in
-the previous Devil releases. The new thing is that you can modify&view
-the macros like levels and that you can change the side which will be
-connected in the macro. To do so, press 'M' or select in the menu 'edit'
-'set connect side/exit'. The side will be marked with three red lines in
-the middle and a fourth line at the point which will be layed on the
-current point when you insert the macro (just try it). This connect side
-is identical with the former 'exit side', so if you use a level as
-a macro the exit side is the connect side and if you use a macro as a level
-the connect side is the exit side.
-
-7. The hotkeys:
+The hotkeys:
  shift+esc: fast quit
  esc: quit
  tab: change movemode
@@ -83,7 +75,6 @@ the connect side is the exit side.
  backspace: delete special
  shift+ins: insert fast
  ins: insert
- F3: make room
  5: beam to current object
  7: goto wall
  9: goto side cube
@@ -127,10 +118,11 @@ the connect side is the exit side.
  2: turn up
  6: turn right
 
-Have fun,
+Have a good time,
 Achim
 
-PS.: Next release:
- - automatic mine illuminating
- - save camera positions
- - perhaps more than one window per level (to have i.e. two perspectives)
+PS: Next major new feature: Texture mapping (on one side) but this will take
+ a while.
+PSPS.: Searching someone who can translate a German manual in a English
+ manual.
+

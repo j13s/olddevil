@@ -13,22 +13,26 @@ Welcome to DEVIL, the Descent Editor for Vertices, Items and Levels at all.
       \_________________\____________\__________/____________/______________/
           (thanks to Catalin-Andrei Stefanescu for the new ASCII art)
 					
-             This is the README.TXT for version V2.00c
+                This is the README.TXT for version V2.00g
+         For further info refer to readme20.txt and docs/userman.doc
 		
-               Mail address: ubdb@rz.uni-karlsruhe.de
-      Home page: http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html 
+                Mail address: ubdb@rz.uni-karlsruhe.de
+       Home page: http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html 
 
 DEVIL is free software, and you are welcome to redistribute it under certain
 conditions, therefore DEVIL comes with ABSOLUTELY NO WARRANTY;
-for details see the file 'COPYING'. go32.exe is copyright by DJ Delorie;
-for copying this see 'COPYING.DJ'. The graphics library is copyright
-by Csaba Biegel; see 'COPYING.CB'. You get GNU-C with source-code on nearly 
-every ftp-site (for example ftp.uni-stuttgart.de).
+for details see the file 'COPYING'. Some things are copyright from DJ
+Delorie, for these see 'COPYING.DJ'. The graphics library is copyright
+by Csaba Biegel; see 'COPYING.CB'. The CWSDPMI is copyright by 
+Charles W Sandmann, see 'CWSDPMI.DOC'. You get GNU-C with source-code on
+nearly every ftp-site (for example ftp.uni-stuttgart.de).
 
 If you want to sell Devil on a Shareware-CD or something like that, remember
 that this program is Freeware, therefore I won't get a cent from the people
 using this program. So if you make money with Devil think about spending
-some bucks to the author.
+some bucks to the author. And please e-mail or mail me when you sell it.
+You should have a look at the 'CWSDPMI.DOC' file for the terms for 
+distributing the CWSDPMI.EXE file commercially which is needed to run Devil.
 
 Devil is sponsored by the german magazine "PC PLAYER". They are
 paying me some money to encourage further development of Devil :-)).
@@ -38,15 +42,11 @@ title screen. There is no other obligation. DEVIL IS STILL FREEWARE!
 PC PLAYER can be reached by E-Mail at devil@pcplayer.mhs.compuserve.com
 
 ATTENTION:
- There is a special driver for S3 cards which uses the accelerator
- functions of the card. If you want something like this for your (not S3)
- card, too, please mail me a specification and I will see what I can do.
-
- There is a new Devil Mailing list, to subscribe send a mail with the
- subject DEVIL-FULL-SUB to DevilML@aol.com. I'm subscribed in this list, too,
+ There is a Devil Mailing list, to subscribe send a mail with the
+ subject DEVIL-FULL-SUB to sclouse@sky.net. I'm subscribed in this list, too,
  so please mail any questions about how to use Devil to this list and not
  directly to me. If you only want to get mails if a new version of Devil is
- released, send a mail with the subject DEVIL-ANNOUNCE-SUB to DevilML@aol.com.
+ released, send a mail with the subject DEVIL-ANNOUNCE-SUB to sclouse@sky.net.
  
   CONTENTS:
   
@@ -57,20 +57,19 @@ ATTENTION:
       [1b] How to install this thing ?
       [1c] DEVIL crashes before the titlescreen appears. 
       [1d] DEVIL crashes after the titlescreen has appeared.
+      [1e] Using a higher resolution
 
   [2] BUILDING LEVELS
       [2a] Building a level.
       [2b] Including the level in descent (easy way).
       [2c] Including the level in descent/Compiling your own HOG-files.
       [2d] Extracting the original levels.
-      [2e] Extracting other files.
-      [2f] Restoring the original descent.
-      [2g] Copying macros.
+      [2e] Restoring the original descent.
+      [2f] Copying macros.
 
   [3] BUGS AND OTHER WELL KNOWN FEATURES
       [3a] How many bugs I've to expect ?
-      [3b] Bugtypes.
-      [3c] Report a bug.
+      [3b] Report a bug.
 
   [4] FURTHER PLANS
       [4a] Next weeks.
@@ -84,8 +83,6 @@ ATTENTION:
       [5d] Recompiling DEVIL.
 
   [A] UPDATES
-  
-  [B] Things I've tried without success.
   
 [0] THE VERSION NUMBERS.
  Since version V1.0a DEVIL is numbered in the following way:
@@ -141,6 +138,10 @@ ATTENTION:
   Perhaps your level-file is corrupted. Try starting devil with
    devil /nocfg
 
+ [1e] Using a higher resolution
+  Just change the line in the devil.ini file, where 640 and 480 stands
+  in 800, 600 or 1024, 768.
+  
 [2] BUILDING LEVELS
  [2a] Building a level.
   Start devil.bat. If it does some output and then returns to the DOS-prompt
@@ -158,29 +159,16 @@ ATTENTION:
   load this level automatically and replace the original level. 
   
  [2c] Including the level in descent/Compiling your own HOG-files.
-  If you want to produce your own missions you can compile your own
-  HOG-files with hogfile.exe. It will ask you all necessary data
-  and produce the specified HOG-file. If this HOG-file and the corresponding
-  MSN-file is in the DESCENT-directory, DESCENT will recognize this and
-  ask you which mission you want to play. You can also use rdl2hog and 
-  makemsn available at the Interplay site which are much more comfortable than
-  little hogfile.exe.
+  If you want to produce your own missions (compilations of levels) you can
+  do your own HOG-files with the Mission Manager in Devil. You must store
+  the MSN/HOG-file produced from Devil in your DESCENT directory.
+  DESCENT will recognize these files and ask you which mission you want to
+  play.
   
  [2d] Extracting the original levels.
-  This is done with extract.exe. Assuming that you will extract
-  the level 01, type in the levels-directory (!):
-   C:\DESCENT\DEVIL\LEVELS> ..\extract.exe level01.rdl ..\..\descent.hog
-  Instead of 01 you can write 01-27, S1-S3 (S must be uppercase).
-  The last parameter is the hog-file from which you want to 
-  extract, if it's '..\..\descent.hog' you can omit it.
-  The HOG-file is not changed. Try '$' instead of a 'level01.rdl' for the
-  contents of the HOG-file. Extract works also with other non-original
-  HOG-files. 
+  Also done with the Mission Manager.
 
- [2e] Extracting other files.
-  The same thing as extracting the levels. 
-
- [2f] Copying macros.
+ [2e] Copying macros.
   If your friend has build some macros you want to include, just copy
   them in your macros directory and start DEVIL.
 
@@ -197,44 +185,25 @@ ATTENTION:
   a good idea to look in the file devil.err, perhaps you can do
   some repair for yourself.
   
- [3b] Bugtypes.
-  I distinguish the following bugtypes:
-   A. Real, heavy bug: DEVIL crashes down with a message like
-       General Protection Fault
-      and a lot of registers and numbers and so on.
-      If you've discoverd such a bug I hope you've saved your work so
-      far. Please send me the clear readable message and the last few
-      steps you've made before the crash, so I can see what to do.
-   B. Middle bug: DEVIL crashes not really down, but goes to the DOS-prompt.
-      In this case it's a good idea to look in the file DEVIL.ERR.
-      Please send me the text written in there and the description of
-      your last few actions.
-   C. Weird bug: DESCENT won't load the level or crashes loading the level.
-      Also report to me (but first look at the documentation for possible
-      reasons). 
-   D. No bug: Suggestions to improve DEVIL. Also report to me.
-
- [3c] Report a bug.
+ [3b] Report a bug.
   Report a bug to: ubdb@rz.uni-karlsruhe.de
   Please, please make a description what you have done when Devil has
   crashed and mail the level you are working on with your bug report.
+  Remember: I must be able to reproduce the bug to fix it!
 
 [4] Further plans
 
  [4a] Next weeks 
-  A cube move mode.
   Making seven cubes out of one.
-  Some corridor generators.
-  Illuminating the mine automatically.
+  Texture mapping for one side.
+  Special Devil ASCII file format.
   
  [4b] Next months
-  Save/read hogfiles directly and special Devil file format.
+  Some corridor generators.
+  A cube move mode.
   An Undo feature (perhaps this goes together with some sort of programming
    language)
   A setup program for DEVIL.INI, so you can change keys and menus and so on. 
-  Tune the plot-routine especially avoid the copro. 
-  If I get an idea how to do it, texture-mapping on one cube, so you
-   can see it from the inside. 
   
  [4c] Never
   A bitmap editor.
@@ -277,7 +246,7 @@ ATTENTION:
   
 [A] UPDATES
  The latest release is always available at
-  http://www.uni-karlsruhe.de/~ubdb/index.html (my site)
+  http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html (my site)
   http://www.interplay.com/website/devil.html (official US site)
   US: The Integrated Connection BBS: 317-921-8619
   UK: The Shed BBS: 
@@ -456,10 +425,12 @@ ATTENTION:
          and the white lines.
        - now Devil know the Descent limits and gives warnings.
        - hope I fixed the bug with the play-level feature.
- 2.00 (not yet completed)
+ 2.00 (not yet completed, only major changes are listed)
        - new graphics interface
        - macro viewer & changer
-       - loading&handling several levels
+       - loading&handling several levels        
+       - mine illuminating
+       - Mission Manager
        
 Have a good time, build many levels, bomb all enemies and send me an email
 
