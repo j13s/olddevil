@@ -17,82 +17,109 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "structs.h"
-#include "system.h"
+#include "userio.h"
 #include "tools.h"
 #include "grfx.h"
 #include "readlvl.h"
 #include "initio.h"
-#include "event.h"
-#include "do_event.h" /* just for enum evcodes */
-#include "do_bmap.h"
+#include "tag.h"
+#include "config.h"
+#include "version.h"
+#include "do_event.h"
+#include "askcfg.h"
 
-FILE *errf;
+const char *extnames[desc_number]={ "SDL","RDL","RDL","SL2","RL2","RL2" };
+#ifdef GER
+const char *ininames[desc_number]=
+ { NULL,NULL,NULL,NULL,NULL,NULL };  /* german is deactivated */
+#else 
+const char *ininames[desc_number]=
+ { NULL,"d1reg.ini","d1reg.ini",NULL,"d2reg_10.ini","d2reg_11.ini" };
+#endif 
+const char *vernames[desc_number]=
+ { "Descent 1 V1.0 shareware","Descent 1 V1.0 registered",
+   "Descent 1 V1.4 (or higher) registered","Descent 2 V1.0 shareware",
+   "Descent 2 V1.0 registered","Descent 2 V1.1 (or higher) registered" };
+   
 struct viewdata view;
+struct initdata init;
+struct pigdata pig;
+struct palette palettes[NUM_PALETTES];
 struct leveldata *l;
 
 void my_exit(void)
- {
- closegrph();
- exit(0);
- }
+ { closegrph(); exit(2); }
 
-enum cmdline_params { clp_nosvga,num_cmdlineparams };
-char *cmdline_switches[num_cmdlineparams]={ "VGA" };
-char *cmdline_txts[num_cmdlineparams]=
- { "use only VGA-mode (no Super-VGA)" };
+const char *signame[5]={ "Unknown","Floating point exception",
+ "Illegal opcode","Segment violation","Terminate" };
+void my_abort(int sigcode)
+ { 
+ int x;
+ switch(sigcode)
+  { case SIGFPE: x=1; break; case SIGILL: x=2; break;
+    case SIGSEGV: x=3; break; case SIGTERM: x=4; break;
+    default: x=0; }
+ if(errf!=NULL)
+  { fprintf(errf,"Unexpected signal: %s\n",signame[x]); fflush(errf); }
+ else printf("Unexpected signal: %s\n",signame[x]);
+ exit(2);
+ }
+ 
+enum cmdline_params { clp_new,clp_notitle,clp_config,num_cmdlineparams };
+const char *cmdline_switches[num_cmdlineparams]={ "NEW","NOTITLE",
+ "CONFIG" };
+const char *cmdline_txts[num_cmdlineparams]=
+ { TXT_CMDSTARTNEW,TXT_CMDDONTSHOWTITLE,TXT_CMDCONFIG };
 int main(int argn,char *argc[])
  {
- int i,j;
- struct sys_event se;
- char *fname;
- printf("Program was compiled with %s\n",SYS_COMPILER_NAME);
- if(sizeof(double)!=8 || sizeof(int)!=4 || sizeof(short int)!=2
-  || sizeof(long int)!=4 || sizeof(char)!=1)
-  {printf("Wrong double/int size. Check your compiler flags.\n"); exit(0);}
-#ifdef TEST
- errf=fopen("output.tst","w");
-#else
- errf=fopen("devil.err","w");
-#endif
+ int i,j,title=1;
+ long int with_cfg=1,reconfig=0;
+ char buffer[128];
+ signal(SIGFPE,my_abort); signal(SIGILL,my_abort);
+ signal(SIGSEGV,my_abort); signal(SIGTERM,my_abort);
+ printf("Devil %s\nCompiler: %s\nCompiled: %s %s\n",VERSION,
+  SYS_COMPILER_NAME,__DATE__,__TIME__);
+ if(sizeof(float)!=4 || sizeof(long int)!=4 || sizeof(short int)!=2 ||
+  sizeof(int)!=4 || sizeof(char)!=1)
+  {printf("Wrong float/int size. Check your compiler flags.\n"); exit(2);}
+ errf=stdout;
  for(j=1;j<argn;j++)
   {
-  char buffer[strlen(argc[j])];
   sscanf(argc[j]," %s",buffer);
   for(i=0;i<strlen(buffer);i++) buffer[i]=toupper(buffer[i]);
-  for(i=0;i<num_cmdlineparams;i++)
+  if(buffer[0]=='/')
    {
-   if(strcmp(buffer,cmdline_switches[i])==0)
-    switch(i)
-     {
-     case clp_nosvga: supervga=0; break;
-     }
-   else
+   for(i=0;i<num_cmdlineparams;i++)
     {
-    printf("Unknown parameter [%s]. Allowed parameters:\n",argc[j]);
+    if(strcmp(&buffer[1],cmdline_switches[i])==0)
+     {
+     switch(i)
+      {
+      case clp_new: with_cfg=0; break;
+      case clp_notitle:
+       printf("Devil is sponsored by PC Player!\n"); title=0;  break;
+      case clp_config: reconfig=1; break;
+      }
+     break;
+     }
+    }
+   if(i==num_cmdlineparams)
+    {
+    printf(TXT_CMDUNKNOWNPARAM,&buffer[1]);
     for(i=0;i<num_cmdlineparams;i++)
      printf("%s -- %s\n",cmdline_switches[i],cmdline_txts[i]);
-    exit(0);
+    exit(1);
     }
    }
   }
- /* ok ok, l should not be of leveldata * but of leveldata,
-  but I didn't feel like changing all the references */
- if((l=malloc(sizeof(struct leveldata)))==NULL)
-  { printf("No mem for level.\n"); exit(0); }
- initeditor("devil.ini");
- initgrph(); if(!sys_getnumlock()) sys_numlockonoff();
- fname=l->lname;
-#ifdef SHAREWARE
- readlvl(fname,l);
-#else
- readlvl(fname,l);
-#endif
- free(fname);
- sys_disablectrlc();
- rebuild_screen(0xff);
- do
-  { sys_getevent(&se,1); drawnumlock(); }
- while(event(&se));
- closegrph();
+ initeditor(INIFILE,title);
+ if(!readconfig()) writeconfig(0);
+ else if(reconfig) writeconfig(1);
+ initgrph(title); 
+ ws_disablectrlc();
+ l=NULL;
+ if(with_cfg) readstatus();
+ else printmsg(TXT_NOCFGFILE);
+ w_handleuser(0,NULL,0,NULL,view.num_keycodes,view.ec_keycodes,do_event);
  return 1;
  }

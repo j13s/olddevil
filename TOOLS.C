@@ -17,394 +17,121 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
     
 #include "structs.h"
-#include "system.h"
-#include "tools.h"
+#include "userio.h"
 #include "grfx.h"
+#include "plot.h"
+#include "tag.h"
+#include "insert.h"
+#include "tools.h"
 
-extern int supervga;
-
-int drawnumlock(void)
+char *makepath(const char *path,const char *fname)
  {
- int xoffs=view.bounds[ecw_movebuttons][0],
-  yoffs=view.bounds[ecw_movebuttons][1],xsize,ysize;
- xsize=(view.bounds[ecw_movebuttons][2]-xoffs)/3;
- ysize=(view.bounds[ecw_movebuttons][3]-yoffs)/3;
- sys_drawbutton(xoffs,yoffs+2*ysize,xoffs+3*xsize,yoffs+3*ysize,
-  sys_getnumlock() ? "Move" : "Modify");
- return sys_getnumlock();
- }
- 
-unsigned char *getsidedata(unsigned int *se,int *length)
- {
- unsigned char *data;
- int d,maxd;
- maxd=*(se++);
- if((data=getdata(*(se++)))==NULL) return NULL;
- for(d=0;d<maxd-3;d++) 
-  if((data=*(unsigned char **)(data+*(se++)))==NULL) return NULL;
- *length=*(se+1);
- return data+*se;
- }
- 
-int getsideno(unsigned int *se,unsigned long *no)
- {
- int length,d;
- unsigned char *data;
- if((data=getsidedata(se,&length))==NULL) return 0;
- for(d=0,*no=0;d<length;d++)
-  *no|=(*(data+d)<<(d*8));
- return 1;
- }
- 
-void setsideno(unsigned int *se,unsigned long no)
- {
- unsigned char *data;
- int length,d;
- if((data=getsidedata(se,&length))==NULL) return;
- for(d=0;d<length;d++)
-  *(data+d)=(no>>(d*8))&0xfful;
- }
- 
-void dosideeffects(struct infoitem *i,unsigned long no)
- {
- int k;
- for(k=0;k<i->numsideeffs;k++) setsideno(i->sideeffs[k],no);
- }
- 
-struct infoitem *findnpmenuitem(int row,int column,int nextprev,
- int *mindist,struct infoitem *mini,struct infoitem *is,int num)
- {
- unsigned long no;
- int dist,k;
- struct infoitem *i;
- for(i=is;i-is<num;i++)
-  {
-  dist=((i->row-row)*view.smenuwidth+i->column-column)*nextprev;
-  if(dist>=0 && dist<*mindist)
-   { *mindist=dist; mini=i; }
-  if(i->numchildren>0)
-   {
-   if(getno(i,&no))
-    for(k=0;k<i->numchildren;k++)
-     if(i->itemchildren[k]==no)
-      mini=findnpmenuitem(row,column,nextprev,mindist,mini,i->children[k],
-       i->numechildren[k]);
-   }
-  }
- return mini;
+ char *lp;
+ checkmem(lp=MALLOC(strlen(fname)+strlen(path)+2));
+ strcpy(lp,path); strcat(lp,"/"); strcat(lp,fname);
+ return lp;
  }
 
-/* searches next (nextprev=1) or previous (nextprev=-1) menuitem.
-   if i==NULL the first or last menuitem is returned */
-struct infoitem *findmenuitem(struct infoitem *i,int nextprev)
- {
- int mindist=view.smenuheight*view.smenuwidth;
- struct infoitem *si;
- if(i!=NULL)
-  si=findnpmenuitem(i->row,i->column+nextprev,nextprev,&mindist,
-   NULL,view.info[view.showwhat],view.infonum[view.showwhat]);
- else si=NULL;
- if(si==NULL)
-  if(nextprev==1)
-   si=findnpmenuitem(0,0,1,&mindist,NULL,view.info[view.showwhat],
-    view.infonum[view.showwhat]);
-  else
-   si=findnpmenuitem(view.menuheight,view.smenuwidth,-1,&mindist,
-    NULL,view.info[view.showwhat],view.infonum[view.showwhat]);
- return si;
- }
- 
-int fwritestring(FILE *f,char *s)
- {
- int n;
- n=strlen(s)+1;
- if(fwrite(&n,sizeof(int),1,f)!=1)
-  { printmsg("Can't save string length for %s.",s); return 0; }
- if(fwrite(s,1,strlen(s)+1,f)!=strlen(s)+1)
-  { printmsg("Can't save string %s.",s); return 0; }
- return 1;
- }
- 
-char *freadstring(FILE *f)
+void makesecretstart(struct leveldata *ld,struct node *secretwall)
  {
  int i;
- char *e;
- if(fread(&i,sizeof(int),1,f)!=1)
-  { fprintf(errf,"Can't read size of string in freadstring\n"); return NULL; }
- if((e=malloc(i))==NULL)
-  { fprintf(errf,"No mem for text (%d) in freadstring.\n",i); return NULL; }
- if(fread(e,1,i,f)!=i)
-  { fprintf(errf,"Can't read string in freadstring\n"); free(e); return NULL;}
- return e;
+ struct node *n;
+ my_assert(secretwall!=NULL);
+ my_assert(n=insertthing(secretwall->d.d->c,NULL));
+ n->d.t=changething(n->d.t,NULL,tt1_secretstart,secretwall->d.d->c->d.c);
+ for(i=0;i<9;i++) n->d.t->orientation[i]=ld->secret_orient[i];
+ setthingpts(n->d.t); setthingcube(n->d.t); ld->secretstart=n; 
  }
- 
-int readmacroheader(FILE *f,struct macro *m)
- {
- char head[5];
- if(fread(head,1,5,f)!=5)
-  { fprintf(errf,"Can't read macro head for macro file %s.\n",m->filename);
-    return 0; }
- if(strncmp(head,"MACRO",5)!=0) 
-  { fprintf(errf,"No macro: %s in %s\n",head,m->filename); return 0; }
- if(fread(&m->groupno,sizeof(int),1,f)!=1)
-  { fprintf(errf,"Can't group number in macrofile %s\n",m->filename); 
-    return 0; }
- free(m->shorttxt);
- if((m->shorttxt=freadstring(f))==NULL)
-  { fprintf(errf,"Can't read shorttxt for macro %s\n",m->filename);return 0; }
- initlist(&m->cubes); initlist(&m->things); initlist(&m->doors);
- initlist(&m->pts); initlist(&m->sdoors); initlist(&m->producers);
- m->wallno=0; m->longtxt=NULL;
- return 1;
- }
- 
-struct infoitem *findii(struct infoitem *i,int num,int offset)
- {
- int k,l;
- struct infoitem *reti;
- for(k=0;k<num;k++)
-  {
-  if(i[k].offset==offset) return &i[k];
-  for(l=0;l<i[k].numchildren;l++)
-   if((reti=findii(i[k].children[l],i[k].numdchildren[l],offset))!=NULL)
-    return reti;
-  }
- return NULL;
- }
-
-struct infoitem *findinfoitem(enum infos incode,int offset)
- { return findii(view.info[incode],view.descripnum[incode],offset); }
-
+  
 /* in t is the old structure (NULL is possible), newtype is the new type1 of
    the thing and c is for the orientation */
-struct thing *changething(struct thing *t,int newtype,struct cube *c)
+struct thing *changething(struct thing *t,struct thing *clone,int newtype,
+ struct cube *c)
  {
  struct thing *t2;
  struct point coords[3];
- int j,i;
+ int j,i,starts[11];
  size_t size=0;
  void *data=NULL;
+ struct node *n;
  if(t!=NULL && newtype==t->type1) return t;
  switch(newtype)
   {
-  case 2: size=sizeof(struct robot); data=&stdrobot; break;
-  case 3: size=sizeof(struct item); data=&stdhostage; break;
-  case 4: size=sizeof(struct start); data=&stdstart; break;
-  case 7: size=sizeof(struct item); data=&stditem; break;
-  case 9: size=sizeof(struct reactor); data=&stdreactor; break;
-  case 0xe: size=sizeof(struct start); data=&stdcoopstart; break;
-  default: fprintf(errf,"Unknown thing type %d in changething.\n",t->type1);
-   my_exit();
+  case tt1_robot: size=init.d_ver>=d2_10_sw ? sizeof(struct D2_robot) :
+    sizeof(struct D1_robot); 
+   data=init.d_ver>=d2_10_sw ? (void *)&D2_stdrobot : (void *)&D1_stdrobot;
+   break;
+  case tt1_hostage: size=sizeof(struct item); data=&stdhostage; break;
+  case tt1_secretstart: /* secret start */
+   size=sizeof(struct start); 
+   if(l->secretstart) waitmsg(TXT_ONLYONESECRETSTART,l->secretstart->no);
+   for(n=l->sdoors.head;n->next!=NULL;n=n->next)
+    if(n->d.sd->type==switch_secretexit) break;
+   if(n->next==NULL) waitmsg(TXT_NOSECRETDOORFORSTART);
+   data=&stdsecretstart; 
+   break;
+  case tt1_dmstart: case tt1_coopstart: 
+   size=sizeof(struct start); 
+   data=newtype==tt1_dmstart ? &stdstart : &stdcoopstart; 
+   if(init.d_ver>=d2_10_sw && newtype==tt1_coopstart)
+    {
+    for(n=l->things.head,j=0;n->next!=NULL;n=n->next)
+     if(n->d.t->type1==newtype) j++;
+    ((struct thing *)data)->type2=0;
+    if(j>=4) waitmsg(TXT_TOOMANYSTARTS);
+    }
+   else
+    {
+    for(i=0;i<11;i++) starts[i]=0;
+    for(n=l->things.head;n->next!=NULL;n=n->next)
+     if(n->d.t->type1==newtype && n->d.t->type2<11)
+      starts[n->d.t->type2]=1;
+    for(i=(newtype==4 ? 0 : 8),j=0;i<(newtype==4 ? 8 : 11) && !j;i++)
+     if(starts[i]==0) 
+      { j=1; ((struct thing *)data)->type2=newtype==4 ? i : 0;}
+    if(!j) waitmsg(TXT_TOOMANYSTARTS);
+    }
+   break;
+  case tt1_mine: size=sizeof(struct mine); data=&stdmine; break;
+  case tt1_item: size=sizeof(struct item); data=&stditem; break;
+  case tt1_reactor: size=sizeof(struct reactor); data=&stdreactor; break;
+  default: fprintf(errf,"Unknown thingtype: %d\n",newtype); my_assert(0);
   }
- if((t2=malloc(size))==NULL)
-  { printmsg("No mem for extended thing."); return NULL; }
+ if(clone!=NULL) data=clone;
+ checkmem(t2=MALLOC(size));
  memcpy(t2,data,size);
  if(t!=NULL)  
-  { for(j=0;j<3;j++) t2->p[j]=t->p[j]; 
-    t2->type1=newtype; }
+  { t2->p[0]=t->p[0]; t2->type1=newtype; t2->tagged=t->tagged; }
  if(t!=NULL) /* orientation */
   for(j=0;j<9;j++) t2->orientation[j]=t->orientation[j];
  else 
   {
   for(j=0;j<3;j++)
    {
-   coords[0].x[j]=c->p[0]->d.p->x[j]-c->p[3]->d.p->x[j];
-   coords[1].x[j]=c->p[1]->d.p->x[j]-c->p[0]->d.p->x[j];
+   coords[0].x[j]=c->p[wallpts[view.currwall][(view.currpnt-1)&3]]->d.p->x[j]-
+    c->p[wallpts[view.currwall][view.currpnt]]->d.p->x[j];
+   coords[2].x[j]=c->p[wallpts[view.currwall][(view.currpnt+1)&3]]->d.p->x[j]-
+    c->p[wallpts[view.currwall][view.currpnt]]->d.p->x[j];
    }
   normalize(&coords[0]);
   for(j=0;j<3;j++)
-   coords[1].x[j]-=SCALAR(&coords[0],&coords[1])*coords[0].x[j];
-  normalize(&coords[1]);
-  VECTOR(&coords[2],&coords[0],&coords[1]);
+   coords[2].x[j]-=SCALAR(&coords[0],&coords[2])*coords[0].x[j];
+  normalize(&coords[2]);
+  VECTOR(&coords[1],&coords[2],&coords[0]);
   for(j=0;j<3;j++)
    for(i=0;i<3;i++)
     t2->orientation[j*3+i]=coords[j].x[i]*65536;
   }
- setthingpts(t2);
- view.oldpcurrthing=NULL;
+ if(t) 
+  {
+  if(t->nc)
+   { for(n=t->nc->d.c->things.head;n->next!=NULL;n=n->next)
+      if(n->d.t==t) break;
+     if(n->next) freenode(&t->nc->d.c->things,n,NULL); }
+  FREE(t);
+  }
+ setthingpts(t2); setthingcube(t2); 
  return t2;
- }
- 
-void printdatabyte(int row,int column,unsigned char *data,int offset)
- { sprintf(&view.menubuffer[(row+1)*view.smenuwidth+column+5],
-    "%.2x",(unsigned int)data[offset]); }
-
-void markdatabyte(struct infoitem *i,int byte)
- {
- int x1,y1,x2,y2,row,column;
- row=(i->offset+byte)/4+view.maxrow[view.showwhat]+3-view.menuoffset+1;
- column=((i->offset+byte)%4)*3+4;
- x1=column*view.fontwidth+view.fontwidth/2+view.bounds[ecw_uppermenu][0];
- y1=row*view.fontheight+view.bounds[ecw_uppermenu][1]+1;
- x2=x1+3*view.fontwidth-1;
- y2=y1+view.fontheight-2;
- sys_filledbox(x1,y1,x2,y2,view.color[(HILIGHTCOLORS+i->class)],1);
- if(byte==0) sys_line(x1,y1,x1,y2,view.color[WHITE],0);
- if(byte==i->length-1) sys_line(x2,y1,x2,y2,view.color[WHITE],0);
- }
- 
-/* reads texture sd from file f in direction dir.
-   dir=0 -> normal (origin left upper corner x+ y+).
-   dir=1 -> 90ø   (origin right upper corner x- y+). 
-   dir=2 -> 180ø   (origin right lower corner x- y-).
-   dir=3 -> 270ø    (origin left lower corner x+ y-). */
-void readbitmap(FILE *f,struct texture *sd,int dir)
- {
- unsigned char *sbitmap,*bitmap=view.txt_sbuffer,
-  *buffer,*fill,*nobytesinrow;
- unsigned int size;
- unsigned int i;
- int startx,starty,endx,endy,addx,addy,mx,my,x,y;
- if(sd->xsize!=64 || sd->ysize!=64)
-  { printmsg("Texture of wrong size: %d %d",sd->xsize,sd->ysize); return; }
- switch(dir)
-  {
-  case 0: startx=starty=0; addx=addy=1; mx=1; my=64; break;
-  case 1: startx=63; starty=0; addx=-1; addy=1; mx=64; my=1; break;
-  case 2: startx=starty=63; addx=addy=-1; mx=1; my=64; break;
-  case 3: startx=0; starty=63; addx=1; addy=-1; mx=64; my=1; break;
-  default:
-   printmsg("Unknown direction in readbitmap: %d\n",dir); return;
-  }
- endx=63-startx; endy=63-starty;
- switch(sd->type1)
-  {
-  case 0: case 0x10: case 1: case 0x11:
-   y=starty-addy;
-   do
-    {
-    y+=addy;
-    x=startx-addx;
-    do
-     {
-     x+=addx;
-     if(fread(&bitmap[y*my+x*mx],1,1,f)!=1)
-      { printmsg("Can't read uncompressed bitmap."); return; }
-     }
-    while(x!=endx);
-    }
-   while(y!=endy);
-   break;
-  case 8: case 9: case 0x18: case 0x19: case 0x0b: case 0x1b:
-   if(fread(&size,sizeof(unsigned long int),(size_t)1,f)!=1)
-    { printmsg("Can't read size of compressed bitmap."); return; }
-   if((nobytesinrow=malloc((size_t)sd->ysize))==NULL)
-    { printmsg("No mem for no of bytes in row."); return; }
-   if((buffer=malloc((size_t)size-4-sd->ysize))==NULL)
-    { printmsg("No mem for buffer for compressed bitmap."); return; }
-   if(fread(nobytesinrow,1,(size_t)sd->ysize,f)!=sd->ysize)
-    { printmsg("Can't read nobytesinrow."); return; } /* no need for this */
-   if(fread(buffer,(int)size-4-sd->ysize,1,f)!=1)
-    { printmsg("Can't read compressed bitmap."); return; }
-   y=starty-addy;
-   fill=buffer;
-   do
-    {
-    y+=addy;
-    x=startx-addx;
-    do
-     {
-     if((*fill&0xe0)==0xe0)
-      {
-      for(i=0;i<(*fill&0x1f);i++)
-       {
-       if(x==endx)
-        { printmsg("Error reading compressed bitmap."); 
-	return; }
-       x+=addx;
-       bitmap[y*my+x*mx]=*(fill+1);
-       }
-      fill+=2;
-      }
-     else
-      { x+=addx; bitmap[y*my+x*mx]=*(fill++); }
-     }
-    while(x!=endx);
-    fill++; /*0xe0*/
-    }
-   while(y!=endy);
-   free(buffer);
-   free(nobytesinrow);
-   break;
-  default:
-   printmsg("Bitmap-type %d not implemented.",(int)sd->type1);
-  }
- for(fill=bitmap,sbitmap=view.txt_buffer;fill-bitmap<64*64;fill++,
-  sbitmap++)
-  if(*fill!=0xff) *sbitmap=*fill;
- }
-
-void drawonetexture(int rtxtnum,int w)
- {
- struct texture *sd;
- char *txt;
- int plot;
- unsigned int txtnum=rtxtnum&0x3fff; /* the first two bits are direction */
- sd=(txtnum<view.numtxtref) ? view.txtref[txtnum] : NULL;
- if((plot=(sd!=NULL && (txtnum!=0 || w!=1)))==0)
-  txt=(rtxtnum>0) ? "UNKNOWN " : "Nothing ";
- else
-  {
-  txt=sd->name;
-  fseek(view.pigfile,(long)sd->offset+view.txt_bmoffset,SEEK_SET);
-  readbitmap(view.pigfile,sd,(rtxtnum>>14)&0x3);
-  }
- sys_drawtexture(plot,view.txt_xpos,view.txt_ypos,view.txt_xpos,
-  view.txt_ypos + (w ? 85 : 70),txt); 
- }
-
-void drawtextures(struct wall *w)
- {
- struct corner *c,*c0;
- int orig_x[9],orig_y[9],i;
- double l;
- changeto256();
- sys_filledbox(view.txt_xpos,view.txt_ypos,view.txt_xpos+64,
-  view.txt_ypos+85+view.fontheight,view.color[BLACK],0);
- if(w==NULL) { drawonetexture(-1,0); drawonetexture(-1,1); return; }
- drawonetexture(w->texture1,0);
- if(w->texture2!=0) drawonetexture(w->texture2,1);
- else drawonetexture(-1,1);
- sys_initclipping(view.txt_xpos,view.txt_ypos,view.txt_xpos+63,
-  view.txt_ypos+63);
- c0=&view.pcurrwall->corners[0];
- orig_x[0]=orig_x[1]=orig_x[2]=(c0->xpos*64/2048)%64;
- orig_x[3]=orig_x[4]=orig_x[5]=(c0->xpos*64/2048)%64+64;
- orig_x[6]=orig_x[7]=orig_x[8]=(c0->xpos*64/2048)%64-64;
- orig_y[0]=orig_y[3]=orig_y[6]=(c0->ypos*64/2048)%64;
- orig_y[1]=orig_y[4]=orig_y[7]=(c0->ypos*64/2048)%64+64;
- orig_y[2]=orig_y[5]=orig_y[8]=(c0->ypos*64/2048)%64-64;
- c=&view.pcurrwall->corners[1];
- l=sqrt((c->xpos-c0->xpos)*(c->xpos-c0->xpos)+(c->ypos-c0->ypos)*(c->ypos-
-  c0->ypos))/32;
- for(i=0;i<9;i++)
-  sys_clipline(view.txt_xpos+orig_x[i],view.txt_ypos+orig_y[i],
-   (int)((c->xpos-c0->xpos)/l)+view.txt_xpos+orig_x[i],
-   (int)((c->ypos-c0->ypos)/l)+view.txt_ypos+orig_y[i],
-   supervga ? view.color[HILIGHTCOLORS+3] : view.color[WHITE],0);
- c=&view.pcurrwall->corners[3];
- l=sqrt((c->xpos-c0->xpos)*(c->xpos-c0->xpos)+(c->ypos-c0->ypos)*(c->ypos-
-  c0->ypos))/32;
- for(i=0;i<9;i++)
-  {
-  sys_clipline(view.txt_xpos+orig_x[i],view.txt_ypos+orig_y[i],
-   (int)((c->xpos-c0->xpos)/l)+view.txt_xpos+orig_x[i],
-   (int)((c->ypos-c0->ypos)/l)+view.txt_ypos+orig_y[i],
-   supervga ? view.color[HILIGHTCOLORS+4] : view.color[WHITE],0);
-  sys_clipline(view.txt_xpos+orig_x[i]+3,view.txt_ypos+orig_y[i]+3,
-   view.txt_xpos+orig_x[i]-3,view.txt_ypos+orig_y[i]-3,view.color[WHITE],0);
-  sys_clipline(view.txt_xpos+orig_x[i]-3,view.txt_ypos+orig_y[i]+3,
-   view.txt_xpos+orig_x[i]+3,view.txt_ypos+orig_y[i]-3,view.color[WHITE],0);
-  }
- sys_killclipping();
- }
- 
-void beam(struct point *p)
- {
- int x;
- view.e0=*p;
- for(x=0;x<3;x++)
-  view.e0.x[x]-=view.tsize*4*view.e[2].x[x]; 
  }
  
 int testvector(struct cube *c,int p0,int p1,int p2,int p3,
@@ -428,13 +155,17 @@ int testvector(struct cube *c,int p0,int p1,int p2,int p3,
  return 1;
  }
  
+/* check if pnt p is in cube c */
+int checkpntcube(struct node *nc,struct point *p)
+ { return (testvector(nc->d.c,0,1,3,4,p) && testvector(nc->d.c,6,2,5,7,p)); }
+
 /* find cube around position p. if there's no cube, return NULL */
 struct node *findpntcube(struct list *cl,struct point *p)
  {
  struct node *n;
  /* this is certainly not the fastest method doing this */
  for(n=cl->head;n->next!=NULL;n=n->next)
-  if(testvector(n->d.c,0,1,3,4,p) && testvector(n->d.c,6,2,5,7,p)) return n;
+  if(checkpntcube(n,p)) return n;
  return NULL;
  } 
 
@@ -453,227 +184,152 @@ void makemarker(struct point *mp,struct point *np)
  np[7].x[0]-=view.tsize;np[7].x[1]-=view.tsize;np[7].x[2]+=view.tsize;
  }
  
+/* make a marker at pos offset with orientation coords (order: right, top
+ front) and size size. The coords for the lines are saved in pnts. */ 
+void make_o_marker(struct point *offset,struct point *coords,float size,
+ struct point *pnts)
+ {
+ int j;
+ for(j=0;j<11;j++) pnts[j]=*offset;
+ for(j=0;j<3;j++)
+  { pnts[2].x[j]+=coords[2].x[j]*size;
+    pnts[3].x[j]+=coords[2].x[j]*size;
+    pnts[9].x[j]+=coords[2].x[j]*size; }
+ for(j=0;j<3;j++)
+  { pnts[6].x[j]+=coords[1].x[j]*size/3;
+    pnts[7].x[j]+=coords[1].x[j]*size/3;
+    pnts[10].x[j]+=coords[1].x[j]*size/3; }
+ for(j=0;j<3;j++)
+  { pnts[1].x[j]-=coords[0].x[j]*size/3;
+    pnts[8].x[j]-=coords[0].x[j]*size/3;
+    pnts[4].x[j]+=coords[0].x[j]*size/3;
+    pnts[5].x[j]+=coords[0].x[j]*size/3; }
+ }
+ 
+/* set/change the cube for the thing t if necessary. */
+void setthingcube(struct thing *t)
+ {
+ struct node *n;
+ int w;
+ /* check if the thing is still in the same cube */
+ if(t->nc && checkpntcube(t->nc,&t->p[0])) return;
+ /* if the thing was in a cube, remove it from the list */
+ if(t->nc)
+  {
+  for(n=t->nc->d.c->things.head;n->next!=NULL;n=n->next)
+   if(n->d.t==t) break;
+  my_assert(n->next!=NULL);
+  unlistnode(&t->nc->d.c->things,n);
+  /* check the neighbours */
+  for(w=0;w<6;w++)
+   if(t->nc->d.c->nc[w] && checkpntcube(t->nc->d.c->nc[w],&t->p[0])) 
+    break;
+  t->nc=(w<6 ? t->nc->d.c->nc[w] : NULL);
+  }
+ else n=NULL;
+ /* still no cube found? then brute force: Check all cubes */
+ if(!t->nc) t->nc=findpntcube(&l->cubes,&t->p[0]);
+ /* if the thing is in a new cube add it to the list */
+ if(t->nc) 
+  if(n) listnode_tail(&t->nc->d.c->things,n);
+  else addnode(&t->nc->d.c->things,-1,t);
+ }
+ 
 void setthingpts(struct thing *t)
  {
- struct point p;
- int j;
- if(t->type1==3 || t->type1==7)
+ struct point p,coords[3];
+ int i,j;
+ float x;
+ switch(t->type1)
   {
-  for(j=8;j<11;j++)
-   { t->p[j].x[0]=t->p[0].x[0]; t->p[j].x[1]=t->p[0].x[1]; 
-     t->p[j].x[2]=t->p[0].x[2]; }
-  makemarker(&t->p[0],&t->p[1]);
+  case 7: /* item */
+   for(j=9;j<11;j++)
+    { t->p[j].x[0]=t->p[0].x[0]; t->p[j].x[1]=t->p[0].x[1]; 
+      t->p[j].x[2]=t->p[0].x[2]; }
+   makemarker(&t->p[0],&t->p[1]);
+   break;
+  case 3: /* hostage */
+   for(j=1;j<11;j++) t->p[j]=t->p[0];
+   for(j=0;j<3;j++) p.x[j]=t->orientation[j+3];
+   x=t->size/LENGTH(&p);
+   for(j=0;j<3;j++)
+    { t->p[1].x[j]+=p.x[j]*x*3/4;
+      t->p[4].x[j]-=p.x[j]*x;
+      t->p[6].x[j]-=p.x[j]*x;
+      t->p[7].x[j]+=p.x[j]*x/2;
+      t->p[8].x[j]+=p.x[j]*x;
+      t->p[9].x[j]+=p.x[j]*x/2;
+      t->p[10].x[j]+=p.x[j]*x; }
+   for(j=0;j<3;j++) p.x[j]=t->orientation[j];
+   x=t->size/LENGTH(&p);
+   for(j=0;j<3;j++)
+    { t->p[4].x[j]-=p.x[j]*x/3;
+      t->p[6].x[j]+=p.x[j]*x/3;
+      t->p[8].x[j]-=p.x[j]*x/2;
+      t->p[10].x[j]+=p.x[j]*x/2; }
+   for(j=0;j<3;j++) p.x[j]=t->orientation[j+6];
+   x=t->size/LENGTH(&p);
+   for(j=0;j<3;j++)
+    { t->p[8].x[j]+=p.x[j]*x/5;
+      t->p[10].x[j]+=p.x[j]*x/5; }
+   break;
+  case 9: /* reactor 
+   for(j=1;j<11;j++) t->p[j]=t->p[0];
+   for(j=0;j<3;j++) p.x[j]=t->orientation[j+6];
+   x=t->size/LENGTH(&p);
+   for(j=0;j<3;j++)
+    { t->p[1].x[j]-=p.x[j]*x;
+      t->p[3].x[j]+=p.x[j]*x;
+      t->p[5].x[j]+=p.x[j]*x;
+      t->p[7].x[j]-=p.x[j]*x; }
+   for(j=0;j<3;j++) p.x[j]=t->orientation[j+3];
+   for(j=0;j<3;j++)
+    { t->p[1].x[j]-=p.x[j]*x;
+      t->p[2].x[j]+=p.x[j]*x;
+      t->p[3].x[j]-=p.x[j]*x;
+      t->p[4].x[j]+=p.x[j]*x;
+      t->p[5].x[j]-=p.x[j]*x;
+      t->p[6].x[j]+=p.x[j]*x;
+      t->p[7].x[j]-=p.x[j]*x;
+      t->p[8].x[j]+=p.x[j]*x;
+      t->p[10].x[j]+=p.x[j]*x; }
+   for(j=0;j<3;j++) p.x[j]=t->orientation[j];
+   for(j=0;j<3;j++)
+    { t->p[1].x[j]-=p.x[j]*x;
+      t->p[3].x[j]-=p.x[j]*x;
+      t->p[5].x[j]+=p.x[j]*x;
+      t->p[7].x[j]+=p.x[j]*x; }
+   break; */
+  default:
+   for(i=0;i<3;i++)
+    for(j=0;j<3;j++) coords[i].x[j]=t->orientation[i*3+j]/65536.0;
+   make_o_marker(t->p,coords,t->size,t->p);
   }
- else
-  {
-  for(j=1;j<11;j++)
-   t->p[j]=t->p[0];
-  for(j=0;j<3;j++)
-   p.x[j]=t->orientation[j+6];
-  for(j=0;j<3;j++)
-   {
-   t->p[2].x[j]+=p.x[j]/LENGTH(&p)*view.tsize*3;
-   t->p[3].x[j]+=p.x[j]/LENGTH(&p)*view.tsize*3;
-   t->p[9].x[j]+=p.x[j]/LENGTH(&p)*view.tsize*3;
-   }
-  for(j=0;j<3;j++)
-   p.x[j]=t->orientation[j+3];
-  for(j=0;j<3;j++)
-   {
-   t->p[6].x[j]+=p.x[j]/LENGTH(&p)*view.tsize;
-   t->p[7].x[j]+=p.x[j]/LENGTH(&p)*view.tsize;
-   t->p[10].x[j]+=p.x[j]/LENGTH(&p)*view.tsize;
-   }
-  for(j=0;j<3;j++)
-   p.x[j]=t->orientation[j];
-  for(j=0;j<3;j++)
-   {
-   t->p[1].x[j]-=p.x[j]/LENGTH(&p)*view.tsize;
-   t->p[8].x[j]-=p.x[j]/LENGTH(&p)*view.tsize;
-   t->p[4].x[j]+=p.x[j]/LENGTH(&p)*view.tsize;
-   t->p[5].x[j]+=p.x[j]/LENGTH(&p)*view.tsize;
-   }
-  }
- }
-  
-void printmsg(char *txt,...)
- {
- va_list args;
- va_start(args,txt);
- vprintmsg(txt,args);
- va_end(args);
  }
  
-void vprintmsg(char *txt,va_list args)
+/* set the value view.illum_brightness and changes all lightsources for
+ the textures in the right manner */
+void set_illum_brightness(float dno)
  {
- int addy=3;
- char buffer[255];
- vsprintf(buffer,txt,args); 
- buffer[view.xsize/view.fontwidth]=0;
- if(buffer[0]=='*') addy+=view.fontheight+1; 
- sys_filledbox(view.xoffset,view.yoffset+view.ysize+addy,
-  view.xoffset+view.xsize,view.maxysize-1,view.color[BLACK],0);
- sys_text(view.xoffset,view.yoffset+view.ysize+addy,
-  buffer[0]=='*' ? &buffer[1] : buffer,view.color[WHITE],view.color[BLACK]);
+ int j,k;
+ for(k=0;k<pig.num_rdltxts;k++)
+  for(j=0;j<ILLUM_GRIDSIZE*ILLUM_GRIDSIZE;j++)
+   if(pig.rdl_txts[k].my_light[j])
+    pig.rdl_txts[k].my_light[j]*=dno/view.illum_brightness;
+ view.illum_brightness=dno;
  }
 
-/* makes the thing nearest to the normal screen coords x,y the current th.*/
-int findthing(int sx,int sy)
- {
- int k;
- double x,y,min=view.maxvisibility;
- struct thing *t;
- struct node *n,*min_t;
- struct point v,d; /* v is the direction of the beam */
- x=(double)(sx-view.xoffset)/(view.xsize-1)-0.5;
- y=(double)(view.ysize-(sy-view.yoffset))/(view.ysize-1)-0.5;
- /* now create the beam */
- for(k=0;k<3;k++)
-  v.x[k]=view.e0.x[k]+x*view.e[0].x[k]+y*view.e[1].x[k]-
-   view.x0.x[k];
- y=LENGTH(&v);
- /* now test all things if they're in the magical beam */
- for(n=l->things.head,min_t=NULL;n->next!=NULL;n=n->next)
-  {
-  t=n->d.t;
-  for(k=0;k<3;k++)
-   { d.x[k]=t->p[0].x[k]-view.x0.x[k]; }
-  x=LENGTH(&d);
-  /* clickphi is already cosin, so it must be a greater value
-   for smaller angle */
-  if(x<=min && view.clickphi*x*y<SCALAR(&d,&v))
-   { min_t=n; min=x; }
-  }
- if(min_t!=NULL)
-  {
-  view.oldpcurrthing=view.pcurrthing; 
-  view.pcurrthing=min_t;
-  return 1;
-  }
- else
-  return 0;
- } 
- 
-/* makes the door nearest to the normal screen coords x,y the current door*/
-int finddoor(int sx,int sy)
- {
- int k;
- double x,y,min=view.maxvisibility;
- struct door *door;
- struct node *n,*min_d;
- struct point v,d; /* v is the direction of the beam */
- x=(double)(sx-view.xoffset)/(view.xsize-1)-0.5;
- y=(double)(view.ysize-(sy-view.yoffset))/(view.ysize-1)-0.5;
- /* now create the beam */
- for(k=0;k<3;k++)
-  v.x[k]=view.e0.x[k]+x*view.e[0].x[k]+y*view.e[1].x[k]-
-   view.x0.x[k];
- y=LENGTH(&v);
- /* now test all things if they're in the magical beam */
- for(n=l->doors.head,min_d=NULL;n->next!=NULL;n=n->next)
-  {
-  door=n->d.d;
-  for(k=0;k<3;k++)
-   { d.x[k]=door->p.x[k]-view.x0.x[k]; }
-  x=LENGTH(&d);
-  /* clickphi is already cosin, so it must be a greater value
-   for smaller angle */
-  if(x<=min && view.clickphi*x*y<SCALAR(&d,&v))
-   { min_d=n; min=x; }
-  }
- if(min_d!=NULL)
-  {
-  view.oldpcurrdoor=view.pcurrdoor; 
-  view.pcurrdoor=min_d;
-  return 1;
-  }
- else
-  return 0;
- } 
- 
-/* makes the cube nearest to the normal screen coords x,y the current cube */
-int findcube(int sx,int sy)
- {
- int k,m,o,min_wall=0,min_pno=0;
- double x,y,min,minwallx;
- struct point v,d; /* v is the direction of the beam */
- struct point *p;
- struct node *n,*min_p,*min_c=NULL;
- struct cube *c;
- x=(double)(sx-view.xoffset)/(view.xsize-1)-0.5;
- y=(double)(view.ysize-(sy-view.yoffset))/(view.ysize-1)-0.5;
- /* now create the beam */
- for(k=0;k<3;k++)
-  v.x[k]=view.e0.x[k]+x*view.e[0].x[k]+y*view.e[1].x[k]-view.x0.x[k];
- y=LENGTH(&v);
- /* now test all points if they're in the magical beam */
- for(n=l->pts.head,min_p=NULL,min=view.maxvisibility*2;n->next!=NULL;
-  n=n->next)
-  {
-  p=n->d.p;
-  for(k=0;k<3;k++)
-   { d.x[k]=p->x[k]-view.x0.x[k]; }
-  x=LENGTH(&d);
-  /* clickphi is already cosin, so it must be a greater value
-   for smaller angle */
-  if(x<=min && view.clickphi*x*y<SCALAR(&d,&v))
-   { min_p=n; min=x; }
-  }
- if(min_p!=NULL)
-  {
-  /* now search the nearest cube with this point */
-  for(n=min_p->d.lp->c.head,min=view.maxvisibility*2;n->next!=NULL;
-   n=n->next)
-   {
-   c=n->d.n->d.c;
-   for(k=0,x=0;k<8;k++)
-    {
-    for(m=0;m<3;m++)
-     { d.x[m]=c->p[k]->d.p->x[m]-view.x0.x[m]; }
-    x+=LENGTH(&d)/8.0;
-    }
-   if(x<=min) 
-    {
-    min=x; min_c=n->d.n; min_pno=n->no;
-    for(k=0,minwallx=view.maxvisibility*2,min_wall=0;k<3;k++)
-     {
-     for(o=0,x=0;o<4;o++)
-      {
-      for(m=0;m<3;m++)
-       d.x[m]=c->p[wallpts[wallno[min_pno][0][k]][o]]->d.p->x[m]-view.x0.x[m];
-      x+=LENGTH(&d)/4;
-      }
-     if(x<=minwallx) { min_wall=k; minwallx=x; }
-     }
-    }
-   }
-  }
- if(min_c!=NULL)
-  {
-  view.oldpcurrcube=view.pcurrcube; 
-  view.oldpcurrpnt=
-   view.oldpcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p;
-  view.pcurrcube=min_c;
-  view.currwall=wallno[min_pno][0][min_wall];
-  view.currpnt=wallno[min_pno][1][min_wall];
-  view.pcurrwall=min_c->d.c->walls[view.currwall];
-  return 1;
-  }
- else
-  return 0;
- } 
- 
 /* turns the coordsystem es to ee.
    i,j give the axis to turn, k is the axis to turn around, i,j,k are
    0,1,2; 1,2,0 or 2,0,1 */
-void turn(struct point *es,struct point *ee,int i,int j,int k,double angel)
+void turn(struct point *es,struct point *ee,int i,int j,int k,float angle)
  {
  struct point ne1,ne2;
  int l;
  for(l=0;l<3;l++)
   {
-  ne1.x[l]=cos(angel)*es[i].x[l]+sin(angel)*es[j].x[l];
-  ne2.x[l]=-sin(angel)*es[i].x[l]+cos(angel)*es[j].x[l];
+  ne1.x[l]=cos(angle)*es[i].x[l]+sin(angle)*es[j].x[l];
+  ne2.x[l]=-sin(angle)*es[i].x[l]+cos(angle)*es[j].x[l];
   }
  ee[i]=ne1; ee[j]=ne2;
  VECTOR(&ee[k],&ee[i],&ee[j]);
@@ -686,54 +342,91 @@ void turn(struct point *es,struct point *ee,int i,int j,int k,double angel)
  prototype in structs.h */
 void normalize(struct point *p)
  {
- double l=LENGTH(p);
- p->x[0]/=l; p->x[1]/=l; p->x[2]/=l;
+ float l=LENGTH(p);
+ if(l!=0.0) { p->x[0]/=l; p->x[1]/=l; p->x[2]/=l; }
  }
  
-struct objtype *findotype(struct objdata *od,int n)
+/* gives the current node corresponding to 'it' */
+struct node *getnode(enum datastructs it)
  {
- struct objtype **ot;
- for(ot=od->data;ot-od->data<od->size;ot++)
-  if((*ot)->no==n) break;
- if(ot-od->data>=od->size)
-  return NULL;
- else
-  return *ot;
+ switch(it)
+  {
+  case ds_point: case ds_wall: case ds_corner: case ds_producer:
+  case ds_cube: case ds_flickeringlight: return view.pcurrcube; break;
+  case ds_sdoor:
+  case ds_door: return view.pcurrdoor; break;
+  case ds_thing: return view.pcurrthing; break;
+  case ds_internal: 
+  case ds_leveldata: return NULL;
+  default:
+   fprintf(errf,"getdata: value of info not known: %d\n",it); my_exit(); 
+  }
+ return NULL;
  }
  
 /* gives data for infoitem it. only uses pcurrcube, pcurrdoor, currwall,
  currpnt and  pcurrthing (because of changevalue) */
-unsigned char *getdata(enum datastructs it)
+unsigned char *vl_getdata(enum datastructs it,struct node *n,va_list args)
  {
  void *data=NULL;
- if(!view.pcurrcube) return NULL;
+ int a,b;
  switch(it)
   {
-  case ds_cube: data=view.pcurrcube->d.c; break;
-  case ds_wall: data=view.pcurrcube->d.c->walls[view.currwall]; break;
-  case ds_door: if(view.pcurrdoor!=NULL) data=view.pcurrdoor->d.d;
+  case ds_cube: 
+   if(n==NULL) n=view.pcurrcube;
+   if(n!=NULL) data=n->d.c; break;
+  case ds_wall:
+   if(n==NULL) { n=view.pcurrcube; a=view.currwall; }
+   else a=va_arg(args,int);
+   if(n!=NULL) data=n->d.c->walls[a]; break;
+  case ds_door: 
+   if(n==NULL) n=view.pcurrdoor;
+   if(n!=NULL) data=n->d.d;
    break;
   case ds_corner: 
-   if(view.pcurrcube->d.c->walls[view.currwall]!=NULL) 
-    data=&view.pcurrcube->d.c->walls[view.currwall]->corners[view.currpnt];
+   if(n==NULL) { n=view.pcurrcube; a=view.currwall; b=view.currpnt; }
+   else { a=va_arg(args,int); b=va_arg(args,int); }
+   if(n!=NULL && n->d.c->walls[a]!=NULL) data=&n->d.c->walls[a]->corners[b];
    break;
-  case ds_thing: data=&view.pcurrthing->d.t->type1; break;
+  case ds_thing: 
+   if(n==NULL) n=view.pcurrthing;
+   if(n!=NULL) data=&n->d.t->type1; break;
   case ds_internal: data=&view; break;
   case ds_leveldata: data=l; break;
   case ds_sdoor:
-   if(view.pcurrdoor!=NULL && view.pcurrdoor->d.d->sd!=NULL)
-    data=view.pcurrdoor->d.d->sd->d.sd;
+   if(n==NULL) n=view.pcurrdoor;
+   if(n!=NULL && n->d.d->sd!=NULL) data=n->d.d->sd->d.sd;
    break;
   case ds_producer:
-   if(view.pcurrcube->d.c->cp) data=view.pcurrcube->d.c->cp->d.cp; 
+   if(n==NULL) n=view.pcurrcube;
+   if(n!=NULL && n->d.c->cp!=NULL) data=n->d.c->cp->d.cp; 
    break;
-  case ds_point: 
-   data=view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p;
+  case ds_point:
+   if(n==NULL) { n=view.pcurrcube; a=view.currwall; b=view.currpnt; }
+   else { a=va_arg(args,int); b=va_arg(args,int); }
+   if(n!=NULL) data=n->d.c->p[wallpts[a][b]]->d.p;
+   break;
+  case ds_flickeringlight:
+   if(n==NULL) { n=view.pcurrcube; a=view.currwall; }
+   else a=va_arg(args,int);
+   if(n!=NULL && n->d.c->walls[a]!=NULL && n->d.c->walls[a]->fl!=NULL)
+    data=n->d.c->walls[a]->fl->d.fl;
    break;
   default:
-   fprintf(errf,"getdata: value of info not known: %d\n",it); my_exit(); 
+   fprintf(errf,"getdata: value of info not known: %d (max %d)\n",it,
+    ds_number); my_exit(); 
   }
  return (unsigned char *)data;
+ }
+ 
+unsigned char *getdata(enum datastructs it,struct node *n,...)
+ { 
+ unsigned char *r;
+ va_list args;
+ va_start(args,n);
+ r=vl_getdata(it,n,args);
+ va_end(args);
+ return r;
  }
  
 size_t getsize(enum datastructs it,struct thing *t)
@@ -741,21 +434,27 @@ size_t getsize(enum datastructs it,struct thing *t)
  size_t size=0;
  switch(it)
   {
-  case ds_producer: size=16; break;
-  case ds_sdoor: size=54; break;
+  case ds_producer: size=20; break;
+  case ds_sdoor: size=52; break;
   case ds_leveldata: size=sizeof(struct leveldata); break;
   case ds_internal: size=sizeof(struct viewdata); break;
   case ds_cube: size=40; break;
   case ds_wall: size=28; break;
   case ds_door: size=24; break;
   case ds_corner: size=6; break;
+  case ds_turnoff: size=6; break;
+  case ds_changedlight: size=8; break;
+  case ds_flickeringlight: size=16; break;
   case ds_thing: 
    switch(t->type1)
     {
-    case 9: size=sizeof(struct reactor); break;
-    case 3: case 7: size=sizeof(struct item); break;
-    case 4: case 0xe: size=sizeof(struct start); break;
-    case 2: size=sizeof(struct robot); break;
+    case tt1_reactor: size=sizeof(struct reactor); break;
+    case tt1_hostage: case tt1_item: size=sizeof(struct item); break;
+    case tt1_dmstart: case tt1_coopstart: case tt1_secretstart:
+     size=sizeof(struct start); break;
+    case tt1_robot: size=init.d_ver>=d2_10_sw ? sizeof(struct D2_robot) 
+     : sizeof(struct D1_robot); break;
+    case tt1_mine: size=sizeof(struct mine); break;
     default: fprintf(errf,"getsize: Unknown thing-type: %.2x\n",
      (unsigned)t->type1); my_exit();
     }
@@ -767,147 +466,107 @@ size_t getsize(enum datastructs it,struct thing *t)
  return size;
  }
 
-void setno(struct infoitem *i,unsigned long no)
+int setno(struct infoitem *i,void *no,struct node *n,...)
  {
- int k;
- unsigned char *data;
- if((data=getdata(i->infonr))==NULL || i->length>4 || i->offset<0) return;
- for(k=0;k<i->length;k++)
-  *(data+i->offset+k)=(no>>(k*8))&0xfful;
+ int k,ret=1;
+ unsigned char *data,*src=no;
+ va_list args;
+ va_start(args,n);
+ if((data=vl_getdata(i->infonr,n,args))!=NULL && i->offset>=0)
+  for(k=0;k<i->length;k++)
+   *(data+i->offset+k)=*(src+k);
+ else ret=0;
+ va_end(args);
+ return ret;
  }
- 
-int getno(struct infoitem *i,unsigned long *no)
+
+int getno(struct infoitem *i,void *no,struct node *n,...)
  {
- unsigned char *data;
- unsigned long *d;
- if((data=getdata(i->infonr))==NULL) return 0;
- if(i->offset<0) return 0;
- d=(unsigned long *)(data+i->offset);
- if(i->length>4)
-  { printmsg("Illegal length for %s in getno %d\n",i->txt,i->length); 
-    return 0; }
- *no=*d&(0xfffffffful>>((4-i->length)*8));
- return 1;
+ unsigned char *data,*dest=no;
+ int k,e;
+ va_list args;
+ va_start(args,n);
+ if((e=((data=vl_getdata(i->infonr,n,args))!=NULL && i->offset>=0))!=0)
+  for(k=0;k<i->length;k++)
+   *(dest+k)=*(data+i->offset+k);
+ va_end(args);
+ return e;
  }
  
 enum sdoortypes getsdoortype(struct sdoor *sd)
  {
- if(sd->flags==0x0001) return sdtype_door;
- else return sdtype_cube;
- }
- 
-/* list functions */
-void initlist(struct list *l)
- {
- l->dummy=NULL;
- l->head=(struct node *)&l->dummy;
- l->tail=(struct node *)&l->head;
- l->size=0;
+ switch(sd->type)
+  {
+  case switch_producer: return sdtype_cube;
+  case switch_turnofflight: case switch_turnonlight: return sdtype_side;
+  case switch_exit: case switch_secretexit: case switch_nothing:
+   return sdtype_none;
+  case switch_opendoor: case switch_closedoor: 
+  case switch_illusion_on: case switch_illusion_off:
+  case switch_unlockdoor: case switch_lockdoor:
+  case switch_openwall: case switch_closewall:
+  case switch_wall_to_ill:
+   return sdtype_door;
+  default: fprintf(errf,"Unknown sdoortype: %x\n",sd->type); my_assert(0);
+  }
  }
  
 void freecube(void *n)
  {
- struct wall **w;
  struct cube *c=n;
- for(w=c->walls;w-c->walls<6;w++)
-  free(*w);
+ int w;
+ for(w=0;w<6;w++)
+  { if(c->walls[w]) FREE(c->walls[w]); 
+    if(c->polygons[w*2]) FREE(c->polygons[w*2]);
+    if(c->polygons[w*2+1]) FREE(c->polygons[w*2+1]); }
  freelist(&c->sdoors,NULL);
- free(c);
+ FREE(c);
  }
 
 void freedoor(void *n)
  {
  struct door *d=n;
  freelist(&d->sdoors,NULL);
- free(d);
+ FREE(d);
  }
 
-void cleanmacro(void *n)
- {
- struct macro *m=n;
- freelist(&m->pts,freelistpnt); 
- freelist(&m->doors,freedoor); 
- freelist(&m->things,free); 
- freelist(&m->cubes,freecube);
- freelist(&m->sdoors,free); 
- freelist(&m->producers,free);
- free(m->longtxt);  m->longtxt=NULL;
- }
- 
-void freemacro(void *n)
- {
- struct macro *m=n;
- cleanmacro(m);
- free(m->shorttxt); free(m->filename); 
- free(m);
- }
- 
 void freelistpnt(void *n)
  {
  struct listpoint *lp=n;
  freelist(&lp->c,NULL);
- free(lp);
+ FREE(lp);
  }
- 
+
+void freelightsource(void *n)
+ {
+ struct lightsource *ls=n;
+ freelist(&ls->effects,free);
+ FREE(ls);
+ }
+
 void freelist(struct list *l,void (*freeentry)(void *))
  {
  struct node *n;
- for(n=l->head;n->next!=NULL;n=n->next)
-  freenode(l,n,freeentry);
+ for(n=l->head->next;n!=NULL;n=n->next)
+  freenode(l,n->prev,freeentry);
  l->size=0;
  initlist(l);
  }
- 
-struct node *insertnode(struct list *l,struct node *nprev,int no,void *data)
- {
- struct node *n;
- if((n=malloc(sizeof(struct node)))==NULL)
-  { fprintf(errf,"No mem for node.\n"); return NULL; }
- n->d.v=data;
- n->next=nprev->next;
- n->prev=nprev;
- n->no=no;
- nprev->next->prev=n;
- nprev->next=n;
- l->size++;
- return n;
- }
-
-struct node *addnode(struct list *l,int no,void *data)
- { return insertnode(l,l->tail,no,data); }
- 
-struct node *addheadnode(struct list *l,int no,void *data)
- { return insertnode(l,(struct node *)&l->head,no,data); }
  
 void freenode(struct list *l,struct node *n,void (*freeentry)(void *))
  {
  unlistnode(l,n);
  if(freeentry!=NULL)
   freeentry(n->d.v);
- free(n);
+ FREE(n);
  }
 
-void unlistnode(struct list *l,struct node *n)
- {
- n->prev->next=n->next;
- n->next->prev=n->prev;
- l->size--;
- }
- 
-struct node *findnode(struct list *l,int no)
- {
- struct node *n;
- for(n=l->head;n->next!=NULL;n=n->next)
-  if(n->no==no) { return n; }
- return NULL;
- }
- 
 void sortlist(struct list *l,int start)
  {
  struct node *n;
  int i;
- for(n=l->head,i=0;n->next!=NULL;n=n->next,i++)
-  n->no=start+i;
+ for(n=l->head,i=0;n->next!=NULL;n=n->next,i++) n->no=start+i;
+ l->size=i; l->maxnum=i+start;
  }
  
 int copylist(struct list *dl,struct list *sl,size_t s)
@@ -916,10 +575,31 @@ int copylist(struct list *dl,struct list *sl,size_t s)
  void *data;
  for(sn=sl->tail;sn->prev!=NULL;sn=sn->prev)
   {
-  if((data=malloc(s))==NULL) return 0;
+  if((data=MALLOC(s))==NULL) return 0;
   memcpy(data,sn->d.v,s);
   addheadnode(dl,sn->no,data);
   }
  return 1;
  }
 
+int compstrs(const char *s1,const char *s2)
+ {
+ char buffer1[256],buffer2[256];
+ int i,c;
+ strncpy(buffer1,s1,256); buffer1[255]=0;
+ for(i=0;i<strlen(buffer1);i++) buffer1[i]=toupper(buffer1[i]);
+ strncpy(buffer2,s2,256); buffer2[255]=0;
+ for(i=0;i<strlen(buffer2);i++) buffer2[i]=toupper(buffer2[i]);
+ if(strlen(buffer1)>strlen(buffer2)) { i=1; buffer1[strlen(buffer2)]=0; }
+ else if(strlen(buffer2)>strlen(buffer1)) { i=-1;buffer2[strlen(buffer1)]=0; }
+ else i=0;
+ return (c=strcoll(buffer1,buffer2))==0 ? i : c; 
+ }
+ 
+int qs_compstrs(const void *s1,const void *s2)
+ {
+ const char *ss1=*(const char **)s1,*ss2=*(const char **)s2;
+ return compstrs(ss1,ss2);
+ }
+
+int isbinary(int x) { return x=='0' || x=='1'; }

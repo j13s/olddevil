@@ -1,5 +1,5 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
-    do_side.c - included in "change.c". all functions for side-effects.
+    do_side.c - all functions for side-effects.
     Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
@@ -15,340 +15,456 @@
     You should have received a copy of the GNU General Public License
     along with this program (file COPYING); if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-    
-enum sidecodes { sc_changeitemtype,sc_changetxt,sc_changeswitch,
- sc_producer,sc_changepnt,sc_itemgrfx,sc_changedooranim,sc_setorigin,
- sc_changecubetype,sc_changedoortype,sc_doorchangetxt1,sc_doorchangetxt2,
- sc_changethingtxt,sc_number };
+#include "structs.h"
+#include "userio.h"
+#include "tools.h"
+#include "calctxt.h"
+#include "insert.h"
+#include "options.h"
+#include "plot.h"
+#include "tag.h"
+#include "plottxt.h"
+#include "do_move.h"
+#include "do_side.h"
 
-int dsc_changeitemtype(struct infoitem *i,int to,int no)
- { 
- struct thing *t;
- if(view.pcurrthing==NULL)
-  { printmsg("No current thing."); return no; }
- t=view.pcurrthing->d.t;
- view.pcurrthing->d.t=changething(t,no,view.pcurrcube->d.c);
- free(t);
- if(view.pcurrthing->d.t==NULL)
-  { printmsg("Can't make thing.");
-    freenode(&l->things,view.pcurrthing,NULL); }
- return no;
- }
-
-void drawtxt(int n,int *data)
+int dsc_cubetype(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
  {
- struct wall *w=view.pcurrcube->d.c->walls[view.currwall];
- if(*data==0)
-  w->texture1=n;
- else
-  { w->texture2=n|*(data+1); }
- drawtextures(w);
- }
- 
-int dsc_changetxt(struct infoitem *i,int to,int no)
- {
- int n=no,ok=1,data[2];
- struct objdata *od;
- if(!view.pcurrcube || view.pcurrcube->d.c->walls[view.currwall]==NULL)
-  { if(!to) printmsg("No current wall."); return no; }
- if(view.pcurrcube->d.c->d[view.currwall]!=NULL)
-  od=&view.txtnums[i->offset/2+txt1_wall];
- else
-  od=&view.txtnums[i->offset/2];
- if(!to)
-  {
-  if(i->offset==0)
-   { data[0]=0; 
-     ok=readltype(drawtxt,od->str,od,1,&n,data); }
-  else
-   { data[0]=1;
-     data[1]=view.pcurrcube->d.c->walls[view.currwall]->texture2&0xc000;
-     ok=readltype(drawtxt,od->str,od,1,&n,data); }
-  }
- if(ok) return n;
- else return no;
- }
-
-int dsc_changethingtxt(struct infoitem *i,int to,int no)
- {
- int n=no,ok=1,data=0;
- struct objdata *od;
- if(!view.pcurrthing)
-  { printmsg("No current thing."); return no; }
- od=&view.txtnums[0];
- if(!to) ok=readltype(drawtxt,od->str,od,1,&n,&data); 
- if(ok) return n;
- else return no;
- }
- 
-int dsc_doorchangetxt(struct infoitem *i,int to,int no)
- {
- int n,data[2];
- int ok=1;
- struct objdata *od;
- if(!view.pcurrdoor || !view.pcurrdoor->d.d->w)
-  { if(!to) printmsg("No wall."); return no; }
- n=(i->sidefuncnr==sc_doorchangetxt1) ? view.pcurrdoor->d.d->w->texture1 :
-  view.pcurrdoor->d.d->w->texture2;
- od=&view.txtnums[txt1_wall+i->sidefuncnr-sc_doorchangetxt1];
- if(!to)
-  {
-  if(i->sidefuncnr==sc_doorchangetxt1)
-   { data[0]=0; 
-     ok=readltype(drawtxt,od->str,od,1,&n,data); }
-  else
-   { data[0]=1;
-     data[1]=view.pcurrdoor->d.d->w->texture2&0xc000;
-     ok=readltype(drawtxt,od->str,od,1,&n,data); }
-  }
- else n=no; /* for tagged objects */
- if(ok) 
-  if(i->sidefuncnr==sc_doorchangetxt1) 
-   { view.pcurrdoor->d.d->w->texture1=n;
-     if(view.pcurrdoor->d.d->d && view.pcurrdoor->d.d->d->d.d->w)
-      view.pcurrdoor->d.d->d->d.d->w->texture1=n; }
-  else
-   { view.pcurrdoor->d.d->w->texture2=n;
-     if(view.pcurrdoor->d.d->d && view.pcurrdoor->d.d->d->d.d->w)
-      view.pcurrdoor->d.d->d->d.d->w->texture2=n; }
- return no;
- }
-
-int dsc_changeswitch(struct infoitem *i,int to,int no)
- {
- struct node *n;
- struct sdoor *sd;
- if(view.pcurrdoor==NULL)
-  { printmsg("No current wall."); return no; }
- if(no==0) /* delete switch */
-  { 
-  deletesdoor(view.pcurrdoor->d.d->sd); view.pcurrdoor->d.d->sd=NULL; 
-  return no;
-  }
- if(view.pcurrdoor->d.d->sd==NULL) /* make switch */
-  insertsdoor(view.pcurrdoor);
- sd=view.pcurrdoor->d.d->sd->d.sd;
- cleansdoor(sd);
- switch(no)
-  {
-  case 0x0800: case 0x10000: break; /* exit, alternate exit */
-  case 0x4000: /* activate producer */
-   for(n=view.tagged[tt_cube].head;n->next!=NULL;n=n->next)
-    {
-    if(n->d.n->d.c->type!=4)
-     { if(to==0) printmsg("Tagged cube %d is not a producer.",n->d.n->no);
-       continue; }
-    if(sd->num>=10)
-     { if(to==0) printmsg("Too much cubes tagged (maximum number 10)."); 
-       break; }
-    addnode(&n->d.n->d.c->sdoors,sd->d->no,sd->d);
-    sd->target[sd->num++]=n->d.n;
-    }
-   break;
-  case 0x0100:  /* open door */
-   for(n=view.tagged[tt_door].head;n->next!=NULL;n=n->next)
-    {
-    if(n->no==view.pcurrdoor->no) 
-     { printmsg("Door can't open itself."); continue; }
-    if(n->d.n->d.d->type1!=2)
-     { if(to==0) printmsg("Tagged wall %d is not a door.",n->d.n->no); 
-       continue; }
-    if(sd->num>=10)
-     { if(to==0) printmsg("Too much doors tagged (maximum number 10)."); 
-       break; }
-    addnode(&n->d.n->d.d->sdoors,sd->d->no,sd->d);
-    sd->target[sd->num++]=n->d.n;
-    }
-   break;
-  default: printmsg("Unknown switch type: %x in door %d ?",no,
-   view.pcurrdoor->no); 
-  }
- return no;
- }
-
-int dsc_changepnt(struct infoitem *i,int to,int no)
- {
- double oldpos,*pos;
- char txt[5];
- if(getdata(i->infonr)==NULL)
-  { printmsg("No current pnt."); return no; }
- pos=(double *)(getdata(i->infonr)+i->offset);
- oldpos=*pos;
- strncpy(txt,i->txt,4); txt[4]=0;
- if(readkeyb(txt,"%lg",pos)==0) return no; 
- *pos*=65536.0;
- if(!testpnt(view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]))
-  *pos=oldpos;
- else
-  newcorners(view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]);
- return no;
- }
- 
-int dsc_itemgrfx(struct infoitem *i,int to,int no)
- {
- struct objtype **ot;
- struct infoitem *igrfx;
- int k;
- if(view.pcurrthing==NULL)
-  { printmsg("No current item."); return no; }
- if((igrfx=findinfoitem(i->infonr,83))==NULL)
-  { printmsg("Can't get graphics infoitem."); return no; }
- for(ot=i->od->data,k=-1;ot-i->od->data<i->od->size;ot++)
-  if((*ot)->no==no) { k=ot-i->od->data; break; }
- if(k==-1) return no;
- for(ot=igrfx->od->data;ot-igrfx->od->data<igrfx->od->size;ot++)
-  if(strcmp((*ot)->str,i->od->data[k]->str)==0)
-   { *(getdata(i->infonr)+83)=(*ot)->no; break; }
- return no;
- }
- 
-int dsc_producer(struct infoitem *i,int to,int no)
- {
- int k;
- struct infoitem *things=findinfoitem(ds_thing,0),*robots=NULL;
- int tagged[32];
- unsigned long rno=no;
+ unsigned char *t=d;
  struct producer *cp;
- if(!view.pcurrcube) { printmsg("No cube."); return no; }
- if(view.pcurrcube->d.c->cp==NULL)
+ if(n==NULL) return 0;
+ if(*t==cube_producer && !n->d.c->cp)
   {
-  if((cp=malloc(sizeof(struct producer)))==NULL)
-   { printmsg("No mem for producer."); return no; }
-  if((view.pcurrcube->d.c->cp=addnode(&l->producers,l->producers.size,cp))
-   ==NULL)
-   { printmsg("Can't insert node for producer."); free(cp); return no; }
+  if(l->producers.size==MAX_DESCENT_RCENTERS+1)
+   waitmsg(TXT_INSTOOMANYRCENTERS);
+  checkmem(cp=MALLOC(sizeof(struct producer)));
+  checkmem(n->d.c->cp=addnode(&l->producers,l->producers.size,cp));
   *cp=stdproducer;
-  cp->c=view.pcurrcube;
+  cp->c=n;
   }
- if(!to)
+ else if(*t!=cube_producer && n->d.c->cp)
   {
-  if(things==NULL)
-   { printmsg("Can't find thingtype????"); return rno; }
-  for(k=0;k<things->numchildren;k++)
-   if(things->itemchildren[k]==2) { robots=things->children[k]; break; }
-  if(robots==NULL) 
-   { printmsg("Can't find robots????"); return rno; }
-  for(k=0;k<32;k++) tagged[k]=-1;
-  for(k=0;k<robots->od->size;k++)
-   if(rno&(1<<robots->od->data[k]->no))
-    tagged[k]=robots->od->data[k]->no;
-  if(!readltype(NULL,i->txt,robots->od,32,tagged,NULL)) return rno;
-  for(k=0,rno=0;k<32;k++)
-   if(tagged[k]>=0) rno|=(1<<tagged[k]);
+  killsdoorlist(&n->d.c->sdoors,n->no);
+  freenode(&l->producers,n->d.c->cp,free);
+  n->d.c->cp=NULL;
+  freelist(&n->d.c->sdoors,NULL);
   }
- if(rno==0)
-  {
-  killsdoorlist(&view.pcurrcube->d.c->sdoors,view.pcurrcube->no);
-  freenode(&l->producers,view.pcurrcube->d.c->cp,free);
-  freelist(&view.pcurrcube->d.c->sdoors,NULL);
-  view.pcurrcube->d.c->cp=NULL;
-  }
- return rno;
+ return setno(i,d,n);
  }
  
-int dsc_changecubetype(struct infoitem *i,int to,int no)
+int dsc_set_avg_cubelight(struct infoitem *i,void *d,struct node *n,
+ int wallno,int pntno,int tagged)
  {
- if(!view.pcurrcube) return no;
- if(no!=4 && view.pcurrcube->d.c->cp)
-  {
-  killsdoorlist(&view.pcurrcube->d.c->sdoors,view.pcurrcube->no);
-  freenode(&l->producers,view.pcurrcube->d.c->cp,free);
-  view.pcurrcube->d.c->cp=NULL;
-  freelist(&view.pcurrcube->d.d->sdoors,NULL);
-  }
- return no;
+ int j,k;
+ unsigned short *no=d;
+ if(n==NULL) return 0;
+ for(k=0;k<6;k++)
+  if(n->d.c->walls[k]!=NULL)
+   for(j=0;j<4;j++) n->d.c->walls[k]->corners[j].light=*no;
+ if(!tagged) { drawopt(in_wall);  plotlevel(); }
+ return 1;
  }
  
-int dsc_changedoortype(struct infoitem *i,int to,int no)
+int dsc_set_avg_sidelight(struct infoitem *i,void *d,struct node *n,
+ int wallno,int pntno,int tagged)
  {
- if(!view.pcurrdoor) return no;
- if(no!=2 && view.pcurrdoor->d.d->sdoors.size>0)
-  {
-  killsdoorlist(&view.pcurrdoor->d.d->sdoors,view.pcurrdoor->no);
-  freelist(&view.pcurrdoor->d.d->sdoors,NULL);
-  }
- return no;
+ int j;
+ unsigned short *no=d;
+ if(n==NULL) return 0;
+ if(n->d.c->walls[wallno]!=NULL)
+  for(j=0;j<4;j++) n->d.c->walls[wallno]->corners[j].light=*no;
+ if(!tagged) { drawopt(in_cube); plotlevel(); }
+ return 1;
  }
  
-void drawdoortxt(int n,int *data)
+int dsc_set_t2_dir(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ { int r=setno(i,d,n,wallno,pntno); if(!tagged) drawopt(in_wall); return r; }
+ 
+int dsc_change_pnt_coord(struct infoitem *i,void *d,struct node *n,
+ int wallno,int pntno,int tagged)
  {
- int no;
- if(n<0) return;
- no=view.doorstarts[n];
- if(no>=0)
-  { view.pcurrdoor->d.d->w->texture1=no;
-    view.pcurrdoor->d.d->w->texture2=0; }
+ float oldx,oldy,oldz;
+ struct node *p;
+ if(n==NULL || wallno<0 || pntno<0 || wallno>5 || pntno>3) return 0;
+ my_assert((p=n->d.c->p[wallpts[wallno][pntno]])!=NULL);
+ oldx=p->d.p->x[0]; oldy=p->d.p->x[1]; oldz=p->d.p->x[2];
+ setno(i,d,n,wallno,pntno);
+ if(!testpnt(n->d.c->p[wallpts[wallno][pntno]]))
+  { p->d.p->x[0]=oldx; p->d.p->x[1]=oldy; p->d.p->x[2]=oldz; }
  else
-  { view.pcurrdoor->d.d->w->texture1=*data; 
-    view.pcurrdoor->d.d->w->texture2&=0xc000;
-    view.pcurrdoor->d.d->w->texture2|=(-no)&0x3fff; }
- drawtextures(view.pcurrdoor->d.d->w);
+  newcorners(n->d.c->p[wallpts[wallno][pntno]]);
+ if(!tagged) { plotlevel(); drawopt(in_point); }
+ return 1;
  }
  
-int dsc_changedooranim(struct infoitem *i,int to,int no)
- {
- int n=no,ot1,ot2;
- if(view.pcurrdoor==NULL)
-  { printmsg("No current wall."); return no; }
- if(view.pcurrdoor->d.d->w==NULL)
-  { printmsg("No side there."); return no; }
- ot1=view.pcurrdoor->d.d->w->texture1;
- ot2=view.pcurrdoor->d.d->w->texture2;
- if(to || readltype(drawdoortxt,i->txt,&view.doornums,1,&n,&ot1))
-  {
-  to=1;
-  if(view.pcurrdoor->d.d->d!=NULL && view.pcurrdoor->d.d->d->d.d->w!=NULL)
-   if(view.doorstarts[n]>=0) 
-    { view.pcurrdoor->d.d->d->d.d->w->texture2=0; 
-      view.pcurrdoor->d.d->d->d.d->w->texture1=view.doorstarts[n]; }
-  else 
-   { view.pcurrdoor->d.d->d->d.d->w->texture2&=0xc000;
-     view.pcurrdoor->d.d->d->d.d->w->texture2|=(-view.doorstarts[n])&0x3fff; }
-  printmsg("Texture changed.");
-  }
- if(!to)
-  { view.pcurrdoor->d.d->w->texture1=ot1;
-    view.pcurrdoor->d.d->w->texture2=ot2; }
- return n;
+int dsc_set_uvl(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ { 
+ int offset;
+ /* this is all a bit clumsy because we need ds_wall to print the
+    correct data but we need ds_corner to run through the correct
+    taglist */
+ if(n==NULL || n->d.c->walls[wallno]==NULL) return 0;
+ offset=((i->offset-4)%6)/2;
+ *((unsigned short *)(&n->d.c->walls[wallno]->corners[pntno])+offset)=
+  *(unsigned short *)d;
+ initfilledside(n->d.c,wallno); 
+ if(!tagged) 
+  { plotlevel(); drawopt(in_wall); drawopt(in_cube); }  
+ return 1; 
  }
 
-void draworigintxt(int n,int *data)
- { 
- struct wall *w=view.pcurrcube->d.c->walls[view.currwall]; 
- w->texture2=(w->texture2&0x3fff)|(n<<14);
- drawtextures(w);
- }
- 
-int dsc_setorigin(struct infoitem *i,int to,int no)
+int dsc_thing_type(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
  {
- int odir,direction;
- if(view.pcurrcube->d.c->walls[view.currwall]==NULL)
-  { printmsg("No side here."); return no; }
- if(view.pcurrcube->d.c->walls[view.currwall]->texture2==0)
-  { printmsg("No second texture."); return no; }
- if(!to)
+ static int change;
+ int *no=d;
+ if(n==NULL || view.pcurrcube==NULL) return 0;
+ if(*no!=n->d.t->type1)
   {
-  odir=direction=(view.pcurrcube->d.c->walls[view.currwall]->texture2>>14)&3;
-  if(!readltype(draworigintxt,i->txt,i->od,1,&direction,NULL))
-   { view.pcurrcube->d.c->walls[view.currwall]->texture2&=0x3fff;
-     view.pcurrcube->d.c->walls[view.currwall]->texture2|=odir<<14; }
+  if(n==l->secretstart) l->secretstart=NULL;
+  n->d.t=changething(n->d.t,NULL,*no,view.pcurrcube->d.c);
+  if(n->d.t==NULL)
+   { printmsg(TXT_CANTMAKETHING); freenode(&l->things,n,NULL); }
+  if(n->d.t->type1==tt1_secretstart) l->secretstart=n;
+  change=1;
   }
- else
-  { view.pcurrcube->d.c->walls[view.currwall]->texture2&=0x3fff;
-    view.pcurrcube->d.c->walls[view.currwall]->texture2|=no<<14; } 
- return direction;
+ if(change && !tagged) { plotlevel(); drawopt(in_thing); change=0; }
+ return 1;
  }
  
-int dsc_dummy(struct infoitem *i,int to,int no)
- { printmsg("DUMMYDUMMYDUMMYDUMMY"); return no; }
+int dsc_robot(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ int *no=d,r;
+ if(n==NULL) return 0;
+ r=setno(i,d,n);
+ if(n->d.t->type1==tt1_robot)
+  if(*no>=0 && *no<NUM_ROBOTS) n->d.t->size=robotsize[*no]; 
+  else n->d.t->size=D2_stdrobot.t.size; 
+ else if(n->d.t->type1==tt1_reactor)
+  if(*no>=0 && *no<NUM_REACTORS) 
+   { n->d.t->size=reactorsize[*no]; 
+     ((struct reactor *)n->d.t)->r.model_num=reactorpolyobj[*no]; }
+  else 
+   { n->d.t->size=stdreactor.t.size; 
+     ((struct reactor *)n->d.t)->r.model_num=stdreactor.r.model_num; }
+ else n->d.t->size=view.tsize*2;
+ setthingpts(n->d.t);
+ if(!tagged) plotlevel();
+ return r;
+ }
+
+int dsc_hostagesize(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ { 
+ int r;
+ if(n==NULL) return 0; 
+ r=setno(i,d,n); setthingpts(n->d.t); 
+ if(!tagged) plotlevel(); 
+ return r;
+ }
  
-/* i is the current infoitem, to=0 if original,=1 if tagged objects,
-   no is the number from the original for the tagged objects.
-   returnvalue is only for to=0 valid, then it's the entered value 
-   (for side effects) */
-int (*do_extrasideeffect[sc_number])(struct infoitem *i,int to,
- int no) =
- { dsc_changeitemtype,dsc_changetxt,dsc_changeswitch,dsc_producer,
-   dsc_changepnt,dsc_itemgrfx,dsc_changedooranim,dsc_setorigin,
-   dsc_changecubetype,dsc_changedoortype,dsc_doorchangetxt,
-   dsc_doorchangetxt,dsc_changethingtxt};
+int itemgrfx[48]={ 0x24,0x12,0x13,0x14,0x18,0x1a,0x19,0x12,0x12,0x12,
+ 0x22,0x23,0x33,0x25,0x26,0x27,0x28,0x29,0x2a,0x2b,0x2c,0x2d,0x2e,0x2f,0x12,
+ 0x31,0x12,0x12,0x45,0x46,0x47,0x48,0x4d,0x49,0x4a,0x4b,0x4c,0x53,0x4e,0x59,
+ 0x4f,0x5a,0x5b,0x51,0x66,0x52,0x64,0x65 };
+int dsc_itemgrfx(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ struct item *item;  
+ int r;
+ if(n==NULL) return 0;
+ r=setno(i,d,n);
+ item=(struct item *)n->d.v;
+ item->r.vclip=itemgrfx[item->t.type2<48 ? item->t.type2 : 1];
+ if(!tagged) drawopt(in_thing);
+ return r;
+ }
+ 
+int changedoortype(struct node *n,int no,int tagged)
+ {
+ my_assert(n->d.d->w!=NULL);
+ if(no==n->d.d->type1) return 1;
+ if(no!=door1_switchwithwall && n->d.d->d==NULL) 
+  { printmsg(TXT_WALLTYPENEEDSNB); return 0; }
+ n->d.d->type1=no;
+ if(n->d.d->sdoors.size>0)
+  {
+  killsdoorlist(&n->d.d->sdoors,n->no);
+  freelist(&n->d.d->sdoors,NULL);
+  if(!tagged) plotlevel();
+  }
+ if(no==door1_blow)
+  {
+  n->d.d->animtxt=std_anim_blowdoor;
+  n->d.d->w->texture1=pig.anims[std_anim_blowdoor]->rdlno;
+  n->d.d->w->texture2=0;
+  n->d.d->hitpoints=std_blowdoorhp;
+  if(!tagged && view.pcurrwall==n->d.d->w) drawopt(in_wall);
+  }
+ else n->d.d->hitpoints=0;
+ if(no==door1_onlyswitch) /* only switch: set texture to empty/nothing */
+  { /* is not required because DESCENT ignores it anyway */
+  n->d.d->w->texture1=init.d_ver>=d2_10_sw ? D2_std_emptytxt:D1_std_emptytxt;
+  n->d.d->w->texture2=0; /* nothing */
+  if(!tagged && view.pcurrwall==n->d.d->w) drawopt(in_wall);
+  }
+ if(no==door1_switchwithwall)
+  { n->d.d->w->texture2=std_switch_t2;
+    if(n->d.d->sd) n->d.d->sd->d.sd->flags|=switchflag_once;
+    if(!tagged && view.pcurrwall==n->d.d->w) drawopt(in_wall); }
+ if(no!=door1_blow && no!=door1_normal) /* no door, no blow door -> no anim*/
+  n->d.d->animtxt=-1;
+ if(!tagged) drawopt(in_door);
+ return 1;
+ }
+ 
+int dsc_walltype(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ int no=*(int *)d,ok;
+ my_assert(n!=NULL);
+ ok=changedoortype(n,no,tagged);
+ if(ok && n->d.d->d && (no==door1_normal || no==door1_blow || 
+  n->d.d->d->d.d->type1==door1_normal || n->d.d->d->d.d->type1==door1_blow))
+  changedoortype(n->d.d->d,no,tagged);
+ return ok;
+ }
+ 
+int dsc_dooranim(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ char no=*(char *)d;
+ my_assert(n!=NULL && n->d.d->w!=NULL && n->d.d->d!=NULL && 
+  n->d.d->d->d.d->w!=NULL)
+ my_assert(no>=0 && no<pig.num_anims && pig.anims[no]!=NULL &&
+  pig.anims[no]->pig);
+ if(!pig.anims[no]->pig->anim_t2) 
+  {
+  n->d.d->w->texture2=0; 
+  if(n->d.d->old_txt1==-1) n->d.d->old_txt1=n->d.d->w->texture1;
+  n->d.d->w->texture1=pig.anims[no]->rdlno;
+  n->d.d->d->d.d->w->texture2=0; 
+  if(n->d.d->d->d.d->old_txt1==-1)
+   n->d.d->d->d.d->old_txt1=n->d.d->d->d.d->w->texture1;
+  n->d.d->d->d.d->w->texture1=pig.anims[no]->rdlno; 
+  }
+ else 
+  {
+  if(n->d.d->old_txt1>=0) n->d.d->w->texture1=n->d.d->old_txt1;
+  n->d.d->old_txt1=-1;
+  n->d.d->w->texture2=pig.anims[no]->rdlno;
+  if(n->d.d->d->d.d->old_txt1>=0)
+   n->d.d->d->d.d->w->texture1=n->d.d->d->d.d->old_txt1;
+  n->d.d->d->d.d->old_txt1=-1;
+  n->d.d->d->d.d->w->texture2=pig.anims[no]->rdlno;
+  }
+ n->d.d->animtxt=n->d.d->d->d.d->animtxt=no;
+ if(!tagged && 
+  (n->d.d->w==view.pcurrwall || n->d.d->d->d.d->w==view.pcurrwall))
+  drawopt(in_wall);
+ return 1;
+ }
+ 
+int dsc_switch(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ struct sdoor *sd;
+ unsigned short no=*(unsigned short *)d;
+ struct node *sn;
+ int r;
+ my_assert(n!=NULL);
+ if(tagged && no!=switch_producer) return 0;
+ if(no==switch_nothing) /* delete switch */
+  { if(n->d.d->sd!=NULL) deletesdoor(n->d.d->sd);
+    r=setno(i,d,n); if(!tagged) { plotlevel(); drawopt(in_door); } 
+    return r; }
+ if(n->d.d->sd==NULL) insertsdoor(n); /* make switch */
+ sd=n->d.d->sd->d.sd;
+ cleansdoor(sd);
+ r=setno(i,d,n);
+ sd->type=n->d.d->switchtype;
+ switch(getsdoortype(sd))
+  {
+  case sdtype_none:
+   if(sd->type==switch_secretexit && init.d_ver>=d2_10_sw &&
+    l->secretstart==NULL) 
+    makesecretstart(l,n); 
+   break;
+  case sdtype_cube:
+   for(sn=l->tagged[tt_cube].head;sn->next!=NULL;sn=sn->next)
+    {
+    if(sn->d.n->d.c->type!=4)
+     { if(!pntno) printmsg(TXT_TAGGEDCUBENOPROD,sn->d.n->no); continue; }
+    if(sd->num>=10)
+     { if(!pntno) printmsg(TXT_TOOMUCHCUBESTAGGED); break; }
+    checkmem(addnode(&sn->d.n->d.c->sdoors,sd->d->no,sd->d));
+    sd->target[sd->num++]=sn->d.n;
+    }
+   break;
+  case sdtype_side:
+   for(sn=l->tagged[tt_wall].head;sn->next!=NULL;sn=sn->next)
+    {
+    if(sd->num>=10)
+     { if(!pntno) printmsg(TXT_TOOMUCHCUBESTAGGED); break; }
+    checkmem(addnode(&sn->d.n->d.c->sdoors,sd->d->no,sd->d));
+    sd->walls[sd->num]=sn->no%6;
+    sd->target[sd->num++]=sn->d.n;
+    }
+   break;
+  case sdtype_door:
+   for(sn=l->tagged[tt_door].head;sn->next!=NULL;sn=sn->next)
+    {
+    if(sn->no==n->no) { printmsg(TXT_DOOROPENITSELF); continue; }
+    if(sn->d.n->d.d->c->d.c->nc[sn->d.n->d.d->wallnum]==NULL)
+     { printmsg(TXT_NOSWITCHABLEWALL); continue; }
+    if((no==switch_opendoor || no==switch_closedoor || no==switch_unlockdoor
+     || no==switch_lockdoor) && sn->d.n->d.d->type1!=door1_normal)
+     { printmsg(TXT_TAGGEDWALLNODOOR,sn->d.n->no); continue; } 
+    if((no==switch_openwall || no==switch_closewall || no==switch_illusion_off
+    || no==switch_illusion_on || no==switch_wall_to_ill) &&
+     sn->d.n->d.d->type1!=door1_onlyswitch && 
+     sn->d.n->d.d->type1!=door1_shootthrough &&
+     sn->d.n->d.d->type1!=door1_onlytxt)
+     { printmsg(TXT_TAGGEDWALLNOSWITCHILLWALL,sn->d.n->no); continue; }
+    if(sd->num>=10) { printmsg(TXT_TOOMUCHDOORSTAGGED); break; }
+    addnode(&sn->d.n->d.d->sdoors,sd->d->no,sd->d);
+    sd->target[sd->num++]=sn->d.n;
+    }
+   break;
+  default: my_assert(0);
+  }
+ if(!tagged) { plotlevel(); drawopt(in_door); }
+ return r;
+ }
+ 
+int dsc_illum_brightness(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ float dno=*(float *)d;
+ if(dno<0.01 || dno>100)
+  { waitmsg(TXT_ILLUM_BRIGHTNESS); drawopt(in_internal); return 0; }
+ set_illum_brightness(dno);
+ return 1;
+ }
+ 
+int dsc_dropsomething(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ if(!setno(i,d,n)) return 0;
+ if(n->d.t->contain_type1==0 || n->d.t->contain_type1==255)
+  n->d.t->contain_count=0;
+ if(!tagged) drawopt(in_thing);
+ return 1;
+ }
+ 
+int dsc_changedrawwhat(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ if(!setno(i,d,n)) return 0;
+ if((view.drawwhat&DW_ALLLINES)==0) 
+  { printmsg(TXT_CALCMAP); initdescmap(); }
+ printmsg(TXT_NODRAWING,
+  view.drawwhat&DW_CUBES ? TXT_DWCUBES : "",
+  view.drawwhat&DW_DOORS ? TXT_DWWALLS : "",
+  view.drawwhat&DW_THINGS ? TXT_DWTHINGS : "",
+  view.drawwhat&DW_ALLLINES ? TXT_DWLINES : "",
+  view.drawwhat&DW_XTAGGED ? TXT_DWXTAGGED : "");
+ if(view.render) init_rendercube(); 
+ plotlevel();
+ return 1;
+ }
+ 
+int dsc_perspective(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ if(!setno(i,d,n)) return 0;
+ if(!l) return 1;
+ l->whichdisplay=view.whichdisplay;
+ if(view.whichdisplay) 
+  { view.drawwhat|=DW_CUBES;
+    if(view.render>1) view.render=1;
+    drawopt(in_internal); } 
+ init_rendercube();
+ w_refreshwin(l->w);
+ return 1;
+ }
+ 
+int dsc_thingpos(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ float dno=*(float *)d;
+ my_assert(i->offset>=0 && i->offset<3);
+ n->d.t->p[0].x[i->offset]=dno;
+ setthingpts(n->d.t); setthingcube(n->d.t);
+ if(!tagged) plotlevel();
+ return 1;
+ }
+ 
+int dsc_flythrough(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ int j,k,nft=*(int *)d;
+ if(nft>1)
+  { view.whichdisplay=0; if(l) l->whichdisplay=view.whichdisplay; }
+ else view.drawwhat|=DW_CUBES;
+ view.render=nft;
+ if(!view.pcurrcube) return 1;
+ for(j=0;j<3;j++)
+  {
+  view.e0.x[j]=0.0;
+  for(k=0;k<8;k++) 
+   view.e0.x[j]+=
+    (l->rendercube ? l->rendercube:view.pcurrcube)->d.c->p[k]->d.p->x[j]/8.0;
+  }
+ init_rendercube();
+ w_refreshwin(l->w);
+ return 1;
+ }
+ 
+int dsc_fl_delay(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ int delay=*(long *)d;
+ struct flickering_light *fl;
+ if(!l || !n || !n->d.c->walls[wallno]) return 0;
+ if(delay<1)
+  { if(n->d.c->walls[wallno]->fl)
+     freenode(&l->flickeringlights,n->d.c->walls[wallno]->fl,free);
+    n->d.c->walls[wallno]->fl=NULL; if(!tagged) drawopt(in_wall);
+    return 1; }
+ if(!n->d.c->walls[wallno]->fl)
+  { if(delay<1) return 0; 
+    checkmem(fl=MALLOC(sizeof(struct flickering_light)));
+    checkmem(n->d.c->walls[wallno]->fl=addnode(&l->flickeringlights,-1,fl));
+    fl->c=n; fl->cube=n->no; fl->wall=wallno; fl->mask=0xffffffff; }
+ else fl=n->d.c->walls[wallno]->fl->d.fl;
+ fl->delay=fl->timer=delay; if(!tagged) drawopt(in_wall);
+ return 1;
+ }
+ 
+/* i is the current infoitem, d is a pointer to the data which was given
+   by the user and may be changed in the functions, n is a pointer to
+   the node which should be changed by the data. If needed wallno and
+   pntno must be set to provide additional information where to find
+   the data to be changed.
+   tagged indicates if the change is done on a tagged object or on
+   the current object. The tagged objects are changed before the current
+   objects are changed, so it is wise to refresh the screen only if
+   tagged==0 (to save time). 
+   The functions must change the original data. This is not done before
+   or after calling this function. If they change the data return a 1
+   if not, return a 0 */
+int (*dsc_sideeffect[sc_number])(struct infoitem *i,void *d,
+ struct node *n,int wallno,int pntno,int tagged)=
+ { dsc_cubetype,dsc_set_avg_cubelight,dsc_set_t2_dir,dsc_set_avg_sidelight,
+   dsc_change_pnt_coord,dsc_set_uvl,dsc_thing_type,dsc_robot,
+   dsc_hostagesize,dsc_itemgrfx,dsc_walltype,dsc_dooranim,dsc_switch,
+   dsc_illum_brightness,dsc_dropsomething,dsc_changedrawwhat,
+   dsc_thingpos,dsc_perspective,dsc_flythrough,dsc_fl_delay };
+
+int do_sideeffect(enum sidecodes sc,struct infoitem *i,void *d,
+ struct node *n,int wallno,int pntno,int tagged)
+ { return dsc_sideeffect[sc](i,d,n,wallno,pntno,tagged); }

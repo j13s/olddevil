@@ -15,28 +15,41 @@
     You should have received a copy of the GNU General Public License
     along with this program (file COPYING); if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-    
+
+#define DEBUG 0
+
 #include "structs.h"
-#include "system.h"
+#include "userio.h"
 #include "tools.h"
+#include "calctxt.h"
 #include "insert.h"
+#include "do_move.h"
+#include "do_mod.h"
+#include "grfx.h"
+#include "readtxt.h"
+#include "plotdata.h"
+#include "plotsys.h"
+#include "plottxt.h"
 #include "plot.h"
 #define COLORNUM2(d,min) (((d)>=view.maxvisibility) ? (min) : \
    (d<=0.0) ? GRAYSCALE : ((int)((GRAYSCALE-1)*(1-(d)/view.maxvisibility))+1))
-#define WCOLORNUM(d,h) view.color[(h)<=0 ? COLORNUM2(d,(h)==0 ? 1 : BLACK) :\
- HILIGHTCOLORS+(h)-1]
-#define TCOLORNUM(d,c,h) view.color[((h)==0 || (h)<0) ? \
- (((d)>view.maxvisibility) ? BLACK : (c)+THINGCOLORS) : HILIGHTCOLORS+(h)-1]
-int partcolor(struct door *d,double dist,int h)
+#define WCOLORNUM(d,h) view.color[(h)<=0 ? COLORNUM2(d,(h)==-1 ? BLACK : 1) :\
+ ((h)==256 ? BLACK : HILIGHTCOLORS+(h)-1)]
+#define TCOLORNUM(c,h) view.color[(h)<=0 ? \
+ ((h)==0 ? (c)+THINGCOLORS : BLACK) : HILIGHTCOLORS+(h)-1]
+#define ANALYZE_HILIGHT(h) (h<0 ? -h : (h==256 ? -1 : (h==257 ? 0 : h)))
+int partcolor(struct door *d,float dist,int h)
  {
  int i,key;
+ if(h<0 && dist>view.maxvisibility) return BLACK;
+ if(d->tagged) return HILIGHTCOLORS+2;
  switch(d->type1)
   {
-  case 3: case 4: case 5: /* a texture/switch/window */
+  case door1_onlytxt: case door1_shootthrough:
    return COLORNUM2(dist,h==0 ? 1 : BLACK); 
-  case 1: /* blow door */
+  case door1_blow: /* blow door */
    return DOORCOLORS;
-  case 2: /* normal door */
+  case door1_normal: /* normal door */
    for(i=0,key=d->key;key!=0;i++,key=key>>1);
    return i+DOORCOLORS;
   default:
@@ -44,431 +57,789 @@ int partcolor(struct door *d,double dist,int h)
   }
  }
 #define PCOLORNUM(dist,door,h) view.color[(h)<=0 ? partcolor(door,dist,h) : \
- HILIGHTCOLORS+(h)-1]
+ ((h)==256 ? BLACK : HILIGHTCOLORS+(h)-1)]
 
-int pointinsight(struct point *p,struct point *d,double *dist);
-int pointinangle(struct point *d,double *dist);
-int pointvisible(struct point *p,double *d);
-void calcpoint(struct point *p,struct pixel *pix,struct point *v,
- double xoff,double yoff,double d);
- int calchit(double *r,double ax,double ay,double ex,double ey,
- double dx,double dy);
-void plotline(struct pixel *ps,struct pixel *pe,struct point *p1,
- struct point *p2,int color,int xor);
-void plotwall(struct cube *c,int wno,int hilight);
+#include "in_plot.h"
 
-void printpos(void)
- {
- char buffer[100];
- sprintf(buffer,"%.1f,%.1f,%.1f",view.e0.x[0]/65536.0,view.e0.x[1]/65536.0,
-  view.e0.x[2]/65536.0);
- buffer[view.smenuwidth]=0;
- sys_text(view.bounds[ecw_lowermenu][0],view.bounds[ecw_lowermenu][3]+1,
-  buffer,view.color[WHITE],view.color[BLACK]);
- sprintf(buffer,"%5.3f,%5.3f,%5.3f",view.e[2].x[0],view.e[2].x[1],
-  view.e[2].x[2]);
- buffer[view.smenuwidth]=0;
- sys_text(view.bounds[ecw_lowermenu][0],view.bounds[ecw_lowermenu][3]+1+
-  view.fontheight,buffer,view.color[WHITE],view.color[BLACK]);
- }
- 
-void makeview(void)
+/* Maximum/minimum viewangle. The minimum view angle will be used for
+ the smaller axis if the quotient between larger and smaller axis is
+ smaller than tan(MAX_VIEWANGLE)/tan(MIN_VIEWANGLE). The max. value
+ will be used for the larger axis if the quotient is greater. */
+#define MAX_VIEWANGLE (M_PI/3.0) 
+#define MIN_VIEWANGLE (M_PI/5.0)
+
+struct point e0,er[3]; /* e0 and e[3] for current view */
+float xviewphi=0.5,yviewphi=0.5,z_dist; /* viewphi is the cos(view angle) */
+struct point x0,m0; /* x0 viewpoint, m0 line viewpoint-center of screen */
+int max_xcoord,max_ycoord; /* (scr_xysize-1)/2 */
+int scr_xsize,scr_ysize;
+
+float FABS(float x) { return x<0.0 ? -x : x; }
+
+void copytoscreen(void) 
+ { psys_copytoscreen(w_xwinincoord(l->w,0),w_ywinincoord(l->w,0),
+    w_xwinincoord(l->w,0),w_ywinincoord(l->w,0),w_xwininsize(l->w),
+    w_ywininsize(l->w)); }
+
+void initcoordsystem(int lr,struct point *e0,struct point *er,
+ struct point *x0)
  {
  int i;
- printpos();
+ er[0]=lr>0 ? view.e[2] : view.e[0];
+ er[1]=view.e[1];
+ if(lr>0) for(i=0;i<3;i++) er[2].x[i]=-view.e[0].x[i];
+ else er[2]=view.e[2];
+ if(l->whichdisplay && lr>=0)
+  for(i=0;i<3;i++) e0->x[i]=view.e0.x[i]-er[2].x[i]*view.distcenter;
+ else *e0=view.e0;
  /* Position of viewpoint: */
  for(i=0;i<3;i++)
-  {
-  /* now from the middle of the screen to behind the screen: */
-  view.x0.x[i]=view.e0.x[i]-view.e[2].x[i]*view.dist;
-  view.m0.x[i]=view.e0.x[i]-view.x0.x[i];
-  }
- view.oldpcurrcube=view.oldpcurrthing=NULL;
- view.oldpcurrpnt=NULL;
- /* calculate x and y view angle (1=sqr(LENGTH(&view.e[i]))) */
- view.xviewphi=view.dist/sqrt(view.dist*view.dist+1);
- view.yviewphi=view.dist/sqrt(view.dist*view.dist+1);
- /* kill oldpicture, one pixel more in every direction because of
-    two points thick tagged lines */
- sys_filledbox(view.xoffset-1,view.yoffset-1,view.xsize+view.xoffset+1,
-  view.ysize+view.yoffset+1,view.color[BLACK],0);
- }
-
-int pointinsight(struct point *p,struct point *d,double *dist)
- {
- int i;
- for(i=0;i<3;i++)
-  d->x[i]=p->x[i]-view.x0.x[i];
- *dist=LENGTH(d);
- return *dist<view.maxvisibility;
+  /* from the middle of the screen to behind the screen: */
+  x0->x[i]=e0->x[i]-er[2].x[i]*z_dist;
  }
  
-int pointinangle(struct point *d,double *dist)
+void makeview(int lr)
  {
- double m0_d;
- if(0.0>(m0_d=SCALAR(d,&view.e[2])))
-  { *dist=-*dist; return 0; }
+ int i,max_axis,min_axis;
+ float max_angle,min_angle;
+ my_assert(lr==-1 || lr==0 || lr==1);
+ if(lr==-1)
+  { scr_xsize=init.xres; scr_ysize=init.yres; }
  else
-  { return view.xviewphi*(*dist)*view.dist<=m0_d;}
- }
- 
-int pointvisible(struct point *p,double *dist)
- {
- struct point d;
- int insight=pointinsight(p,&d,dist);
- return pointinangle(&d,dist) && insight;
+  { scr_xsize=(view.whichdisplay ? w_xwininsize(l->w)/2 : w_xwininsize(l->w));
+    scr_ysize=w_ywininsize(l->w); }
+ max_xcoord=scr_xsize/2; max_ycoord=scr_ysize/2;
+ scr_xsize=max_xcoord*2+1; scr_ysize=max_ycoord*2+1;
+ max_axis = max_xcoord>=max_ycoord ?
+  (min_axis=max_ycoord,max_xcoord) : (min_axis=max_xcoord,max_ycoord);
+ if(max_axis*tan(MIN_VIEWANGLE)>=min_axis*tan(MAX_VIEWANGLE))
+  {max_angle=MAX_VIEWANGLE; min_angle=atan(tan(max_angle)*min_axis/max_axis);}
+ else  
+  {min_angle=MIN_VIEWANGLE; max_angle=atan(tan(min_angle)*max_axis/min_axis);}
+ xviewphi= max_xcoord>=max_ycoord ? (yviewphi=cos(min_angle),cos(max_angle)) :
+  (yviewphi=cos(max_angle),cos(min_angle));
+ z_dist=max_axis/tan(max_angle);
+ initcoordsystem(lr,&e0,er,&x0);
+ for(i=0;i<3;i++) m0.x[i]=e0.x[i]-x0.x[i];
  }
 
-/* calculates the point of intersection of the line between p and v
- and the screen and saves the result in coordinates of the screen
- in pix. xoff and yoff are the coordinates of the orthogonal projection of v
- on the screen (for the viewpoint this is the middle of the screen 0.5,0.5) 
- dist is the length of viewpoint->screen */
-void calcpoint(struct point *p,struct pixel *pix,struct point *viewpoint,
- double xoff,double yoff,double dist)
+/* return the coords of point p on the screen plane in pix. Return a
+ 1 if the point is visible, a zero otherwise. */
+int in_getpixelcoords(struct point *p,struct pixel *pix)
  {
+ struct point d,x,y;
+ float fx,fy;
  int i;
- struct point a,b,d,v;
- double x;
- v=*viewpoint;
+ for(i=0;i<3;i++) d.x[i]=p->x[i]-x0.x[i];
+ pix->d=SCALAR(&d,&er[2]); fx=SCALAR(&d,&er[0]); fy=SCALAR(&d,&er[1]);
+ if(pix->d<z_dist) return 0; /* point behind me */
  for(i=0;i<3;i++)
-  { d.x[i]=p->x[i]-v.x[i]; a.x[i]=v.x[i]-view.e0.x[i]; 
-    b.x[i]=p->x[i]-view.e0.x[i]; }
- if(0.0<SCALAR(&b,&view.e[2])*SCALAR(&a,&view.e[2]))
-  for(i=0;i<3;i++) /* use mirrored viewpoint */
-   { d.x[i]+=2*view.e[2].x[i]*dist; v.x[i]+=2*view.e[2].x[i]*dist; } 
- x=SCALAR(&view.e[2],&d); /* y*x */
- /* d=p-v / p=C / v=F / d=x / e[2]=y */
- for(i=0;i<3;i++)
-  {
-  a.x[i]=x*view.e[2].x[i]+v.x[i]; /* D=(y*x)*y */
-  b.x[i]=p->x[i]-a.x[i]; /* d=C-D */
-  }
- pix->x=SCALAR(&b,&view.e[0])*dist/fabs(x)+xoff;
- pix->y=SCALAR(&b,&view.e[1])*dist/fabs(x)+yoff;
+  { x.x[i]=d.x[i]-fy*er[1].x[i]; y.x[i]=d.x[i]-fx*er[0].x[i]; }
+ if(SCALAR(&x,&er[2])<xviewphi || SCALAR(&y,&er[2])<yviewphi) return 0;
+ pix->x=fx*z_dist/pix->d+0.5; pix->y=fy*z_dist/pix->d+0.5;
+ return 1;
  }
 
+/* returns the coords of point p in pix. lr==0 for left display, lr==1
+   for right display */
+int getpixelcoords(int lr,struct point *p,struct pixel *pix)
+ { makeview(lr); return in_getpixelcoords(p,pix); }
+ 
 /* calculates point of intersection of two lines m1*t1+b1, m2*t2+b2:
     a=b2-b1, e=m1, d=m2 */
-int calchit(double *r,double ax,double ay,double ex,double ey,
- double dx,double dy)
+int calchit(float *r,float ax,float ay,float ex,float ey,
+ float dx,float dy)
  { 
- double D=ey*dx-ex*dy,s;
+ float D=ey*dx-ex*dy,s;
  if(D==0.0) 
   { *r=0; return 0; } /* no hit at all, lines are parallel */ \
  *r=(ay*dx-ax*dy)/D; s=(ex*ay-ey*ax)/D; 
  return (*r>=0.0 && *r<=1.0) && (s>=0.0 && s<=1.0); 
  }
- 
-void plotline(struct pixel *ps,struct pixel *pe,struct point *p1,
- struct point *p2,int color,int xor)
+
+/* get the (clipped) screen coords for line sp->ep (lr==0 on left,==1 on right  display) and return them in spix,epix. If the line is not visible, return
+ a 0,otherwise a 1. if checkdist==1 then check if the line is too
+ far away */
+int getscreencoords(int lr,struct point *sp,struct point *ep,
+ struct pixel *spix,struct pixel *epix,int checkdist)
  {
- int x1,y1,x2,y2,hit[4],numhits;
- double dx,dy,t[4];
- struct pixel s,e,*pix,pnew;
- struct point *p,d;
- /* clip the line */
- if((ps->x<=0&&pe->x<=0)||(ps->y<=0&&pe->y<=0)||(ps->x>=1&&pe->x>=1)|| 
-  (ps->y>=1&&pe->y>=1)||(ps->d<=0&&pe->d<=0))
-  return;
- /* first shorten the lines through the screen */
- if(ps->d<0.0&&pe->d>0.0) { p=p2; p2=p1; p1=p; pix=ps; ps=pe; pe=pix; }
- if(ps->d>0.0&&pe->d<0.0)
-  { /* now we have a problem: this line is too long */
-  /* so we calculate a new one (ooops) */
-  /* calculate orthogonal projection of p1 on the screen: */
-  for(x1=0;x1<3;x1++)
-   d.x[x1]=p1->x[x1]-view.e0.x[x1]; 
-  /* calculate point of intersection */
-  calcpoint(p2,&pnew,p1,SCALAR(&d,&view.e[0]),SCALAR(&d,&view.e[1]),
-   SCALAR(&d,&view.e[2])-view.dist);
-  /* now in &pnew is the point of intersection on the screen */
-  pnew.d=sqrt(view.dist*view.dist+pnew.x*pnew.x+pnew.y*pnew.y);
-  pnew.x-=0.5; pnew.y-=0.5; 
-  pe=&pnew;
-  /* clip the line */
-  if((ps->x<=0&&pe->x<=0)||(ps->y<=0&&pe->y<=0)||(ps->x>=1&&pe->x>=1)|| 
-   (ps->y>=1&&pe->y>=1)||(ps->d<=0&&pe->d<=0))
-   return;
+ struct point e_d,s_d,d,p;
+ float f1,f2,s_s[3],e_s[3],l2_e,l2_s;
+ struct point_2d sp2d,ep2d;
+ int i;
+ /* clip the line against the viewplane */
+ for(i=0;i<3;i++)
+  { e_d.x[i]=ep->x[i]-x0.x[i]; s_d.x[i]=sp->x[i]-x0.x[i]; 
+    d.x[i]=ep->x[i]-sp->x[i]; }
+ f1=SCALAR(&s_d,&er[2]); f2=SCALAR(&e_d,&er[2]);
+ if(f1<z_dist && f2<z_dist) return 0; /* point behind me */
+ if(checkdist && f1>view.maxvisibility && f2>view.maxvisibility) return 0;
+  /* point too far away */
+ if(f1>=z_dist && f2<z_dist)
+  { s_s[2]=f2; e_s[2]=f1; p=e_d; e_d=s_d; s_d=p; }
+ else { s_s[2]=f1; e_s[2]=f2; }
+ s_s[0]=SCALAR(&s_d,&er[0]); e_s[0]=SCALAR(&e_d,&er[0]);
+ s_s[1]=SCALAR(&s_d,&er[1]); e_s[1]=SCALAR(&e_d,&er[1]);
+ l2_s=SCALAR(&s_d,&s_d); l2_e=SCALAR(&e_d,&e_d);
+ if(((s_s[0]>0.0 && e_s[0]>0.0) || (s_s[0]<0.0 && e_s[0]<0.0)) &&
+  s_s[0]*s_s[0]>l2_s*xviewphi && e_s[0]*e_s[0]>l2_e*xviewphi) return 0;
+ if(((s_s[1]>0.0 && e_s[1]>0.0) || (s_s[1]<0.0 && e_s[1]<0.0)) &&
+  s_s[1]*s_s[1]>l2_e*yviewphi && e_s[1]*e_s[1]>l2_e*yviewphi) return 0;
+ if(s_s[2]<z_dist && e_s[2]>=z_dist)
+  { /* clip against viewplane */
+  f1=(z_dist-s_s[2])/(e_s[2]-s_s[2]);
+  sp2d.x[0]=s_s[0]+(e_s[0]-s_s[0])*f1;
+  sp2d.x[1]=s_s[1]+(e_s[1]-s_s[1])*f1;
+  spix->d=z_dist;
   }
- if(ps->x>=0&&ps->x<=1&&pe->x>=0&&pe->x<=1&&ps->y>=0&&ps->y<=1&&pe->y>=0&&
-  pe->y<=1)
-  { s=*ps; e=*pe; }
- else
-  { /* now there's need for clipping */
-  dx=pe->x-ps->x; dy=pe->y-ps->y; 
-  if(dx*dx+dy*dy<=2.0/view.xsize) return; /* too short */
-  /* now look at the edge of the screen */
-  hit[0]=calchit(&t[0],ps->x,ps->y,1.0,0.0,dx,dy);
-  hit[1]=calchit(&t[1],ps->x-1.0,ps->y,0.0,1.0,dx,dy);
-  hit[2]=calchit(&t[2],ps->x-1.0,ps->y-1.0,-1.0,0.0,dx,dy);
-  hit[3]=calchit(&t[3],ps->x,ps->y-1.0,0.0,-1.0,dx,dy);
-  numhits=hit[0]+hit[1]+hit[2]+hit[3];
- if(!numhits) { return; /* line completely not in screen */ }
-  else
-   {
-   if(hit[0]) { s.x=t[0]; s.y=0.0; e=(ps->y<0.0) ? *pe : *ps; }
-   else if(hit[1]) { s.x=1.0; s.y=t[1]; e=(ps->x>1.0) ? *pe : *ps; }
-   else if(hit[2]) { s.x=1.0-t[2]; s.y=1.0; e=(ps->y>1.0) ? *pe : *ps; }
-   else if(hit[3]) { s.x=0.0; s.y=1.0-t[3]; e=(ps->x<0.0) ? *pe : *ps; }
-   if(numhits>1)
-    {
-    if(hit[3]) 
-     { if((hit[2]==0||t[2]!=1.0) && (t[0]!=0.0||hit[0]==0))  
-        {e.x=0.0; e.y=1.0-t[3];} }
-    else if(hit[2]) { if(t[1]!=1.0||hit[1]==0) {e.x=1.0-t[2]; e.y=1.0;} }
-    else if(hit[1]) { if(t[0]!=1.0||hit[0]==0) {e.x=1.0; e.y=t[1];} }
-    }
-   }
+ else /* no clipping against viewplane */
+  { sp2d.x[0]=z_dist*s_s[0]/s_s[2];
+    sp2d.x[1]=z_dist*s_s[1]/s_s[2];
+    spix->d=s_s[2]; }
+ ep2d.x[0]=z_dist*e_s[0]/e_s[2];
+ ep2d.x[1]=z_dist*e_s[1]/e_s[2];
+ epix->d=e_s[2];
+ /* clip against screen borders: start point */
+ if(FABS(sp2d.x[0])>max_xcoord) 
+  {
+  if(ep2d.x[0]==sp2d.x[0]) return 0;
+  if(sp2d.x[0]>0.0) f1=(sp2d.x[0]-max_xcoord)/(sp2d.x[0]-ep2d.x[0]);
+  else f1=(-max_xcoord-sp2d.x[0])/(ep2d.x[0]-sp2d.x[0]); 
+  if(f1<0.0 || f1>1.0) return 0;
+  sp2d.x[0]=sp2d.x[0]+(ep2d.x[0]-sp2d.x[0])*f1; 
+  sp2d.x[1]=sp2d.x[1]+(ep2d.x[1]-sp2d.x[1])*f1;
   }
- x1=(int)(s.x*(view.xsize-1))+view.xoffset;
- x2=(int)(e.x*(view.xsize-1))+view.xoffset;
- y1=(int)view.ysize-(s.y*(view.ysize-1))+view.yoffset;
- y2=(int)view.ysize-(e.y*(view.ysize-1))+view.yoffset;
- sys_line(x1,y1,x2,y2,color,xor);
-/* if(color==view.color[HILIGHTCOLORS+2])
-  { / tagged, make one line left and one line right next the real line /
-  ty=2*(x2-x1)<(y2-y1) ? 0 : (x2-x1)>0 ? 1 : -1;
-  tx=2*(y2-y1)<(x2-x1) ? 0 : (y2-y1)>0 ? 1 : -1;
-  sys_line(x1+tx,y1+ty,x2+tx,y2+ty,color,xor);
-  sys_line(x1-tx,y1-ty,x2-tx,y2-ty,color,xor); 
-  } */
+ if(FABS(sp2d.x[1])>max_ycoord) 
+  {
+  if(ep2d.x[1]==sp2d.x[1]) return 0;
+  if(sp2d.x[1]>0.0) f1=(sp2d.x[1]-max_ycoord)/(sp2d.x[1]-ep2d.x[1]);
+  else f1=(-max_ycoord-sp2d.x[1])/(ep2d.x[1]-sp2d.x[1]);
+  if(f1<0.0 || f1>1.0) return 0;
+  sp2d.x[0]=sp2d.x[0]+(ep2d.x[0]-sp2d.x[0])*f1; 
+  sp2d.x[1]=sp2d.x[1]+(ep2d.x[1]-sp2d.x[1])*f1;
+  }
+ /* end point */
+ if(FABS(ep2d.x[0])>max_xcoord) 
+  {
+  if(ep2d.x[0]==sp2d.x[0]) return 0;
+  if(ep2d.x[0]>0.0) f1=(ep2d.x[0]-max_xcoord)/(ep2d.x[0]-sp2d.x[0]);
+  else f1=(-max_xcoord-ep2d.x[0])/(sp2d.x[0]-ep2d.x[0]); 
+  if(f1<0.0 || f1>1.0) return 0;
+  ep2d.x[0]=ep2d.x[0]-(ep2d.x[0]-sp2d.x[0])*f1; 
+  ep2d.x[1]=ep2d.x[1]-(ep2d.x[1]-sp2d.x[1])*f1;
+  }
+ if(FABS(ep2d.x[1])>max_ycoord) 
+  {
+  if(ep2d.x[1]==sp2d.x[1]) return 0;
+  if(ep2d.x[1]>0.0) f1=(ep2d.x[1]-max_ycoord)/(ep2d.x[1]-sp2d.x[1]);
+  else f1=(-max_ycoord-ep2d.x[1])/(sp2d.x[1]-ep2d.x[1]);
+  if(f1<0.0 || f1>1.0) return 0;
+  ep2d.x[0]=ep2d.x[0]-(ep2d.x[0]-sp2d.x[0])*f1; 
+  ep2d.x[1]=ep2d.x[1]-(ep2d.x[1]-sp2d.x[1])*f1;
+  }
+ spix->x=sp2d.x[0]+max_xcoord+0.5;
+ spix->y=-sp2d.x[1]+max_ycoord+0.5;
+ epix->x=ep2d.x[0]+max_xcoord+0.5;
+ epix->y=-ep2d.x[1]+max_ycoord+0.5;
+ if(lr) { epix->x+=scr_xsize; spix->x+=scr_xsize; }
+ return 1;
+ }
+ 
+void in_plot3dline(int lr,struct point *sp,struct point *ep,int color,
+ int xor,int checkdist)
+ {
+ struct pixel spix,epix;
+ if(getscreencoords(lr,sp,ep,&spix,&epix,checkdist))
+  plotline(spix.x,spix.y,epix.x,epix.y,color,xor);
  }
 
-void plot3dline(struct point *sp,struct point *ep,int color,int hilight,
- int xor)
- {
- struct pixel pix[2];
- struct point d;
- int a,b;
- a=pointinsight(sp,&d,&pix[0].d) || hilight!=0;
- a=a&&pointinangle(&d,&pix[0].d);
- b=pointinsight(ep,&d,&pix[1].d) || hilight!=0;
- b=b&&pointinangle(&d,&pix[1].d);
- if(a||b)
-  {
-  calcpoint(sp,&pix[0],&view.x0,0.5,0.5,view.dist);
-  calcpoint(ep,&pix[1],&view.x0,0.5,0.5,view.dist);
-  plotline(&pix[0],&pix[1],sp,ep,
-   TCOLORNUM((pix[0].d+pix[1].d)/2,color,hilight),xor);
-  }
- }
+/* draw a line from sp to ep with color. if xor==1 xored. if checkdist==1
+ draw the line only if it's within maxvisibility */
+void plot3dline(struct point *sp,struct point *ep,int color,int xor,
+ int checkdist)
+ { makeview(0); in_plot3dline(0,sp,ep,color,xor,checkdist);
+   if(view.whichdisplay)
+    { makeview(1); in_plot3dline(1,sp,ep,color,xor,checkdist); } }
  
-void plotgrid(void)
+/* highlight==0: normal wallcolor 
+   highlight>0: view.color[HILIGHTCOLORS+highlight-1]
+   highlight<0: same as highlight>0 with xor.
+   highlight==256: black
+   highlight==257: normal wallcolor or black if too far away*/ 
+void in_plotmarker(int w,struct point *p,int hilight)
  {
- struct point splot,eplot,p;
- double sizeofgrid,runx,runy;
- int i,n,j;
- if(!view.gridonoff) return;
- p=view.x0;
- fittogrid(&p);
- sizeofgrid=(view.gridlength>=view.maxvisibility/10) ? view.gridlength :
-  (int)(view.maxvisibility/10/view.gridlength+0.5)*view.gridlength;
- if(sizeofgrid==0) { printmsg("Gridsize=0???"); return; }
- printmsg("Shown grid %g:Real grid %g = %d:1.",sizeofgrid,view.gridlength,
-  (int)(sizeofgrid/view.gridlength));
- n=view.maxvisibility/sizeofgrid+1;
- if(n>view.plottimes) n=view.plottimes;
- fprintf(errf,"Plotting %d times.\n",n); fflush(errf);
- /* filling the whole visible ball&more with lines */
- for(runx=-sizeofgrid*n;runx<=sizeofgrid*n;runx+=sizeofgrid)
-  for(runy=-sizeofgrid*n;runy<=sizeofgrid*n;runy+=sizeofgrid)
-   for(i=0;i<1;i++)
-    {
-    splot.x[i]=eplot.x[i]=p.x[i]+runx;
-    j=i+1>=3 ? i-2 : i+1; splot.x[j]=eplot.x[j]=p.x[j]+runy;
-    j=i+2>=3 ? i-1 : i+2;
-    splot.x[j]=p.x[j]-sizeofgrid*n; eplot.x[j]=p.x[j]+sizeofgrid*n;
-    plot3dline(&splot,&eplot,0,1,0);  
-    }
- fprintf(errf,"End of plotgrid.\n"); fflush(errf);
- }
- 
-void plotmarker(struct point *p,int hilight,int xor)
- {
+ struct pixel spix,epix;
  struct point dp[8];
  int i;
  makemarker(p,dp);
- for(i=0;i<8;i+=2)
-  plot3dline(&dp[i],&dp[i+1],WHITE,hilight,xor);
+ for(i=0;i<8;i+=2) 
+  if(getscreencoords(w,&dp[i],&dp[i+1],&spix,&epix,hilight==0||hilight==257))
+   plotline(spix.x,spix.y,epix.x,epix.y,
+    WCOLORNUM((epix.d+spix.d)/2.0,ANALYZE_HILIGHT(hilight)),hilight<0);
+  else if(hilight==257)
+   if(getscreencoords(w,&dp[i],&dp[i+1],&spix,&epix,0))
+    plotline(spix.x,spix.y,epix.x,epix.y,
+     WCOLORNUM((epix.d+spix.d)/2.0,ANALYZE_HILIGHT(256)),0);
  }
 
-void plotdoor(struct node *n,int hilight)
+void plotmarker(struct point *p,int hilight) 
+ { makeview(0); in_plotmarker(0,p,hilight);
+   if(view.whichdisplay) { makeview(1); in_plotmarker(1,p,hilight); } }
+   
+/* hilight==0: normal
+   hilight>0: view.color[HILIGHTCOLORS+hilight-1]
+   hilight==-1: undraw (same as normal but unconditional)
+   hilight==256: black 
+   drawswitched==1: draw objects switched with this door
+   drawswitched==-1: undraw objects switched with this door
+   drawswitched==0: only draw the door */
+void in_plotdoor(int w,struct node *n,int hilight,int drawswitched,int xor)
  {
  struct door *d=n->d.d;
- struct pixel pix[4],ep;
- struct point *p[4];
+ struct pixel spix,epix;
  struct node *sdn;
- int j,visible=0;
- for(j=0;j<4;j++)
-  { 
-  calcpoint(p[j]=d->w->p[j]->d.p,&pix[j],&view.x0,0.5,0.5,view.dist);
-  if(pointvisible(p[j],&pix[j].d) || hilight!=0) visible=1;
-  }
- calcpoint(&d->p,&ep,&view.x0,0.5,0.5,view.dist);
- if(pointvisible(&d->p,&ep.d) || hilight!=0) visible=1;
- if(visible)
-  {
-  plotline(&pix[0],&ep,p[0],&d->p,PCOLORNUM((pix[0].d+ep.d)/2,d,hilight),0);
-  plotline(&pix[1],&ep,p[1],&d->p,PCOLORNUM((pix[1].d+ep.d)/2,d,hilight),0);
-  plotline(&pix[2],&ep,p[2],&d->p,PCOLORNUM((pix[2].d+ep.d)/2,d,hilight),0);
-  plotline(&pix[3],&ep,p[3],&d->p,PCOLORNUM((pix[3].d+ep.d)/2,d,hilight),0);
-  }
- if(d->sd!=NULL && (hilight==1 || hilight==-1))
-  {
-  if(getsdoortype(d->sd->d.sd)==sdtype_door)
-   for(j=0;j<d->sd->d.sd->num;j++) 
-    plotdoor(d->sd->d.sd->target[j],(hilight==1) ? 4 : -2);
-  else
-   for(j=0;j<d->sd->d.sd->num;j++) 
-    plotcube(d->sd->d.sd->target[j],(hilight==1) ? 2 : -2);
-  }
- if(hilight==1 || hilight==-1)
-  for(sdn=d->sdoors.head;sdn->next!=NULL;sdn=sdn->next)
-   plotdoor(sdn->d.n,(hilight==1) ? 4 : -2); 
- }
-  
-void plotwall(struct cube *c,int wno,int hilight)
- {
- struct pixel pix[4];
- struct point *p[4];
  int j;
  for(j=0;j<4;j++)
-  { 
-  calcpoint(p[j]=c->p[wallpts[wno][j]]->d.p,&pix[j],&view.x0,0.5,0.5,
-   view.dist);
-  pointvisible(p[j],&pix[j].d);
+  if(getscreencoords(w,&d->p,d->w->p[j]->d.p,&spix,&epix,hilight==0))
+   plotline(spix.x,spix.y,epix.x,epix.y,
+    PCOLORNUM((epix.d+spix.d)/2.0,d,hilight),xor);
+ if(d->sd!=NULL && drawswitched)
+  {
+  switch(getsdoortype(d->sd->d.sd))
+   {
+   case sdtype_door:
+    for(j=0;j<d->sd->d.sd->num;j++) 
+     in_plotdoor(w,d->sd->d.sd->target[j],drawswitched>0 ? 2 : -1,0,0);
+    break;
+   case sdtype_cube:
+    for(j=0;j<d->sd->d.sd->num;j++) 
+     in_plotcube(w,d->sd->d.sd->target[j],drawswitched>0 ? 2 : -1,0,0,1,0);
+    break;
+   case sdtype_side:
+    for(j=0;j<d->sd->d.sd->num;j++) 
+     in_plotwall(w,d->sd->d.sd->target[j]->d.c,d->sd->d.sd->walls[j],
+      drawswitched>0 ? 1 : -1,0);
+    break;    
+   default: break;
+   }
   }
+ if(drawswitched)
+  for(sdn=d->sdoors.head;sdn->next!=NULL;sdn=sdn->next)
+   in_plotdoor(w,sdn->d.n,drawswitched>0 ? 4 : -1,0,0); 
+ }
+
+void plotdoor(struct node *n,int hilight,int xor) 
+ { makeview(0); in_plotdoor(0,n,hilight,0,xor);
+   if(view.whichdisplay) { makeview(1); in_plotdoor(1,n,hilight,0,xor); } }
+
+/* hilight==0: normal
+   hilight>0: view.color[HILIGHTCOLORS+hilight-1] 
+   hilight==-1: undraw (same as normal but draw unconditional)
+   hilight==-2: undraw with mincolor==1
+   hilight==256: black
+   withdoors==1: draw doors that switch this cube
+   withdoors==-1: undraw doors ....
+   withdoors==0: only draw cube */
+void in_plotcube(int w,struct node *n,int hilight,int withdoors,int xor,
+ int withalllines,int withlockedsides)
+ {
+ struct pixel spix,epix;
+ int j,next;
+ struct cube *c=n->d.c;
+ struct node *sdn;
+ if(withdoors)
+  for(sdn=c->sdoors.head;sdn->next!=NULL;sdn=sdn->next)
+   in_plotdoor(w,sdn->d.n,withdoors>0 ? 4 : -1,0,0);
+ next=0xffff;
+ if(!withalllines)
+  {
+  for(j=0;j<6;j++)
+   if(c->nc[j]!=NULL && c->nc[j]->no<n->no)
+    switch(j)
+     {
+     case 0 : next&=~(0x4|0x40|0x400|0x800); break;
+     case 1 : next&=~(0x8|0x80|0x100|0x800); break;
+     case 2 : next&=~(0x1|0x10|0x100|0x200); break;
+     case 3 : next&=~(0x2|0x20|0x200|0x400); break;
+     case 4 : next&=~(0x10|0x20|0x40|0x80); break;
+     case 5 : next&=~(0x1|0x2|0x4|0x8); break;
+     }  
+  if(next==0) return;
+  }
+ for(j=0;j<4;j++) 
+  {
+  if((next&(1<<j))!=0 && 
+   getscreencoords(w,c->p[j]->d.p,c->p[j==3?0:j+1]->d.p,&spix,&epix,
+    hilight==0))
+   plotline(spix.x,spix.y,epix.x,epix.y,
+    WCOLORNUM((spix.d+epix.d)/2,hilight),xor);
+  if((next&(0x10<<j))!=0 &&
+   getscreencoords(w,c->p[j+4]->d.p,c->p[j==3?4:j+5]->d.p,&spix,&epix,
+    hilight==0))
+   plotline(spix.x,spix.y,epix.x,epix.y,
+    WCOLORNUM((spix.d+epix.d)/2,hilight),xor);
+  if((next&(0x100<<j))!=0 &&
+   getscreencoords(w,c->p[j]->d.p,c->p[j+4]->d.p,&spix,&epix,hilight==0))
+   plotline(spix.x,spix.y,epix.x,epix.y,
+    WCOLORNUM((spix.d+epix.d)/2,hilight),xor);
+  }
+ if(withlockedsides)
+  for(j=0;j<6;j++)
+   if(n->d.c->walls[j]!=NULL && n->d.c->walls[j]->locked)
+    in_plottagwall(w,n->d.c,j,n->d.c->tagged_walls[j]!=NULL ? 4 : 2,xor); 
+ }
+
+void plotcube(struct node *n,int hilight,int xor,int withalllines,
+ int withlockedsides) 
+ { makeview(0); in_plotcube(0,n,hilight,0,xor,withalllines,withlockedsides);
+   if(view.whichdisplay)
+    { makeview(1); in_plotcube(1,n,hilight,0,xor,withalllines,
+       withlockedsides); } }
+
+/* highlight==0: normal thingcolor 
+   highlight>0: view.color[HILIGHTCOLORS+highlight-1]
+   highlight<0: same as highlight>0 with xor.
+   highlight==256: black
+   highlight==257: normal thingcolor or black if too far away */ 
+void in_plotthing(int w,struct thing *t,int hilight)
+ {
+ int i;
+ struct pixel spix,epix;
+ if(t->tagged && hilight==0) hilight=3;
+ for(i=1;i<(t->type1==7 ? 9 : 11);i+=2) 
+  if(getscreencoords(w,&t->p[i],&t->p[i+1],&spix,&epix,
+   hilight==0||hilight==257))
+   plotline(spix.x,spix.y,epix.x,epix.y,
+    TCOLORNUM(t->color,ANALYZE_HILIGHT(hilight)),hilight<0);
+  else if(hilight==257)
+   if(getscreencoords(w,&t->p[i],&t->p[i+1],&spix,&epix,0))
+    plotline(spix.x,spix.y,epix.x,epix.y,
+      TCOLORNUM(t->color,ANALYZE_HILIGHT(256)),0);
+ }
+
+void plotthing(struct thing *t,int hilight)
+ { makeview(0); in_plotthing(0,t,hilight);
+   if(view.whichdisplay) { makeview(1); in_plotthing(1,t,hilight); } }
+
+/* hilight==0: normal
+   hilight>0: view.color[HILIGHTCOLORS+hilight-1] 
+   hilight==2: current side
+   hilight==-1: undraw (same as normal but draw unconditional)
+   hilight==256: black */
+void in_plotwall(int w,struct cube *c,int wno,int hilight,int xor)
+ {
+ struct pixel spix,epix;
+ int j;
  for(j=0;j<4;j++)
-  plotline(&pix[j],&pix[j==3?0:j+1],p[j],p[j==3?0:j+1],
-   WCOLORNUM(0.0,((j==0||j==3) && hilight==2) ? (j==0) ? 4 : 5 : hilight),0);
+  if(getscreencoords(w,c->p[wallpts[wno][j]]->d.p,
+   c->p[wallpts[wno][(j+1)&3]]->d.p,&spix,&epix,hilight==0))
+   plotline(spix.x,spix.y,epix.x,epix.y,
+    WCOLORNUM((spix.d+epix.d)/2.0,
+    ((j==0||j==3) && hilight==2) ? (j==0 ? 4 : 5) : hilight),xor);
  }  
    
-void plotpnt(struct cube *c,int wn,int pn,int hilight)
+void plotwall(struct cube *c,int wno,int hilight,int xor)
+ { makeview(0); in_plotwall(0,c,wno,hilight,xor);
+   if(view.whichdisplay) { makeview(1); in_plotwall(1,c,wno,hilight,xor); } }
+
+void in_plottagwall(int w,struct cube *c,int wallno,int hilight,int xor)
  {
- struct point p;
- int i;
+ struct point p1,p2,p3,p4,p5,p6,d1,d2,d3;
+ int i,j;
  for(i=0;i<3;i++)
-  p.x[i]=c->p[wallpts[wn][(pn+1)&0x3]]->d.p->x[i]+
-   c->p[wallpts[wn][(pn-1)&0x3]]->d.p->x[i]-
-   2*c->p[wallpts[wn][pn]]->d.p->x[i];
- normalize(&p);
+  {
+  p1.x[i]=d1.x[i]=0;
+  for(j=0;j<4;j++)
+   {
+   p1.x[i]+=c->p[wallpts[wallno][j]]->d.p->x[i];
+   d1.x[i]+=c->p[wallpts[oppwalls[wallno]][j]]->d.p->x[i]-
+    c->p[wallpts[wallno][j]]->d.p->x[i];
+   }
+  p1.x[i]/=4.0;
+  d2.x[i]=c->p[wallpts[wallno][0]]->d.p->x[i]-
+   c->p[wallpts[wallno][1]]->d.p->x[i]+
+   c->p[wallpts[wallno][3]]->d.p->x[i]-
+   c->p[wallpts[wallno][2]]->d.p->x[i];
+  d3.x[i]=c->p[wallpts[wallno][0]]->d.p->x[i]-
+   c->p[wallpts[wallno][3]]->d.p->x[i]+
+   c->p[wallpts[wallno][1]]->d.p->x[i]-
+   c->p[wallpts[wallno][2]]->d.p->x[i];
+  }
+ normalize(&d1); normalize(&d2); normalize(&d3);
  for(i=0;i<3;i++)
-  p.x[i]=c->p[wallpts[wn][pn]]->d.p->x[i]+p.x[i]*view.tsize*3;
- plot3dline(c->p[wallpts[wn][pn]]->d.p,&p,WHITE,hilight,0);
+  {
+  p2.x[i]=p1.x[i]+d2.x[i]*view.tsize;
+  p3.x[i]=p1.x[i]-d2.x[i]*view.tsize;
+  p4.x[i]=p1.x[i]+d3.x[i]*view.tsize;
+  p5.x[i]=p1.x[i]-d3.x[i]*view.tsize;
+  p6.x[i]=p1.x[i]+d1.x[i]*view.tsize;
+  }
+ in_plot3dline(w,&p1,&p6,WCOLORNUM(0.0,hilight),xor,0);
+ in_plot3dline(w,&p2,&p3,WCOLORNUM(0.0,hilight),xor,0);
+ in_plot3dline(w,&p4,&p5,WCOLORNUM(0.0,hilight),xor,0);
+ }
+ 
+void plottagwall(struct cube *c,int wno,int hilight,int xor)
+ { makeview(0); in_plottagwall(0,c,wno,hilight,xor);
+   if(view.whichdisplay)
+    { makeview(1); in_plottagwall(1,c,wno,hilight,xor); } }
+
+struct node *oldpcurrcube,*oldpcurrthing,*oldpcurrdoor;
+int oldcurrwall,oldcurrpnt;
+
+void in_plotcurrent(int w)
+ {
+ if(!view.pcurrcube || !l) return;
+ if(oldpcurrdoor) in_plotdoor(w,oldpcurrdoor,-1,-1,0);
+ if(oldpcurrthing) in_plotthing(w,oldpcurrthing->d.t,257);
+ if(oldpcurrcube) 
+  { if(oldcurrpnt>=0) in_plotmarker(w,
+     oldpcurrcube->d.c->p[wallpts[oldcurrwall][oldcurrpnt]]->d.p,-2);
+    in_plotcube(w,oldpcurrcube,oldpcurrcube->d.c->tagged ? 3 : -1,1,0,1,1); }
+ else
+  if(oldcurrpnt>=0) 
+   in_plotmarker(w,
+    view.pcurrcube->d.c->p[wallpts[oldcurrwall][oldcurrpnt]]->d.p,-2);
+ if(view.pcurrthing) in_plotthing(w,view.pcurrthing->d.t,1);
+ if(view.pcurrdoor) in_plotdoor(w,view.pcurrdoor,1,1,0);
+ in_plotcube(w,view.pcurrcube,1,1,0,1,1);
+ in_plotwall(w,view.pcurrcube->d.c,view.currwall,2,0);
+ in_plotmarker(w,
+  view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p,-2);
  }
 
 void plotcurrent(void)
- {
- struct node *n;
- if(!view.pcurrcube) return;
- if(view.oldpcurrdoor)
-  plotdoor(view.oldpcurrdoor,-1);
- if(view.oldpcurrthing)
-  plotthing(view.oldpcurrthing,-1);
- if(view.oldpcurrpnt)
-  plotmarker(view.oldpcurrpnt,2,1);
- if(view.oldpcurrcube) 
-  plotcube(view.oldpcurrcube,-1); 
- /* now plot tagged things */
- switch(view.currmode)
-  {
-  case tt_cube: for(n=view.tagged[tt_cube].head;n->next!=NULL;n=n->next)
-   plotcube(n->d.n,3); break;
-  case tt_wall: for(n=view.tagged[tt_wall].head;n->next!=NULL;n=n->next)
-   plotwall(n->d.n->d.c,n->no%6,3); break;
-  case tt_pnt: for(n=view.tagged[tt_pnt].head;n->next!=NULL;n=n->next)
-   plotpnt(n->d.n->d.c,(n->no%24)/4,(n->no%24)%4,3);
-   break;
-  case tt_thing: for(n=view.tagged[tt_thing].head;n->next!=NULL;n=n->next)
-   plotthing(n->d.n,3); break;
-  case tt_door:  for(n=view.tagged[tt_door].head;n->next!=NULL;n=n->next)
-   plotdoor(n->d.n,3); break;
-  default: fprintf(errf,"Unknown tagtype: %d\n",view.currmode); 
-  }
- if(view.pcurrthing)
-  {
-  plotthing(view.pcurrthing,1); 
-  view.oldpcurrthing=view.pcurrthing;
-  }
- if(view.pcurrdoor)
-  {
-  view.oldpcurrdoor=view.pcurrdoor;
-  plotdoor(view.pcurrdoor,1); 
-  }
- if(view.pcurrcube==NULL) return;
- plotcube(view.pcurrcube,1);
- plotwall(view.pcurrcube->d.c,view.currwall,2);
- if(view.exitcube)
-  plotwall(view.exitcube->d.c,view.exitwall,1);
- view.oldpcurrpnt=
-  view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p;
- plotmarker(view.oldpcurrpnt,2,1);
+ { 
+ w_refreshstart(l->w); makeview(0); in_plotcurrent(0);
+ if(view.whichdisplay) { makeview(1); in_plotcurrent(1); }
+ copytoscreen();
+ w_refreshend(l->w);
+ oldpcurrthing=view.pcurrthing; oldpcurrdoor=view.pcurrdoor;
+ oldpcurrcube=view.pcurrcube; 
+ oldcurrpnt=view.currpnt; oldcurrwall=view.currwall;
  }
  
-void plotcube(struct node *n,int hilight)
+/* plot coordinate axis at view.e0 */
+void in_plotcoordaxis(int lr)
  {
- struct pixel pix[8];
- unsigned short int j,visible=0,next;
- struct cube *c=n->d.c;
- struct point p;
- struct node *sdn;
- if(hilight==1 || hilight==-1)
-  for(sdn=c->sdoors.head;sdn->next!=NULL;sdn=sdn->next)
-   plotdoor(sdn->d.n,(hilight==1) ? 4 : -2);
- for(j=0;j<8;j++)
-  { 
-  if(pointinsight(c->p[j]->d.p,&p,&pix[j].d) || hilight!=0)
-   if(pointinangle(&p,&pix[j].d))
-    visible|=(0x1<<j);
-  }
- next=0xffff;
- if(!visible) return;
- if(hilight==0)
-  {
-  for(j=0;j<6;j++)
-   if(c->nc[j]!=NULL && hilight==0)
-    {
-    if(((view.drawwhat&DW_ALLLINES)==0) || c->nc[j]->no<n->no)
-     switch(j)
-      {
-      case 0 : next&=~(0x4|0x40|0x400|0x800); break;
-      case 1 : next&=~(0x8|0x80|0x100|0x800); break;
-      case 2 : next&=~(0x1|0x10|0x100|0x200); break;
-      case 3 : next&=~(0x2|0x20|0x200|0x400); break;
-      case 4 : next&=~(0x10|0x20|0x40|0x80); break;
-      case 5 : next&=~(0x1|0x2|0x4|0x8); break;
-      }  
-    }
-  if(next==0) return;
-  }
- for(j=0;j<8;j++)
-  calcpoint(c->p[j]->d.p,&pix[j],&view.x0,0.5,0.5,view.dist);  
- if(visible&0x0f)
-  for(j=0;j<4;j++)
-   if((next&(1<<j))!=0)
-    plotline(&pix[j],&pix[j==3?0:(j+1)],c->p[j]->d.p,c->p[j==3?0:j+1]->d.p,
-     WCOLORNUM((pix[j].d+pix[j==3?0:(j+1)].d)/2,hilight),0);
- if(visible&0xf0)
-  for(j=4;j<8;j++)
-   if((next&(1<<j))!=0)
-    plotline(&pix[j],&pix[j==7?4:(j+1)],c->p[j]->d.p,c->p[j==7?4:j+1]->d.p,
-     WCOLORNUM((pix[j].d+pix[j==7?4:(j+1)].d)/2,hilight),0);
- for(j=0;j<4;j++)
-  if((next&(0x100<<j))!=0)
-   plotline(&pix[j],&pix[j+4],c->p[j]->d.p,c->p[j+4]->d.p,
-    WCOLORNUM((pix[j].d+pix[j+4].d)/2,hilight),0);
- }
-
-void plotthing(struct node *n,int hilight)
- {
- double dist;
+ struct point sp,ep;
  int i;
- struct thing *t=n->d.t;
- struct point p;
- if(hilight==0 && (!pointinsight(&t->p[0],&p,&dist)||!pointinangle(&p,&dist)))
-  return;
- for(i=0;i<10;i+=2) /* items are only 4 lines but who cares */
-  plot3dline(&t->p[i+1],&t->p[i+2],t->color,hilight,0);
+ float size;
+ if((view.coord_axis&(1<<l->whichdisplay))==0 || view.distcenter==0.0) return;
+ size = 5.0*view.tsize*view.distcenter/6553600.0;
+ sp=view.e0;
+ if(!l->whichdisplay) for(i=0;i<3;i++) sp.x[i]+=er[2].x[i]*view.distcenter;
+ ep=sp; ep.x[0]+=size; in_plot3dline(lr,&sp,&ep,TCOLORNUM(0,1),0,0);
+ ep=sp; ep.x[1]+=size; in_plot3dline(lr,&sp,&ep,TCOLORNUM(0,2),0,0);
+ ep=sp; ep.x[2]+=size; in_plot3dline(lr,&sp,&ep,TCOLORNUM(0,3),0,0);
+ }
+ 
+/* highlight==0: normal thingcolor or black if too far away
+   highlight>0: view.color[HILIGHTCOLORS+highlight-1]
+   highlight<0: same as highlight>0 with xor.
+   highlight==256: black */ 
+void in_plotpnt(int w,struct cube *c,int wn,int pn,int hilight)
+ {
+ struct point p1,p2;
+ int i;
+ for(i=0;i<3;i++)
+  {
+  p1.x[i]=c->p[wallpts[wn][(pn+1)&0x3]]->d.p->x[i]-
+   c->p[wallpts[wn][pn]]->d.p->x[i];
+  p2.x[i]=c->p[wallpts[wn][(pn-1)&0x3]]->d.p->x[i]-
+   c->p[wallpts[wn][pn]]->d.p->x[i];
+  }
+ normalize(&p1); normalize(&p2);
+ for(i=0;i<3;i++) p1.x[i]+=p2.x[i];
+ normalize(&p1);
+ for(i=0;i<3;i++)
+  p1.x[i]=c->p[wallpts[wn][pn]]->d.p->x[i]+p1.x[i]*view.tsize*3;
+ in_plot3dline(w,c->p[wallpts[wn][pn]]->d.p,&p1,
+  WCOLORNUM(0.0,ANALYZE_HILIGHT(hilight)),hilight<0,hilight==0);
  }
 
+/* plot current level l. */
+void plotlevel(void)
+ {
+ struct node *n;
+ int lr,i;
+ if(l==NULL || l->w==NULL || l->w->shrunk) return;
+ w_refreshstart(l->w); 
+ /* kill oldpicture */
+ clearlevelwin();
+ oldpcurrcube=oldpcurrthing=oldpcurrdoor=NULL;
+ oldcurrwall=oldcurrpnt=-1;
+ for(lr=0;lr<=l->whichdisplay;lr++)
+  {
+  makeview(lr);
+  if(lr)
+   { plotline(w_xwininsize(l->w)/2,0,w_xwininsize(l->w)/2,
+      w_ywininsize(l->w)-1,view.color[WHITE],0);
+     plotline(w_xwininsize(l->w)/2-1,0,w_xwininsize(l->w)/2-1,
+      w_ywininsize(l->w)-1,view.color[WHITE],0); }
+  if(!l->whichdisplay && view.render>1 && l->inside)
+   render_level(lr,l->rendercube!=NULL ? l->rendercube :
+    view.pcurrcube,view.drawwhat,0); 
+  else
+   {
+   if((view.drawwhat&DW_CUBES)!=0 || (!l->inside && view.render>1))
+    if((view.drawwhat&DW_ALLLINES)==0)
+     for(n=l->lines.head;n->next!=NULL;n=n->next)
+      in_plot3dline(lr,n->d.l->s->d.p,n->d.l->e->d.p,n->d.l->color,0,1);
+    else
+     { for(n=l->cubes.head;n->next!=NULL;n=n->next)
+        if(n->d.c->tagged==NULL) in_plotcube(lr,n,0,0,0,0,1); }
+   if(view.render>=1) render_level(lr,view.pcurrcube,0,view.render==1?1:0);
+   if((view.drawwhat&DW_THINGS)!=0)
+    for(n=l->things.head;n->next!=NULL;n=n->next)
+     if(!n->d.t->tagged) in_plotthing(lr,n->d.t,0);
+   if((view.drawwhat&DW_DOORS)!=0)
+    for(n=l->doors.head;n->next!=NULL;n=n->next)
+     if(!n->d.d->tagged) in_plotdoor(lr,n,0,0,0);
+   if(l->exitcube)
+    { in_plottagwall(lr,l->exitcube->d.c,l->exitwall,2,0);
+      in_plotmarker(lr,l->exitcube->d.c->p[wallpts[l->exitwall][0]]->d.p,2); }
+   if(l->cur_corr) in_plotcorridor(lr,l->cur_corr);
+   }   
+  /* now plot tagged things */
+  for(n=l->cubes.head;n->next!=NULL;n=n->next)
+   if(n->d.c->tagged!=NULL) in_plotcube(lr,n,3,0,0,1,1); 
+  if((view.drawwhat&DW_XTAGGED)!=0)
+   for(n=l->tagged[tt_cube].head;n->next!=NULL;n=n->next)
+    for(i=0;i<6;i++) in_plottagwall(lr,n->d.n->d.c,i,3,0);
+  for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
+   in_plottagwall(lr,n->d.n->d.c,n->no%6,n->d.n->d.c->walls[n->no%6]!=NULL && 
+    n->d.n->d.c->walls[n->no%6]->locked ? 4 : 3,0);
+  for(n=l->tagged[tt_pnt].head;n->next!=NULL;n=n->next)
+   in_plotmarker(lr,n->d.n->d.p,3);
+  for(n=l->tagged[tt_thing].head;n->next!=NULL;n=n->next)
+   in_plotthing(lr,n->d.n->d.t,0);
+  for(n=l->tagged[tt_door].head;n->next!=NULL;n=n->next)
+   in_plotdoor(lr,n->d.n,3,0,0);
+  for(n=l->tagged_corners.head;n->next!=NULL;n=n->next)
+   in_plotpnt(lr,n->d.n->d.c,(n->no%24)/4,(n->no%24)%4,3);
+  in_plotcurrent(lr);  
+  in_plotcoordaxis(lr);
+  }
+ copytoscreen();
+ oldpcurrthing=view.pcurrthing; oldpcurrdoor=view.pcurrdoor;
+ oldpcurrcube=view.pcurrcube; 
+ oldcurrpnt=view.currpnt; oldcurrwall=view.currwall;
+ w_refreshend(l->w);
+ }
+ 
+/* #include "plotfill.c" */
+
+void addline(struct node *c,int s,int e)
+ {
+ struct node *sp,*ep;
+ struct line *li;
+ struct node *n;
+ if(c->d.c->p[s]<c->d.c->p[e]) { sp=c->d.c->p[s]; ep=c->d.c->p[e]; }
+ else { sp=c->d.c->p[e]; ep=c->d.c->p[s]; }
+ for(n=l->lines.tail;n->prev!=NULL;n=n->prev)
+  if(n->d.l->s->no==sp->no && n->d.l->e->no==ep->no) return; 
+ checkmem(li=malloc(sizeof(struct line)));
+ addnode(&l->lines,c->no,li); 
+ li->s=sp; li->e=ep; li->color=-1;
+ }
+ 
+void initdescmap(void)
+ {
+ struct node *n;
+ int i,j,k,a,cn1,wno;
+ struct wall *w;
+ struct point t,c0,c1,c2;
+ float x1,x2;
+ if(!l) { printmsg(TXT_NOLEVEL); return; }
+ freelist(&l->lines,free);
+ for(n=l->cubes.head;n->next!=NULL;n=n->next)
+  for(i=0;i<6;i++)
+   if(n->d.c->walls[i]!=NULL)
+    {
+    for(j=0;j<4;j++)
+     {
+/*     cn1=findnbcubetoline(i,j,(j+1)&3); */
+     cn1=nb_sides[i][j];
+     if(n->d.c->nc[cn1]==NULL) addline(n,wallpts[i][j],wallpts[i][(j+1)&3]);
+     else
+      { /* ok, wall is there, neighbour cube is also there. Let's have a
+          look if there's a wall in the neighbourcube */
+      wno=findnbwalltoline(n,n->d.c->nc[cn1]->d.c,i,j,(j+1)&3);
+      if(wno==-1 || (w=n->d.c->nc[cn1]->d.c->walls[wno])==NULL)
+       { addline(n,wallpts[i][j],wallpts[i][(j+1)&3]); continue; }
+      /* Calculate angle between walls */
+      for(k=0;k<3;k++)
+       { 
+       c1.x[k]=0; c2.x[k]=0;
+       for(a=0;a<4;a++)
+        {
+	c1.x[k]+=n->d.c->walls[i]->p[a]->d.p->x[k]; 
+        c2.x[k]+=w->p[a]->d.p->x[k]; 
+	}
+       c0.x[k]=(n->d.c->walls[i]->p[j]->d.p->x[k]+
+        n->d.c->walls[i]->p[(j+1)&3]->d.p->x[k])/2.0;
+       t.x[k]=(n->d.c->walls[i]->p[j]->d.p->x[k]-
+        n->d.c->walls[i]->p[(j+1)&3]->d.p->x[k]);
+       c1.x[k]=c1.x[k]/4.0-c0.x[k]; c2.x[k]=c2.x[k]/4.0-c0.x[k];
+       }
+      /* make both vectors orthgonal to c0 */
+      normalize(&t); x1=SCALAR(&c1,&t); x2=SCALAR(&c2,&t);
+      for(k=0;k<3;k++)
+       {
+       c1.x[k]-=x1*t.x[k];
+       c2.x[k]-=x2*t.x[k];
+       }
+      normalize(&c1); normalize(&c2);
+      if(SCALAR(&c1,&c2)>view.mapangle) 
+       addline(n,wallpts[i][j],wallpts[i][(j+1)&3]);
+      }
+     }
+    }
+ }
+
+void in_plotcorridor(int lr,struct corridor *c)
+ {
+ struct node *n;
+ struct point *plot_pnts=NULL,p[11];
+ int i,num_pts=0;
+ float size;
+ for(n=c->cubes.head;n->next!=NULL;n=n->next) in_plotcube(lr,n,2,0,1,0,0);
+ for(n=c->tracking.head;n->next!=NULL;n=n->next)
+  if(n->d.ct->fixed<=0)
+   { 
+   size=n->d.ct->l_c2/10;
+   if(size<view.tsize*2) size=view.tsize*2;
+   else if(size>view.tsize*20) size=view.tsize*20;
+   switch(c->b_stdform->d.ls->selected)
+    {
+    case 0: make_o_marker(&n->d.ct->x,n->d.ct->coords,size,p); 
+     num_pts=10; plot_pnts=&p[1]; break;
+    case 1: case 2: makemarker(&n->d.ct->x,plot_pnts=p); num_pts=8; break;
+    }
+   for(i=0;i<num_pts;i+=2) 
+    in_plot3dline(lr,&plot_pnts[i],&plot_pnts[i+1],
+     view.color[HILIGHTCOLORS+4],1,0);
+   }
+ }
+ 
+void plotcorridor(struct corridor *c)
+ { 
+ my_assert(c!=NULL);
+ w_refreshstart(c->ld->w); makeview(0); in_plotcorridor(0,c);
+ if(view.whichdisplay) { makeview(1); in_plotcorridor(1,c); }
+ copytoscreen();
+ w_refreshend(c->ld->w);
+ }
+
+
+void dec_frames(int ec)
+ {
+ struct ws_bitmap *scr;
+ clock_t t1;
+ int n1,n2;
+ ws_erasemouse();
+ checkmem(scr=ws_savebitmap(NULL,0,0,init.xres,init.yres));
+ ws_drawfilledbox(0,0,init.xres,init.yres,0,0);
+ makeview(-1); 
+ render_level(0,view.pcurrcube,0,0); 
+ psys_copytoscreen(0,0,0,0,init.xres,init.yres); 
+ n1=n2=0; t1=clock();
+ while((clock()-t1)<CLOCKS_PER_SEC*10) 
+  { render_level(0,view.pcurrcube,0,0); n1++; }
+/* t1=clock();
+ while((clock()-t1)<CLOCKS_PER_SEC*10) 
+  { render_level(0,view.pcurrcube,0,0); 
+    sys_copytoscreen(0,0,drawbuffer); n2++; } */
+ ws_restorebitmap(scr);
+ ws_displaymouse();
+ waitmsg("Frames per sec: without BitBlt %g with BitBlt %g\n",
+  n1/10.0,n2/10.0);
+ }
+
+#define SAFE_DIST 131072.0
+
+/* this function must be in this file because it uses the polygonstructure.
+ cur_e0 = the offset of the left window in the moment and when the function
+  returns this is the offset where the window is after we were moved.
+ wanted_e0 = the offset of the left window where it should be after this
+  routine were executed (if we are not hitting a wall) */
+void move_render(struct point *wanted_e0,struct point *cur_e0)
+ {
+ struct point m,a,b,c,d,n,o,new_m;
+ int i,w,j,pp,min_w=-1;
+ float det,r,s,t,min_t=1.0;
+ struct polygon *p;
+ if(!l->inside || !l->rendercube) 
+  { *cur_e0=*wanted_e0;
+    if(view.render>1) init_rendercube(); 
+    return; }
+ for(i=0;i<3;i++) m.x[i]=wanted_e0->x[i]-cur_e0->x[i];
+ new_m=m;
+ for(w=0;w<6;w++) for(j=0;j<2;j++) 
+ if((p=l->rendercube->d.c->polygons[w*2+j])!=NULL)
+  {
+  for(i=0;i<3;i++) 
+   { a.x[i]=p->pnts[0].p_3d->x[i];
+     c.x[i]=p->pnts[1].p_3d->x[i]-a.x[i];
+     d.x[i]=cur_e0->x[i]-a.x[i]; }
+  VECTOR(&o,&d,&m);
+  for(pp=2;pp<p->num_pnts;pp++)
+   {
+   b=c; for(i=0;i<3;i++) c.x[i]=p->pnts[pp].p_3d->x[i]-a.x[i];
+   VECTOR(&n,&b,&c); det=-SCALAR(&n,&m);
+   if(det>0.0)
+    {
+    det=1.0/det; r=SCALAR(&o,&c)*det;
+    if(r<0.0 || r>1.0) continue;
+    s=-SCALAR(&o,&b)*det;
+    if(s<0.0 || r+s>1.0) continue;
+    t=SCALAR(&n,&d)*det;
+    /* if this a wall, we should be a bit larger than zero radius */
+    if(t<0.0) continue;
+    if(l->rendercube->d.c->nc[w]==NULL && view.render==3)
+     if(fabs(t)<LENGTH(&n)*det*SAFE_DIST) t=-LENGTH(&n)*det*SAFE_DIST;
+     else t-=LENGTH(&n)*det*SAFE_DIST; 
+    if(t>min_t) continue;
+    /* this is the next collision */
+    min_t=t; min_w=w;
+    if(l->rendercube->d.c->nc[w]==NULL)
+     /* in the next step we only want to use the part of m*(1.0-t) parallel
+        to the wall */
+     for(i=0;i<3;i++) 
+      new_m.x[i]=(m.x[i]-n.x[i]*SCALAR(&n,&m)/SCALAR(&n,&n))*(1.0-t); 
+    }
+   }
+  }
+ if(min_w>=0) /* there is a collision with a wall during this step */
+  {
+  if(l->rendercube->d.c->nc[min_w]!=NULL) /* a neighbour */
+   { for(i=0;i<3;i++) cur_e0->x[i]+=m.x[i]*min_t;
+     l->rendercube=l->rendercube->d.c->nc[min_w];
+     move_render(wanted_e0,cur_e0); /*start again from the new cube*/}
+  else if(view.render==3) /* no neighbour and we should stop */
+   { 
+   for(i=0;i<3;i++) 
+    { cur_e0->x[i]+=m.x[i]*min_t;
+      wanted_e0->x[i]=cur_e0->x[i]+new_m.x[i]; }
+   /* and start again from the new position in the same cube in a new 
+      direction. But only if the remaining step is large enough to be
+      no rubbish */  
+   if(LENGTH(&new_m)>65536.0) move_render(wanted_e0,cur_e0);
+   } /* no neighbour and we can move as free as a (klingon war)bird */
+  else { *cur_e0=*wanted_e0; l->inside=0; }
+  }
+ else /* no collision with a wall, just finish the step */
+  *cur_e0=*wanted_e0;
+ }
+
+void move_user(struct point *new_e0)
+ {
+ struct point cur_pos,new_pos;
+ int i;
+ if(view.render<2) { view.e0=*new_e0; return; }
+ for(i=0;i<3;i++) if(new_e0->x[i]!=view.e0.x[i]) break;
+ if(i==3) return;
+ new_pos=*new_e0; cur_pos=view.e0;
+ move_render(&new_pos,&cur_pos); view.e0=cur_pos;
+ }

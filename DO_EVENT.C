@@ -1,5 +1,5 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
-    do_event.c - all functions, the user can directly call with a event.
+    do_event.c - all functions, that the user can directly call with a event.
     Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
@@ -17,1062 +17,410 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
     
 #include "structs.h"
-#include "system.h"
+#include "userio.h"
 #include "tools.h"
-#include "insert.h"
-#include "macros.h"
 #include "readlvl.h"
-#include "change.h"
-#include "event.h"
+#include "plot.h"
 #include "grfx.h"
-#include "do_event.h"
-#include "do_bmap.h"
+#include "options.h"
+#include "tag.h"
+#include "do_tag.h"
+#include "do_mod.h"
+#include "do_light.h"
+#include "do_ins.h"
+#include "do_stat.h"
+#include "do_move.h"
+#include "config.h"
 #include "credits.h"
+#include "do_event.h"
 
-extern struct sys_event *se;
+void dec_fastquit(int ec) { savestatus(0); closegrph(); exit(1); }
 
-/* returns zero if aborted, one if file is created, two if file is
-   overwritten */
-int openwritefile(char *simplefn,char **realfn,char *path,char *ext,FILE **f)
+void dec_quit(int evcode)
  {
- char buffer[strlen(path)+strlen(simplefn)+5],x,*pos;
- int ret=1,i;
- strcpy(buffer,path);  strcat(buffer,simplefn);
- if((pos=strrchr(buffer,'.'))!=NULL) *pos=0;
- for(i=0;i<3;i++) buffer[strlen(buffer)+i+1]=ext[i];
- buffer[strlen(buffer)+4]=0; buffer[strlen(buffer)]='.';
- if((*realfn=malloc(strlen(buffer)-strlen(path)+1))==NULL)
-  { printmsg("No mem for filename."); return 0; }
- strcpy(*realfn,&buffer[strlen(path)]);
- for(i=0;i<strlen(*realfn);i++) *(*realfn+i)=toupper(*(*realfn+i));
- if((*f=fopen(buffer,"rb"))!=NULL)
+ struct node *n;
+ savestatus(0);
+ for(n=view.levels.head;n->next!=NULL;n=n->next)
+  if(!closelevel(n->d.lev,1)) return;
+ closegrph(); exit(1); 
+ }
+
+void dec_loadlevel(int ec)
+ {
+ char *fname;
+ struct leveldata *ld;
+ if((fname=getfilename(&init.levelpath,NULL,init.alllevelexts,
+  TXT_LOADLEVEL,0))!=NULL)
   {
-  fclose(*f);
-  printmsg("Overwrite file %s?",buffer);
-  if(!readkeyb("Overwrite? (y/n)","%c",&x) || x!='y') 
-   { printmsg("Not saved."); return 0; }
-  ret=2;
+  if((ld=openlevel(fname))==NULL) waitmsg(TXT_CANTOPENLVL,fname);
+  else printmsg(TXT_LEVELREAD,ld->fullname,ld->filename);
+  FREE(fname);
   }
- if((*f=fopen(buffer,"wb"))==NULL)
-  { printmsg("Can't open file %s",buffer); return 0; }
- return ret;
  }
  
-int dec_dummy(enum evcodes e) {return 1;} /* just a dummy that I
- don't have to change all values in levedit.ini if I kill one
- event. */
-
-struct infoitem *searchinfo(struct infoitem *i,int num,int x,int y)
+void dec_savelevel(int ec)
  {
- struct infoitem *i2,*neari;
- unsigned long no;
- int k;
- for(i2=i;i2-i<num;i2++)
-  {
-  if(i2->row==y && ((i2->column<=x && i2->column+i2->menulength>=x)
-   || i2->menulength==0) && i2->class==1)
-   return i2;
-  for(k=0;k<i2->numchildren;k++)
-   {
-   if(getno(i2,&no))
-    if(i2->itemchildren[k]==no)
-     if((neari=searchinfo(i2->children[k],i2->numechildren[k],x,y))!=NULL) 
-      return neari;
-   }
-  }
- return NULL;
- }
-
-int dec_changevalue(enum evcodes e)
- {
- struct infoitem *i;
- /* first find the clicked info item */
- if(se->flags==se_f_keypress) i=view.curmenuitem; 
+ char *fname;
+ if(!l) { printmsg(TXT_NOLEVEL); return; }
+ if(l->filename!=NULL && init.d_ver>=d2_10_sw &&
+  strchr(l->filename,'.')-l->filename==strlen(l->filename)-4)
+  strcpy(&l->filename[strlen(l->filename)-3],"RL2");
+ if(ec!=ec_fastsave || l->filename==NULL)
+  fname=getfilename(&init.levelpath,l->filename,init.levelext,
+   TXT_SAVELEVEL,1);
  else
-  i=searchinfo(view.info[view.showwhat],view.infonum[view.showwhat],
-   (se->x-view.bounds[ecw_uppermenu][0])/view.fontwidth,
-   (se->y-view.bounds[ecw_uppermenu][1])/view.fontheight-1+view.menuoffset);
- if(i==NULL) return 1;
- return changevalue(i,e==ec_changevalue||e==ec_chval_without_tag,
-  e==ec_changevalue||e==ec_chval_without_se); 
- }
- 
-int dec_changedata(enum evcodes ec)
- { return changedata(); }
- 
-int dec_loadlevel(enum evcodes ec)
- {
- char buffer[view.smenuwidth+1],*fname;
- if(readkeyb("Default filename: %s. Load file:","%[^\n]",buffer,l->lname))
+  {checkmem(fname=MALLOC(strlen(l->filename)+1)); strcpy(fname,l->filename);}
+ if(fname!=NULL)
   {
-  fname=strlen(buffer)!=0 ? buffer : l->lname;
-  if(readlvl(fname,l)) printmsg("OK");
-  else initdata();
-  free(fname);  fflush(errf);
+  if(!savelevel(fname,l,1,1,init.d_ver)) waitmsg(TXT_CANTSAVELVL,l->fullname);
+  else 
+   { printmsg(TXT_LEVELSAVED,l->fullname,fname);
+     checkmem(l->filename=REALLOC(l->filename,strlen(fname)+1));
+     strcpy(l->filename,fname); }
+  FREE(fname);
   }
- return 6;
+ plotlevel(); drawopts();
  }
 
-int dec_savelevel(enum evcodes ec)
- {
- char buffer[view.smenuwidth+1],*fname;
- FILE *f;
- if(readkeyb("Default filename: %s. Save file:","%[^\n]",buffer,l->lname))
-  {
-  fname=(strlen(buffer)!=0) ? buffer : l->lname;
-#ifdef SHAREWARE
-  if(openwritefile(fname,&l->lname,view.levelpath,"sdl",&f))
-#else
-  if(openwritefile(fname,&l->lname,view.levelpath,"rdl",&f))
-#endif
-   {
-   if(savelvl(f)) printmsg("Level saved");
-   fclose(f);
-   }
-  free(fname);
-  }
- return 6; 
- }
- 
-int dec_clickthing(enum evcodes ec)
+void dec_playlevel(int ec) 
  { 
- if(findthing(se->x,se->y))
-  { view.currmode=tt_thing; view.showwhat=in_thing;
-    view.menuoffset=0; view.curmenuitem=findmenuitem(NULL,1);
-    printmsg("Clicked thing %d",view.pcurrthing->no); return 6; }
- else return 1; 
+ if(l==NULL) { printmsg(TXT_NOLEVEL); return; }
+ if(ec==ec_savetodescdir)
+  { if(savestatus(1) && saveplaymsn(1)) 
+     printmsg(TXT_LEVELSAVED,l->fullname,"Devil Play Level"); }
+ else if(savestatus(1) && saveplaymsn(0)) { closegrph(); exit(0); }
+ }
+
+void dec_credits(int ec) 
+ {
+ char *txt=NULL;
+ int length=0,i=-1,l;
+ while(cred_txt[++i]!=NULL) 
+  {
+  l=ws_charstrlen(w_xmaxwinsize()-20);
+  if(strlen(cred_txt[i])<l) l=strlen(cred_txt[i]);
+  length+=l+1;
+  checkmem(txt=REALLOC(txt,length));
+  strncpy(txt+length-l-1,cred_txt[i],l);
+  txt[length-1]='\n';
+  }
+ txt[length-1]=0;
+ waitmsg(txt); 
+ FREE(txt);
+ }
+
+#define NUM_KBSTATSDESCR 6 
+struct kbstatdescr { int kbstat; const char *txt; }
+ txt_kbstat[NUM_KBSTATSDESCR] =
+ { { 1,"Shift" }, { 2,"Alt" }, { 4,"Ctrl" }, { 8,"Numlock" },
+   { 0x10,"Capslock" }, { 0x20,"Scrollock" } };
+#define NUM_KEYDESCR 53
+struct keydescr { int key; const char *txt; } txt_key[NUM_KEYDESCR] =
+ { { 27,"Esc" }, { 9,"Tab" }, { 271,"Tab" },
+   { 315,"F1" }, { 316,"F2" }, { 317,"F3" }, { 318,"F4" }, { 319,"F5" },
+   { 320,"F6" }, { 321,"F7" }, { 322,"F8" }, { 323,"F9" }, { 324,"F10" },   
+   { 595,"Del" }, { 8,"BS" }, { 594,"Ins" }, { 32,"Space" }, { 335,"N3" },
+   { 328,"N2" }, { 337,"N1" }, { 331,"N4" }, { 336,"N8" }, { 333,"N6" },
+   /* F-keys with shift: */
+   { 340,"F1" }, { 341,"F2" }, { 342,"F3" }, { 343,"F4" }, { 344,"F5" }, 
+   { 345,"F6" }, { 346,"F7" }, { 347,"F8" }, { 348,"F9" }, { 349,"F10" },
+   { 391,"F11" }, { 392,"F12" },
+   /* F-keys with ctrl: */
+   { 350,"F1" }, { 351,"F2" }, { 352,"F3" }, { 353,"F4" }, { 354,"F5" },
+   { 355,"F6" }, { 356,"F7" }, { 357,"F8" }, { 358,"F9" }, { 359,"F10" },
+   { 393,"F11" }, { 394,"F12"}, 
+   { 587,"<-" }, { 589,"->" }, { 584,"/\\" }, { 592,"\\/" } };
+
+#define COLUMNSIZE 200   
+int cur_help_pos,num_codes,num_columns;
+
+void help_refresh(struct w_window *w)
+ {
+ char buffer[100];
+ int i,j,o_y,x,y;
+ o_y=(int)w->data; 
+ ws_drawfilledbox(w_xwinincoord(w,0),w_ywinincoord(w,o_y),
+  w_xwininsize(w),w_ywininsize(w)-o_y,view.color[BLACK],0);
+ for(i=cur_help_pos,x=0,y=0;i<(view.num_keycodes>num_codes+cur_help_pos ? 
+  num_codes+cur_help_pos : view.num_keycodes);i++,y++)
+  {
+  if(y==num_codes/num_columns) { y=0; x++; }
+  buffer[0]=0;
+  for(j=0;j<NUM_KBSTATSDESCR;j++)
+   if(view.ec_keycodes[i].kbstat&txt_kbstat[j].kbstat)
+    sprintf(&buffer[strlen(buffer)],"%s+",txt_kbstat[j].txt);
+  if(view.ec_keycodes[i].key>=256 || !isgraph(view.ec_keycodes[i].key))
+   { for(j=0;j<NUM_KEYDESCR;j++)
+      if(view.ec_keycodes[i].key==txt_key[j].key)
+       { sprintf(&buffer[strlen(buffer)],"%s: ",txt_key[j].txt); break; }
+     if(j>=NUM_KEYDESCR) sprintf(&buffer[strlen(buffer)],"???: "); }
+  else sprintf(&buffer[strlen(buffer)],"%c: ",view.ec_keycodes[i].key);
+  sprintf(&buffer[strlen(buffer)],"%s",view.txt_keycode[i]);  
+  ws_drawtext(w_xwinincoord(w,x*COLUMNSIZE+5),
+   w_ywinincoord(w,o_y+y*w_titlebarheight()),
+   COLUMNSIZE-10,buffer,view.color[WHITE],-1);
+  }
  }
  
-int dec_clickdoor(enum evcodes ec)
- {
- if(finddoor(se->x,se->y))
-  { view.currmode=tt_door; view.showwhat=in_door;  view.menuoffset=0;
-    view.curmenuitem=findmenuitem(NULL,1); 
-    printmsg("Clicked door %d",view.pcurrdoor->no); return 6; }
- else return 1;
- }
+void help_bup(struct w_button *b)
+ { if(cur_help_pos>0) { cur_help_pos--; help_refresh(b->w); } } 
+void help_btop(struct w_button *b) { cur_help_pos=0; help_refresh(b->w); }
+void help_bdown(struct w_button *b)
+ { if(cur_help_pos<view.num_keycodes-num_codes)
+    { cur_help_pos++; help_refresh(b->w); } }
+void help_bbottom(struct w_button *b)
+ { cur_help_pos=view.num_keycodes-num_codes; 
+   if(cur_help_pos<0) cur_help_pos=0; help_refresh(b->w); }
    
-int dec_clickcube(enum evcodes ec)
+void dec_help(int ec)
+ {
+ struct w_window helpwin,*w;
+ struct w_b_press up,down,ok;
+ struct w_button *b_up,*b_down,*b_ok;
+ struct w_keycode exitkey;
+ num_columns=(w_xmaxwinsize()-20)/COLUMNSIZE;
+ if((w_ymaxwinsize()-20)/w_titlebarheight()*num_columns>view.num_keycodes)
+  num_columns=view.num_keycodes*w_titlebarheight()/(w_ymaxwinsize()-20)+1;
+ helpwin.xpos=helpwin.ypos=helpwin.maxxsize=helpwin.maxysize=-1;
+ helpwin.xsize=20+num_columns*COLUMNSIZE;
+ helpwin.ysize=w_ymaxwinsize(); helpwin.shrunk=0; 
+ helpwin.title=NULL;
+ helpwin.hotkey=0; helpwin.buttons=wb_none; helpwin.refresh=wr_normal;
+ helpwin.refresh_routine=NULL;
+ helpwin.close_routine=NULL; helpwin.click_routine=NULL;
+ checkmem(w=w_openwindow(&helpwin));
+ up.delay=10; up.repeat=5; up.l_pressed_routine=up.l_routine=help_bup;
+ up.r_pressed_routine=NULL; up.r_routine=help_btop;
+ down=up; down.l_pressed_routine=down.l_routine=help_bdown;
+ down.r_routine=help_bbottom;
+ ok=up; ok.l_pressed_routine=ok.r_routine=ok.l_routine=NULL;
+ checkmem(b_up=w_addstdbutton(w,w_b_press,0,0,50,-1,TXT_UP,&up,1));
+ checkmem(b_down=w_addstdbutton(w,w_b_press,50,0,50,-1,TXT_DOWN,&down,1));
+ checkmem(b_ok=w_addstdbutton(w,w_b_press,100,0,w_xwininsize(w)-100,-1,
+  TXT_OK,&ok,1));
+ w->data=(void *)(b_ok->ysize+2); cur_help_pos=0;
+ num_codes=(w_ymaxwinsize()-b_ok->ysize-2)/w_titlebarheight()*num_columns;
+ help_refresh(w);
+ exitkey.kbstat=0; exitkey.key=27; exitkey.event=-1; exitkey.flags=w_kf_exit;
+ w_handleuser(1,&b_ok,1,&w,1,&exitkey,NULL);
+ w_closewindow(w);
+ }
+
+void dec_cubemode(int ec)
+ { shrinkopt_win(tt_cube); changecurrmode(tt_cube); }
+void dec_sidemode(int ec)
+ { shrinkopt_win(tt_wall); changecurrmode(tt_wall); }
+void dec_pntmode(int ec) 
+ { shrinkopt_win(tt_pnt); changecurrmode(tt_pnt); }
+void dec_thingmode(int ec) 
+ { shrinkopt_win(tt_thing); changecurrmode(tt_thing); }
+void dec_wallmode(int ec)
+ { shrinkopt_win(tt_door); changecurrmode(tt_door); }
+
+void dec_movemode(int ec)
+ { changemovemode(view.movemode<mt_number-1 ? view.movemode+1 : 0); }
+
+void dec_gridonoff(int ec) { view.gridonoff^=1; drawopt(in_internal); }
+
+void dec_tagall(int ec) 
+ { if(l==NULL) { printmsg(TXT_NOLEVEL); return; }
+   tagallobjects(view.currmode); }
+void dec_tag(int ec)
+ { if(l==NULL) { printmsg(TXT_NOLEVEL); return; }
+   tagobject(view.currmode); }
+
+void dec_movefactor(int ec) 
+ {
+ float f=ec==ec_incrmovefactor ? view.movescala : 1/view.movescala;
+ switch(view.movemode)
+  {
+  case mt_you: view.movefactor*=f; break;
+  case mt_obj: view.pmovefactor*=f; break;
+  default: my_assert(0);
+  }
+ drawopt(in_internal);
+ }
+ 
+void dec_rotangle(int ec) 
+ {
+ float f=ec==ec_incrrotangle ? view.rotscala : 1/view.rotscala;
+ switch(view.movemode)
+  {
+  case mt_you: view.rotangle*=f; break;
+  case mt_obj: view.protangle*=f; break;
+  default: my_assert(0);
+  }
+ drawopt(in_internal);
+ }
+ 
+void dec_visibility(int ec)
+ { view.maxvisibility*=ec==ec_incrvisibility ? view.visscala : 
+    1/view.visscala; drawopt(in_internal); plotlevel(); }
+    
+void dec_changefullname(int ec)
  { 
- if(findcube(se->x,se->y)) 
-  {
-  if(view.currmode!=tt_cube && view.currmode!=tt_wall &&
-   view.currmode!=tt_pnt)
-   { view.currmode=tt_cube; view.showwhat=in_cube; view.menuoffset=0;
-     view.curmenuitem=findmenuitem(NULL,1); }
-  printmsg("Clicked cube %d",view.pcurrcube->no); 
-  return 6; 
-  }
- else return 1;
- }
- 
-int dec_togdraw(enum evcodes ec)
- { 
- switch(ec)
-  {
-  case ec_togdrawgrid: view.drawwhat^=DW_GRID; break;
-  case ec_togdrawthings: view.drawwhat^=DW_THINGS; break;
-  case ec_togdrawlines: view.drawwhat^=DW_ALLLINES; break;
-  case ec_togdrawcubes: view.drawwhat^=DW_CUBES; break;
-  case ec_togdrawdoors: view.drawwhat^=DW_DOORS; break;
-  case ec_togdrawdata: view.drawwhat^=DW_DATA; break;
-  default: fprintf(errf,"Unknown eventcode toggle draw: %d\n",ec); my_exit();
-  }
- view.drawwhat&=~DW_BITMAP; 
- printmsg("Now drawing [%s%s%s%s%s%s]",
-  view.drawwhat&DW_CUBES ? "cubes " : "",
-  view.drawwhat&DW_DOORS ? "doors " : "",
-  view.drawwhat&DW_THINGS ? "things " : "",
-  view.drawwhat&DW_ALLLINES ? "lines " : "",
-  view.drawwhat&DW_DATA ? "data " : "",
-  view.drawwhat&DW_GRID ? "grid " : "");
- return 6; 
- }
- 
-int dec_menu(enum evcodes ec)
- {
- switch(ec)
-  {
-  case ec_menucubes: view.currmode=tt_cube; view.showwhat=in_cube; break;
-  case ec_menuthings: view.currmode=tt_thing; view.showwhat=in_thing; break;
-  case ec_menudoors: view.currmode=tt_door; view.showwhat=in_door; break;
-  case ec_menuwalls: view.currmode=tt_wall; view.showwhat=in_wall; break;
-  case ec_menucorners: view.currmode=tt_pnt; view.showwhat=in_corner; break;
-  case ec_menuint: view.showwhat=in_internal; break;
-  default: printmsg("Unknown event code in dec_menu.\n"); break;
-  }
- view.menuoffset=0; view.curmenuitem=findmenuitem(NULL,1); 
- return 6;
- }
- 
-int dec_changething(enum evcodes ec)
- {
- unsigned long no;
- if(!view.pcurrthing) return 1;
- view.oldpcurrthing=view.pcurrthing;
- switch(ec)
-  {
-  case ec_prevthing: view.pcurrthing=view.pcurrthing->prev;
-   if(view.pcurrthing->prev==NULL)
-    view.pcurrthing=l->things.tail;
-   break;
-  case ec_nextthing: view.pcurrthing=view.pcurrthing->next;
-   if(view.pcurrthing->next==NULL)
-    view.pcurrthing=l->things.head;
-   break;
-  case ec_choosething: 
-   if(!readkeyb("Thing no.:","%li",&no)) return 1;
-   if((view.pcurrthing=findnode(&l->things,no))==NULL)
-    view.pcurrthing=view.oldpcurrthing; 
-   break;
-  default: fprintf(errf,"Unknown event code in dec_changething.\n"); break;
-  }
- view.curmenuitem=findmenuitem(NULL,1);
- return 4;
- }
- 
-int dec_changedoor(enum evcodes ec)
- {
- unsigned long no;
- if(view.pcurrdoor==NULL)
-  { view.pcurrdoor=(l->doors.size>0) ? l->doors.head : NULL;
-    return 4;}
- view.oldpcurrdoor=view.pcurrdoor;
- switch(ec)
-  {
-  case ec_prevdoor: view.pcurrdoor=view.pcurrdoor->prev;
-   if(view.pcurrdoor->prev==NULL)
-    view.pcurrdoor=l->doors.tail;
-   break;
-  case ec_nextdoor: view.pcurrdoor=view.pcurrdoor->next;
-   if(view.pcurrdoor->next==NULL)
-    view.pcurrdoor=l->doors.head;
-   break;
-  case ec_choosedoor: 
-   if(!readkeyb("Door no.:","%li",&no)) return 1;
-   if((view.pcurrdoor=findnode(&l->doors,no))==NULL)
-    view.pcurrdoor=view.oldpcurrdoor;
-   break;
-  default: fprintf(errf,"Unknown event code in dec_changedoor.\n"); break;
-  }
- view.curmenuitem=findmenuitem(NULL,1); return 4;
- }
- 
-int dec_changecube(enum evcodes ec)
- {
- unsigned long no;
- int ret=4;
- if(!view.pcurrcube) return 1;
- view.oldpcurrcube=view.pcurrcube;
- switch(ec)
-  {
-  case ec_nextcube: view.pcurrcube = view.pcurrcube->next; 
-   if(view.pcurrcube->next==NULL)
-    view.pcurrcube=l->cubes.head;
-   break;
-  case ec_prevcube: view.pcurrcube = view.pcurrcube->prev;
-   if(view.pcurrcube->prev==NULL)
-    view.pcurrcube=l->cubes.tail;
-   break;
-  case ec_choosecube: 
-   if(!readkeyb("Cube no.:","%li",&no)) return 1;
-   if((view.pcurrcube=findnode(&l->cubes,no))==NULL)
-    view.pcurrcube=view.oldpcurrcube;
-   break;
-  case ec_gowall:
-   if(view.pcurrdoor)
-    { view.pcurrcube=view.pcurrdoor->d.d->c; 
-      view.currwall=view.pcurrdoor->d.d->w->no; ret=6; }
-   break;
-  case ec_sidecube:
-   if(!view.pcurrcube->d.c->nc[view.currwall])
-    { printmsg("No neighbour cube."); return 1; }
-   view.pcurrcube=view.pcurrcube->d.c->nc[view.currwall]; ret=6;
-   break;
-  default: fprintf(errf,"Unknown event code in changecube.\n"); break;
-  } 
- view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
- view.oldpcurrpnt=
-  view.oldpcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p;
- view.curmenuitem=findmenuitem(NULL,1);
- return ret;
- }
- 
-int dec_changewall(enum evcodes ec)
- {
- if(!view.pcurrcube) return 1;
- switch(ec)
-  {
-  case ec_nextwall: view.currwall++; break;
-  case ec_prevwall: view.currwall--; break;
-  default: fprintf(errf,"Unknown event code in changewall.\n"); break;
-  }
- if(view.currwall<0) view.currwall=6-(-view.currwall)%6;
- else view.currwall%=6;
- view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall]; 
- view.curmenuitem=findmenuitem(NULL,1);
- return 4; 
- }
-
-int dec_beam(enum evcodes ec)
- {
- int i,j;
- struct point p;
- switch(view.currmode)
-  {
-  case tt_pnt: if(!view.pcurrcube) return 1;
-   beam(view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p);
-  case tt_cube: if(!view.pcurrcube) return 1;
-   for(j=0;j<3;j++)
-    { p.x[j]=0;
-    for(i=0;i<8;i++) p.x[j]+=view.pcurrcube->d.c->p[i]->d.p->x[j]/8; }
-   break;
-  case tt_wall: if(!view.pcurrcube) return 1;
-   for(j=0;j<3;j++)
-    { p.x[j]=0;
-    for(i=0;i<4;i++) 
-     p.x[j]+=
-      view.pcurrcube->d.c->p[wallpts[view.currwall][i]]->d.p->x[j]/4;
-    }
-   break;
-  case tt_thing: if(!view.pcurrthing) return 1;
-   p=view.pcurrthing->d.t->p[0]; break;
-  case tt_door: if(!view.pcurrdoor) return 1;
-   p=view.pcurrdoor->d.d->p; break;
-  default: return 1;
-  }
- beam(&p); return 6;
- }
- 
-int dec_fastquit(enum evcodes ec)
- { return 0; }
- 
-int dec_changevisibility(enum evcodes ec)
- { view.maxvisibility *= (ec==ec_incvisibility) ? view.visscala : 
-    1/view.visscala; return 6; }
-
-int dec_changemovefactor(enum evcodes ec)
- { 
- if(ec==ec_incmovefactor || ec==ec_decmovefactor)
-  view.movefactor *= (ec==ec_incmovefactor) ? view.movescala : 
-   1/view.movescala; 
- else
-  view.pmovefactor *= (ec==ec_incpmovefactor) ? view.movescala : 
-   1/view.movescala; 
- return 4;
- }
- 
-int dec_changezoom(enum evcodes ec)
- { view.dist *= (ec==ec_inczoom) ? 1/view.distscala : view.distscala;
-   if(view.dist>1) view.dist=1.0; /* don't know why this won't work */
-   return 6; }
-
-int dec_move(enum evcodes ec)
- {
- int x,i;
- struct point *p;
- switch(ec)
-  {
-  case ec_moveforward: p=&view.e[2]; x=1; break;
-  case ec_movebackward: p=&view.e[2]; x=-1; break;
-  case ec_moveright: p=&view.e[0]; x=1; break;
-  case ec_moveleft: p=&view.e[0]; x=-1; break;
-  case ec_moveup: p=&view.e[1]; x=1; break;
-  case ec_movedown: p=&view.e[1]; x=-1; break;
-  default: fprintf(errf,"Unknown event code in move.\n"); return 1; break;
-  }
- for(i=0;i<3;i++)
-  view.e0.x[i]+=x*view.movefactor*p->x[i];
- return 2;
- }
- 
-int dec_turn(enum evcodes ec)
- {
- int a0,a1,a2;
- double x;
- switch(ec)
-  {
-  case ec_bankleft: a0=0;a1=1;a2=2;x=view.rotangle; break;
-  case ec_bankright: a0=0;a1=1;a2=2;x=-view.rotangle; break;
-  case ec_turnleft: a0=2;a1=0;a2=1;x=-view.rotangle; break;
-  case ec_turnright: a0=2;a1=0;a2=1;x=view.rotangle; break;
-  case ec_turnup: a0=1;a1=2;a2=0;x=view.rotangle; break;
-  case ec_turndown: a0=1;a1=2;a2=0;x=-view.rotangle; break;
-  default: fprintf(errf,"Unknown event code in turn.\n"); return 1; break;
-  }
- turn(view.e,view.e,a0,a1,a2,x);
- return 2;
- }
-
-int dec_changerotangle(enum evcodes ec)
- {
- if(ec==ec_incrotangle || ec==ec_decrotangle)
-  view.rotangle*=(ec==ec_incrotangle) ? view.rotscala : 1/view.rotscala;
- else
-  view.protangle*=(ec==ec_incprotangle) ? view.rotscala : 1/view.rotscala;
- return 4;
- }
-
-#include "do_move.c"
-
-int dec_pmove(enum evcodes ec)
- {
- /* move the current cube,wall,point,thing */
- if(view.currmode!=tt_cube && view.currmode!=tt_wall && 
-  view.currmode!=tt_pnt && view.currmode!=tt_thing)
-  { printmsg("You can't move in this mode."); return 1; }
- if(!view.pcurrcube) return 1;
- return pmove[view.currmode](&view.tagged[view.currmode],ec);
- }
- 
-int dec_pturn(enum evcodes ec)
- {
- if(!view.pcurrcube) return 1;
- switch(view.currmode)
-  {
-  case tt_thing: return pr_thing(&view.tagged[tt_thing],ec);
-  case tt_cube: return pr_cube(&view.tagged[tt_cube],ec);
-  default: return 1;
-  }
- }
- 
-int dec_changepnt(enum evcodes ec)
- {
- if(!view.pcurrcube) return 1;
- view.oldpcurrpnt=
-  view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p;
- view.currpnt+=(ec==ec_nextpnt) ? 1 : -1;
- view.currpnt&=0x3;
- return 4;
- }
- 
-int dec_fitbitmap(enum evcodes ec)
- { if(!view.pcurrwall) return 1;
-   return initbitmapedit(view.pcurrwall); }
- 
-int dec_tagall(enum evcodes ec)
- {
- struct list *cl;
- struct node *n,*cn;
- int i,j;
- if(view.tagged[view.currmode].size==0)
-  {
-  switch(view.currmode)
-   {
-   case tt_cube: cl=&l->cubes; break;
-   case tt_wall:
-    freelist(&view.tagged[tt_wall],NULL);
-    for(cn=l->cubes.head;cn->next!=NULL;cn=cn->next)
-     for(i=0;i<6;i++)
-      if(cn->d.c->walls[i]!=NULL)
-       addnode(&view.tagged[tt_wall],cn->no*6+i,cn);
-    return 6;
-   case tt_pnt: 
-    freelist(&view.tagged[tt_pnt],NULL);
-    for(cn=l->cubes.head;cn->next!=NULL;cn=cn->next)
-     for(i=0;i<6;i++)
-      if(cn->d.c->walls[i]!=NULL)
-       for(j=0;j<4;j++)
-        addnode(&view.tagged[tt_pnt],cn->no*24+i*4+j,cn);
-    return 6;
-   case tt_door: cl=&l->doors; break;
-   case tt_thing: cl=&l->things; break;
-   default: fprintf(errf,"Unknown tagall type: %d\n",view.currmode); return 1;
-   }
-  freelist(&view.tagged[view.currmode],NULL);
-   for(n=cl->head;n->next!=NULL;n=n->next)
-    addnode(&view.tagged[view.currmode],n->no,n);
-  }
- else
-  freelist(&view.tagged[view.currmode],NULL);
- return 6;
- }
- 
-int dec_tag(enum evcodes ec)
- {
- struct node *n;
- int no;
- void *d;
- if(!view.pcurrcube) return 1;
- switch(view.currmode)
-  {
-  case tt_cube: no=view.pcurrcube->no; d=view.pcurrcube; break;
-  case tt_wall: no=view.pcurrcube->no*6+view.currwall; 
-   d=view.pcurrcube; break;
-  case tt_pnt: no=view.pcurrcube->no*24+view.currwall*4+view.currpnt; 
-   d=view.pcurrcube; break;
-  case tt_thing: if(!view.pcurrthing) return 1;
-   no=view.pcurrthing->no; d=view.pcurrthing; break;
-  case tt_door: if(view.pcurrdoor==NULL) return 1;
-   no=view.pcurrdoor->no; d=view.pcurrdoor; break;
-  default: fprintf(errf,"Unknown tag type: %d\n",view.currmode); return 1;
-  }
- if((n=findnode(&view.tagged[view.currmode],no))==NULL)
-  addnode(&view.tagged[view.currmode],no,d);
- else
-  freenode(&view.tagged[view.currmode],n,NULL);
- return 6;
- }
- 
-int dec_tagspecial(enum evcodes ec)
- {
- int j,no,pn;
- struct node *n,*cn;
- if(!view.pcurrcube) return 1;
- switch(view.currmode)
-  {
-  case tt_pnt:
-   pn=wallpts[view.currwall][view.currpnt];
-   for(cn=view.pcurrcube->d.c->p[pn]->d.lp->c.head;cn->next!=NULL;cn=cn->next)
-    for(j=0;j<3;j++)
-     {
-     no=cn->d.n->no*24+wallno[cn->no][0][j]*4+wallno[cn->no][1][j];
-     if((n=findnode(&view.tagged[tt_pnt],no))==NULL)
-      addnode(&view.tagged[tt_pnt],no,cn->d.n);
-     else
-      freenode(&view.tagged[tt_pnt],n,NULL);
-     }
-   break;
-  default: printmsg("No special tag defined for this mode.");
-  }
- return 6;
- }
- 
-int dec_insert(enum evcodes ec)
- {
- struct node *n;
- double scaling;
- if(!view.pcurrcube) return 1;
- switch(view.currmode)
-  {
-  case tt_thing: 
-   view.oldpcurrthing=view.pcurrthing;
-   view.pcurrthing=insertthing(view.pcurrcube,7);
-   break;
-  case tt_door: 
-   view.oldpcurrdoor=view.pcurrdoor;
-   view.pcurrdoor=insertdoor(view.pcurrcube,view.currwall,4,0x18f);
-   break;
-  case tt_cube: 
-   if(view.pcurrmacro==NULL)
-    { printmsg("No macro loaded."); return 1; }
-   if(view.pcurrcube->no==view.exitcube->no && view.currwall==view.exitwall)
-    insertwall(view.exitcube,view.exitwall,0);
-   if(view.pcurrwall==NULL)
-    { printmsg("No current side."); return 1; }
-   if(view.pcurrcube->d.c->nc[view.currwall]!=NULL)
-    { printmsg("Already a cube tacked on."); return 1; }
-   freelist(&view.tagged[tt_cube],NULL);
-   freelist(&view.tagged[tt_door],NULL);
-   freelist(&view.tagged[tt_thing],NULL);
-   if(ec==ec_insscaled || ec==ec_insfastscaled)
-    { if(!readkeyb("Scaling (1=original size):","%lg",&scaling))
-       { printmsg("Aborted macro insert."); return 1; } }
-   else scaling=1;
-   if(scaling<0.1 || scaling>10)
-    { printmsg("Scaling only 0.1..10: %g",scaling); return 1; }
-   if(insertmacro(view.pcurrmacro,ec==ec_fastinsert || ec==ec_insfastscaled,
-    scaling))
-    printmsg("Macro inserted.");
-   for(n=l->cubes.head;n->no<view.pcurrmacro->cubes.size;n=n->next)
-    addnode(&view.tagged[tt_cube],n->no,n);
-   for(n=l->doors.head;n->no<view.pcurrmacro->doors.size;n=n->next)
-    addnode(&view.tagged[tt_door],n->no,n);
-   for(n=l->things.head;n->no<view.pcurrmacro->things.size;n=n->next)
-    addnode(&view.tagged[tt_thing],n->no,n);
-   break;
-  case tt_wall: 
-   if(view.pcurrcube->d.c->nc[view.currwall]==NULL)
-    { printmsg("There is no connection."); return 1; }
-   /* and cut the connection */
-   deleteconnect(view.pcurrcube,view.currwall);
-   break;
-  case tt_pnt: printmsg("You can't insert points."); break;
-  default: fprintf(errf,"Unknown mode %d in insert\n",view.currmode);
-   my_exit();
-  }
- return 6;
- }
- 
-int dec_delete(enum evcodes ec)
- {
- int k;
- struct node *n,*dn;
- if(!view.pcurrcube) return 1;
- view.oldpcurrcube=view.oldpcurrthing=view.oldpcurrdoor=NULL;
- switch(view.currmode)
-  {
-  case tt_cube: 
-   for(n=view.tagged[tt_cube].tail;n->prev!=NULL;n=n->prev)
-    {
-    for(k=0;k<6;k++) 
-     if(n->d.n->d.c->d[k]!=NULL) 
-      { printmsg("Cube %d has wall.",n->d.n->no); break; }
-    if(k==6) deletecube(n->d.n);
-    }
-   break;
-  case tt_thing:
-   for(n=view.tagged[tt_thing].tail;n->prev!=NULL;n=n->prev)
-    {
-    if(n->d.n->no==view.pcurrthing->no) 
-     { 
-     view.pcurrthing=view.pcurrthing->prev->prev ? view.pcurrthing->prev :
-      view.pcurrthing->next;
-     if(!view.pcurrthing->next)
-      { printmsg("Can't kill last thing (should be start)."); 
-        view.pcurrthing=view.pcurrthing->prev; break; } 
-     }
-    freenode(&l->things,n->d.n,free);
-    }
-   break;
-  case tt_door:
-   for(n=view.tagged[tt_door].tail;n->prev!=NULL;n=n->prev)
-    {
-    if(n->d.n->d.d->d!=NULL)
-     if((dn=findnode(&view.tagged[tt_door],n->d.n->d.d->d->no))!=NULL)
-      freenode(&view.tagged[tt_door],dn,NULL);
-    deletedoor(n->d.n);
-    }
-   break;
-  case tt_wall:
-   /* kill wall, therefore connect two cubes */
-   if(view.pcurrcube->d.c->nc[view.currwall]!=NULL)
-    { printmsg("Cube is already connected."); return 1; }
-   if(view.tagged[tt_wall].size!=1)
-    { printmsg("You must tag exactly one wall."); return 1; }
-   if(connect(view.pcurrcube,view.currwall,view.tagged[tt_wall].head->d.n,
-    view.tagged[tt_wall].head->no%6))
-    { freelist(&view.tagged[tt_wall],NULL); view.pcurrwall=NULL; }
-   break;
-  case tt_pnt: break;
-  default: fprintf(errf,"Unknown mode %d in delete\n",view.currmode);
-   my_exit();
-  }
- freelist(&view.tagged[view.currmode],NULL);
- return 6;
- }
- 
-int dec_deleteall(enum evcodes ec)
- {
- enum tagtypes oldmode=view.currmode;
- char x;
- printmsg("Really kill all tagged %d cubes, %d doors and %d things?",
-  view.tagged[tt_cube].size,view.tagged[tt_door].size,
-  view.tagged[tt_thing].size);
- if(!readkeyb("Really? (y/n)","%c",&x) || x!='y') return 1;
- view.currmode=tt_thing; dec_delete(ec);
- view.currmode=tt_door; dec_delete(ec);
- view.currmode=tt_cube; dec_delete(ec);
- view.currmode=oldmode;
- return 6;
- }
- 
-int dec_scroll(enum evcodes ec)
- {
- view.menuoffset+=(ec==ec_scrollup) ? 1 : -1;
- if(view.menuoffset<0) view.menuoffset=0;
- return 4;
- }
- 
-int dec_grid(enum evcodes ec)
- {
- switch(ec)
-  {
-  case ec_gridonoff: view.gridonoff^=1; 
-   printmsg("Grid is now %s",view.gridonoff ? "on." : "off."); break;
-  case ec_incrgridsize: view.gridlength*=view.gridscala; break;
-  case ec_decrgridsize: view.gridlength/=view.gridscala; break;
-  default: fprintf(errf,"Unknown eventcode in grid.\n"); exit(0);
-  }
- return 6;
- }
-
-int dec_makemacro(enum evcodes ec)
- {
- struct node *n;
- char x;
- if(!view.pcurrcube) return 1;
- if(view.pcurrcube->d.c->nc[view.currwall]!=NULL)
-  if(findnode(&view.tagged[tt_cube],
-   view.pcurrcube->d.c->nc[view.currwall]->no)!=NULL)
-   { printmsg("You can't use this wall as connection."); return 1; }
- if(view.pcurrmacro!=NULL && view.pcurrmacro->groupno==-1)
-  {
-  printmsg("Overwrite current macro %s?",view.pcurrmacro->shorttxt);
-  if(!readkeyb("Overwrite? (y/n)","%c",&x) || x!='y') 
-   { printmsg("Macro not built."); return 4; }
-  cleanmacro(view.pcurrmacro); view.pcurrmacro=NULL;
-  }
- if((n=findnode(&view.tagged[tt_cube],view.pcurrcube->no))!=NULL)
-  freenode(&view.tagged[tt_cube],n,NULL); /* currcube must be head */
- n=addheadnode(&view.tagged[tt_cube],view.pcurrcube->no,view.pcurrcube);
- view.pcurrmacro=buildmacro(&view.tagged[tt_cube],&view.tagged[tt_thing]);
- if(view.pcurrmacro!=NULL) printmsg("Macro made.");
- return 6;
- }
-
-int dec_savemacro(enum evcodes evcode)
- {
- int no,mgno,overwrite;
- char buffer[view.xsize/view.fontwidth+1],
-  shorttxt[view.xsize/view.fontwidth+1],*fname;
- FILE *f;
- struct node *n;
- struct list *mglist;
- struct macro *m;
- if(!view.pcurrmacro) { printmsg("No current macro."); return 1; }
- if(!readkeyb("Filename:","%[^\n]",buffer))  return 4;
- if(!readkeyb("Short text:","%[^\n]",shorttxt))
-  { printmsg("Macro saving aborted."); return 4; }
- if((overwrite=openwritefile(buffer,&fname,view.macropath,
-#ifdef SHAREWARE
-  "smc",&f))==0) return 4;
-#else
-  "rmc",&f))==0) return 4;
-#endif
- /* now kill an eventually overwritten macro */
- if(overwrite==2)
-  for(no=0;no<view.macros.size;no++)
-   {
-   mglist=&((struct macrogroup *)view.macros.data[no])->macros;
-   for(n=mglist->head;n->next!=NULL;n=n->next)
-    if(strcmp(n->d.m->filename,fname)==0 || n->d.m==view.pcurrmacro)
-     freenode(mglist,n,(n->d.m!=view.pcurrmacro) ? freemacro : NULL); 
-   }
- mgno=view.pcurrmacro->groupno;
- if(mgno!=-1 && strcmp(fname,view.pcurrmacro->filename)!=0)
-  /* saved current macro under another filename */
-  {
-  /* make an entry for the old filename: */
-  /* if you get memory problems here, the macro will vanish from the
-     list, but I hope you won't get such problems for this few bytes */
-  if((m=malloc(sizeof(struct macro)))==NULL)
-   { printmsg("No mem for macro."); return 4; }
-  m->longtxt=NULL; m->groupno=mgno;
-  initlist(&m->cubes); initlist(&m->things); initlist(&m->doors);
-  initlist(&m->pts); initlist(&m->sdoors); initlist(&m->producers);
-  if((m->filename=malloc(strlen(view.pcurrmacro->filename)+1))==NULL)
-   { printmsg("No mem for macro filename: %s\n",view.pcurrmacro->filename);
-     free(m); return 4; }
-  strcpy(m->filename,view.pcurrmacro->filename);
-  if((m->shorttxt=malloc(strlen(view.pcurrmacro->shorttxt)+1))==NULL)
-   { printmsg("No mem for macro short text: %s\n",view.pcurrmacro->shorttxt);
-     free(m->filename); free(m); return 4; }
-  strcpy(m->shorttxt,view.pcurrmacro->shorttxt);
-  mglist=&((struct macrogroup *)view.macros.data[m->groupno])->macros;
-  if(addnode(mglist,mglist->size,m)==NULL)
-   { printmsg("Can't insert new macro to list."); freemacro(m); return 4; }
-  }
- /* now modify macro filename+shorttxt */
- if(!readltype(NULL,view.macros.str,&view.macros,1,&mgno,NULL) || 
-  mgno>=view.macros.size) 
-  { printmsg("Macro not saved."); return 4; }
- /* get the description */
- free(view.pcurrmacro->longtxt); view.pcurrmacro->longtxt=NULL;
- if(!readdescription(&view.pcurrmacro->longtxt)) 
-  { printmsg("Macro saving aborted."); return 4; }
- free(view.pcurrmacro->shorttxt); view.pcurrmacro->shorttxt=NULL;
- if((view.pcurrmacro->shorttxt=malloc(strlen(shorttxt)+1))==NULL)
-  { printmsg("No mem for short text."); return 4; }
- strcpy(view.pcurrmacro->shorttxt,shorttxt);
- view.pcurrmacro->groupno=mgno;
- /* and add the current macro to the list */
- mglist=&((struct macrogroup *)view.macros.data[mgno])->macros;
- if(addnode(mglist,mglist->size,view.pcurrmacro)==NULL)
-  { printmsg("Can't add macro to list."); return 4; }
- free(view.pcurrmacro->filename);
- view.pcurrmacro->filename=fname;
- if(savemacro(f,view.pcurrmacro)) printmsg("Macro saved.");
- fclose(f);
- return 4;
- }
-
-void printmacrotxt(int no,int *data) 
- {
- struct list *l=(struct list *)data;
- struct node *n;
- char *txt="not found";
- for(n=l->head;n->next!=NULL && no>=0;n=n->next)
-  if(--no<0) { txt=n->d.m->shorttxt; break; }
- printmsg("%s",txt);
- }
- 
-int dec_choosemacro(enum evcodes ec)
- {
- int n1,n2;
- struct macrogroup *mg;
- struct objdata od;
- struct node *n;
- int ok=1;
- char x;
- if(view.pcurrmacro!=NULL && view.pcurrmacro->groupno==-1)
-  {
-  printmsg("Overwrite current not saved macro %s?",view.pcurrmacro->shorttxt);
-  if(!readkeyb("Overwrite? (y/n)","%c",&x) || x!='y') 
-   { printmsg("Macro not built."); return 4; }
-  cleanmacro(view.pcurrmacro); view.pcurrmacro=NULL;
-  }
- if(!readltype(NULL,view.macros.str,&view.macros,1,&n1,NULL)) return 4;
- mg=(struct macrogroup *)view.macros.data[n1];
- if((od.size=mg->macros.size)==0)
-  { printmsg("No macros in this group."); return 4; }
- if((od.data=calloc(sizeof(struct objtype *),od.size))==NULL)
-  { printmsg("No mem for building objdata."); return 4; }
- for(n=mg->macros.head,n2=0;n->next!=NULL;n=n->next,n2++)
-  {
-  if((od.data[n2]=malloc(sizeof(struct objtype)))==NULL)
-   { ok=0; printmsg("No mem for objtype."); break; }
-  od.data[n2]->no=n->no;
-  od.data[n2]->str=n->d.m->filename;
-  }
- if(ok)
-  if(readltype(printmacrotxt,mg->ot.str,&od,1,&n2,(int *)&mg->macros)) 
-   {
-   for(n=mg->macros.head;n->next!=NULL && n->no!=n2;n=n->next);
-   if(n->next!=NULL)
-    {
-    if(!readmacro(n->d.m)) return 4;
-    printmsg("Choosed macro %s",n->d.m->shorttxt);    
-    view.pcurrmacro=n->d.m;
-    }
-   else
-    printmsg("Can't find macro no. %d",n2);
-   }
- for(n1=0;n1<od.size;n1++) free(od.data[n1]);
- free(od.data);
- return 4;
- }
- 
-int dec_domenu(enum evcodes ec)
- {
- switch(ec)
-  {
-  case ec_mmoveup: 
-   view.curmenuitem=findmenuitem(view.curmenuitem,-1); break;
-  case ec_mmovedown:
-   view.curmenuitem=findmenuitem(view.curmenuitem,1); break;
-  default: printmsg("Unknown eventcode in domenu."); return 1;
-  }
- if(view.curmenuitem->row<view.menuoffset) 
-  view.menuoffset=view.curmenuitem->row;
- else if(view.curmenuitem->row>=view.menuoffset+view.smenuheight-4)
-  view.menuoffset=view.curmenuitem->row-view.smenuheight+5;
- return 4;
- }
-
-int dec_changenumlock(enum evcodes ec)
- { sys_numlockonoff(); return 1; }
- 
-int dec_setexit(enum evcodes ec)
- {
- if(!view.pcurrcube) return 1;
- if(view.pcurrcube->d.c->nc[view.currwall]!=NULL)
-  { printmsg("You must set the exit on a side without a neighbour."); 
-    return 1; }
- if(view.exitcube->d.c->walls[view.exitwall]==NULL)
-  insertwall(view.exitcube,view.exitwall,0);
- view.exitcube=view.pcurrcube;
- view.exitwall=view.currwall;
- return 6;
- }
- 
-int dec_credits(enum evcodes evcode)
- {
- int xoff=view.xoffset,yoff=view.yoffset,xsize=view.xsize,ysize=view.ysize;
- int i,maxrow=(ysize-view.fontheight-10)/(view.fontheight+1),
-  columnsize=(xsize-10)/view.fontwidth-1;
- char txt[columnsize+1];
- struct sys_event my_se;
- sys_drawbutton(xoff,yoff,xoff+xsize,yoff+ysize,NULL);
- txt[columnsize]=0; xoff+=5; yoff+=5;
- for(i=0;cred_txt[i]!=NULL && i<maxrow;i++) 
-  {
-  strncpy(txt,cred_txt[i],columnsize);
-  sys_menutext(xoff+(xsize-strlen(txt)*view.fontwidth)/2,
-   yoff+i*view.fontheight,txt,-1);
-  }
- sys_getevent(&my_se,1);
- return 6; 
- }
-
-int dec_helppage(enum evcodes evcode)
- {
- int row=0,column=0,nocolumns=2,
-  columnsize=(view.xsize-11)/nocolumns/view.fontwidth,
-  maxrow=(view.ysize-view.fontheight-11)/view.fontheight,start=0,ok=0,
-  sizeofpage=maxrow,maxstart,maxnum,i;
- struct eventcode *s;
- char txt[columnsize+1];
- char **help_txt;
- struct sys_event my_se;
- txt[columnsize]=0;
- /* Create help text */
- for(s=&view.events[0],maxnum=0;s-view.events<view.noevents;s++)
-  if(s->flags==se_f_keypress) maxnum++;
- if((maxstart=maxnum-sizeofpage)<0) maxstart=0;
- if((help_txt=malloc(sizeof(char *)*maxnum))==NULL)
-  { printmsg("Can't create help-text. No mem."); return 1; }
- for(s=&view.events[0],row=0;s-view.events<view.noevents;s++)
-  if(s->flags==se_f_keypress) help_txt[row++]=s->txt; 
- do
-  {
-  sys_drawbutton(view.xoffset,view.yoffset,view.xoffset+view.xsize,
-   view.yoffset+view.ysize,NULL);
-  for(i=start,row=0,column=0;i<maxnum;i++)
-   {
-   strncpy(txt,help_txt[i],columnsize);
-   sys_menutext(view.xoffset+5+column*columnsize*view.fontwidth,
-    view.yoffset+5+row*view.fontheight,txt,-1);
-   if(++row>=maxrow) { row=0; column++; }
-   if(column>=nocolumns) break;
-   } 
-  printmsg("Move with cursor keys/page up,down/home,end");
-  sys_getevent(&my_se,1);
-  if(my_se.flags==se_f_keypress)
-   {
-   switch(my_se.key)
-    {
-    case 0x247: start=0; break;
-    case 0x248: start--; break;
-    case 0x249: start-=sizeofpage; break;
-    case 0x24f: start=maxstart; break;
-    case 0x250: start++; break;
-    case 0x251: start+=sizeofpage;  break;
-    default: ok=1;
-    }
-   if(start<0) start=0;
-   else if(start>maxstart) start=maxstart; 
-   }
-  else ok=1;
-  }
- while(!ok);
- free(help_txt);
- printmsg("Have a nice day.");
- return 6;
- } 
-
-int dec_quit(enum evcodes evcode)
- {
- char x;
- if(!readkeyb("Quit? (y/n)","%c",&x) || x!='y') return 1; 
- return 0;
- }
-
-int dec_arrangebitmaps(enum evcodes evcode)
- {
- if(!view.pcurrwall) { printmsg("No current side."); return 1; }
- if(view.tagged[tt_wall].size==0) 
-  { printmsg("Tag some sides for this."); return 1; }
- arrangebitmaps(view.pcurrcube,view.pcurrwall,&view.tagged[tt_wall]);
- return 6;
- }
-
-struct point align_xaxis[3]={{{0.0,1.0,0.0}},{{0.0,0.0,1.0}},
- {{1.0,0.0,0.0}}};
-struct point align_yaxis[3]={{{-1.0,0.0,0.0}},{{0.0,0.0,1.0}},
- {{0.0,1.0,0.0}} };
-struct point align_zaxis[3]={{{1.0,0.0,0.0}},{{0.0,1.0,0.0}},
- {{0.0,0.0,1.0}} };
-struct point align_nxaxis[3]={{{0.0,1.0,0.0}},{{0.0,0.0,-1.0}},
- {{-1.0,0.0,0.0}} };
-struct point align_nyaxis[3]={{{-1.0,0.0,0.0}},{{0.0,0.0,-1.0}},
- {{0.0,-1.0,0.0}} };
-struct point align_nzaxis[3]={{{-1.0,0.0,0.0}},{{0.0,1.0,0.0}},
- {{0.0,0.0,-1.0}} };
-int dec_alignyourself(enum evcodes evcode)
- {
- int j;
- switch(evcode)
-  {
-  case ec_aligntox: for(j=0;j<3;j++) view.e[j]=align_xaxis[j]; break;
-  case ec_aligntonegx: for(j=0;j<3;j++) view.e[j]=align_nxaxis[j]; break;
-  case ec_aligntoy: for(j=0;j<3;j++) view.e[j]=align_yaxis[j]; break;
-  case ec_aligntonegy: for(j=0;j<3;j++) view.e[j]=align_nyaxis[j]; break;
-  case ec_aligntoz: for(j=0;j<3;j++) view.e[j]=align_zaxis[j]; break;
-  case ec_aligntonegz: for(j=0;j<3;j++) view.e[j]=align_nzaxis[j]; break;
-  default:
-   printmsg("Unknown eventcode %d in alignyourself.",evcode); return 1;
-  }
- return 6;
- }
- 
-int dec_connectcubes(enum evcodes evcode)
- { return connectcubes(&view.tagged[tt_cube]); }
- 
-int dec_growshrink(enum evcodes evcode)
- {
- int cubepnts[9],i;
- if(!view.pcurrcube) return 1;
- switch(view.currmode)
-  {
-  case tt_cube:
-   for(i=0;i<8;i++) cubepnts[i+1]=i;
-   cubepnts[0]=8; break;
-  case tt_wall: case tt_door:
-   for(i=0;i<4;i++) cubepnts[i+1]=wallpts[view.currwall][i];
-   cubepnts[0]=4; break;
-  default:
-   printmsg("No enlarge/shrink in this mode."); return 1;
-  }
- growshrink(view.pcurrcube->d.c->p,cubepnts,evcode==ec_grow); 
- return 6;
- }
- 
-int dec_calctextures(enum evcodes evcode)
- {
- struct node *n;
+ struct w_window w,*ow;
+ struct w_button *b;
+ struct w_b_string s;
  int i;
- switch(view.currmode)
-  {
-  case tt_cube:
-   for(n=view.tagged[tt_cube].head;n->next!=NULL;n=n->next)
-    for(i=0;i<8;i++)  newcubecorners(n->d.n->d.c,i);
-   break;
-  case tt_wall:
-   for(n=view.tagged[tt_wall].head;n->next!=NULL;n=n->next)
-    if(n->d.n->d.c->walls[n->no%6])
-     for(i=0;i<4;i++)
-      newwallpnt(n->d.n->d.c,n->d.n->d.c->walls[n->no%6],
-       n->d.n->d.c->walls[n->no%6]->p[i]->d.p);
-   break;
-  case tt_pnt:
-   for(n=view.tagged[tt_pnt].head;n->next!=NULL;n=n->next) newcorners(n->d.n);
-   break;
-  default: 
-   printmsg("No texture calculating in this mode."); 
-  }
- return 4;
+ char buffer[256];
+ struct leveldata *ld=l;
+ if(l==NULL) { printmsg(TXT_NOLEVEL); return; }
+ w.shrunk=0; w.title=TXT_LVLNAME; w.hotkey=0; w.help=NULL;
+ w.buttons=wb_drag; w.refresh=wr_normal; w.data=NULL; w.refresh_routine=NULL;
+ w.close_routine=NULL; w.click_routine=NULL;
+ w.xpos=-1; w.ypos=-1; w.maxxsize=w.maxysize=-1;
+ s.d_xsize=-1; s.max_length=30; 
+ for(i=0;i<view.b_levels->num_options;i++)
+  if(view.b_levels->options[i]==l->fullname) break;
+ if(i>=view.b_levels->num_options) 
+  { waitmsg("Error searching levelname..."); return; }
+ checkmem(s.str=MALLOC(s.max_length+1));
+ if(l->fullname)
+  { strncpy(s.str,l->fullname,s.max_length); s.str[s.max_length]=0; }
+ else s.str[0]=0;
+ s.allowed_char=isprint;
+ s.l_char_entered=s.r_char_entered=s.l_string_entered=s.r_string_entered=NULL;
+ checkmem(b=w_addstdbutton(NULL,w_b_string,0,0,-1,-1,TXT_LVLNAME,&s,0));
+ w_winoutsize(&w,b->xsize,b->ysize);
+ checkmem(ow=w_openwindow(&w));
+ w_buttoninwin(ow,b,1);
+ w_handleuser(1,&b,1,&ow,0,NULL,NULL);
+ w_closewindow(ow); 
+ FREE(l->fullname);
+ checkmem(view.b_levels->options[i]=l->fullname=MALLOC(strlen(s.str)+1));
+ strcpy(l->fullname,s.str); FREE(s.str);
+ sprintf(buffer,"%s",l->fullname);
+ w_changewintitle(l->w,buffer);
+ qsort(&view.b_levels->options[1],view.b_levels->num_options-1,sizeof(char *),
+  qs_compstrs);
+ changecurrentlevel(NULL); changecurrentlevel(ld);
  }
  
-int (*dec_do_event[ec_num_of_codes])(enum evcodes evcode)=
-{ dec_credits,dec_changenumlock,dec_clickcube,dec_clickthing,
- dec_togdraw,dec_togdraw,dec_togdraw,dec_menu,
- dec_menu,dec_menu,dec_menu,dec_changething,dec_changething,
- dec_changecube,dec_changecube,dec_changewall,dec_changewall,
- dec_tag,dec_togdraw,dec_pturn,dec_pturn,dec_pturn,dec_pturn,
- dec_changevisibility,dec_changevisibility,dec_changezoom,dec_changezoom,
- dec_changemovefactor,dec_changemovefactor,dec_move,dec_move,dec_move,
- dec_move,dec_move,dec_move,dec_turn,dec_turn,dec_turn,dec_turn,dec_turn,
- dec_turn,dec_changerotangle,dec_changerotangle,dec_changedoor,
- dec_changedoor,dec_menu,dec_menu,dec_loadlevel,dec_savelevel,
- dec_clickdoor,dec_togdraw,dec_tagall,dec_beam,dec_helppage,
- dec_makemacro,dec_savemacro,dec_choosemacro,dec_fastquit,dec_pmove,
- dec_pmove,dec_pmove,dec_pmove,dec_pmove,dec_pmove,dec_changepnt,
- dec_changepnt,dec_fitbitmap,dec_insert,dec_changevalue,dec_pturn,
- dec_pturn,dec_scroll,dec_scroll,dec_changedata,dec_changemovefactor,
- dec_changemovefactor,dec_delete,dec_grid,dec_grid,dec_grid,
- dec_changevalue,dec_domenu,dec_domenu,dec_connectcubes,dec_changecube,
- dec_changething,dec_changedoor,dec_changevalue,dec_changevalue,
- dec_insert,dec_setexit,dec_deleteall,dec_changecube,dec_quit,
- dec_arrangebitmaps,dec_togdraw,dec_changerotangle,dec_changerotangle,
- dec_alignyourself,dec_alignyourself,dec_alignyourself,dec_alignyourself,
- dec_alignyourself,dec_alignyourself,dec_tagspecial,dec_insert,dec_insert,
- dec_changecube,dec_growshrink,dec_growshrink,dec_calctextures };
-
-int do_event(enum evcodes ec)
+void dec_nextlevel(int ec)
  {
- int ret;
- if((view.drawwhat&DW_BITMAP)==0) ret=rebuild_screen(dec_do_event[ec](ec)); 
- else { ret=do_bitmap(ec); rebuild_screen(0xff); }
- return ret;
+ if(!l)
+  { if(view.levels.size>0) changecurrentlevel(view.levels.tail->d.lev); }
+ else
+  changecurrentlevel((l->n->next->next==NULL ? view.levels.head : 
+   l->n->next)->d.lev);
  }
+ 
+void dec_prevlevel(int ec)
+ {
+ if(!l)
+  { if(view.levels.size>0) changecurrentlevel(view.levels.head->d.lev); }
+ else
+  changecurrentlevel((l->n->prev->prev==NULL ? view.levels.tail : 
+   l->n->prev)->d.lev);
+ }
+ 
+void dec_movethingtocube(int ec)
+ {
+ struct thing *t;
+ int i,j;
+ if(!view.pcurrcube) { printmsg(TXT_NOCURRCUBE); return; }
+ if(!view.pcurrthing) { printmsg(TXT_NOCURRTHING); return; }
+ t=view.pcurrthing->d.t;
+ for(j=0;j<3;j++)
+  {
+  t->p[0].x[j]=0.0;
+  for(i=0;i<8;i++)
+   t->p[0].x[j]+=view.pcurrcube->d.c->p[i]->d.p->x[j]/8.0;
+  }
+ setthingpts(t); t->nc=view.pcurrcube; l->levelsaved=0;
+ plotlevel();
+ }
+ 
+void dec_drawwhat(int ec)
+ {
+ switch(ec)
+  {
+  case ec_drawalllines: view.drawwhat^=DW_ALLLINES; 
+   if(!(view.drawwhat&DW_ALLLINES)) initdescmap(); break;
+  default: my_assert(0);
+  }
+ plotlevel();
+ }
+ 
+void dec_missionmanager(int ec) { hogfilemanager(); }
+ 
+void dec_savewinpos(int ec)
+ { 
+ FILE *f;
+ char *fname;
+ fname=getfilename(&init.txtlistpath,NULL,"WIN",TXT_SAVEWINPOS,1);
+ if(fname==NULL) return;
+ if((f=fopen(fname,"w"))==NULL || !w_savecfg(f)) 
+  { printmsg(TXT_CANTSAVEWINPOS,fname); return; }
+ fclose(f);
+ printmsg(TXT_WINPOSSAVED,fname);
+ }
+ 
+void dec_loadwinpos(int ec)
+ { 
+ FILE *f;
+ char *fname;
+ fname=getfilename(&init.txtlistpath,NULL,"WIN",TXT_LOADWINPOS,0);
+ if(fname==NULL) return;
+ if((f=fopen(fname,"r"))==NULL)
+  { printmsg(TXT_CANTREADWINPOS,fname); return; }
+ w_readcfg(f);
+ fclose(f);
+ printmsg(TXT_WINPOSREAD,fname);
+ }
+ 
+void dec_reinitgrfx(int ec)
+ { if(!l) { printmsg(TXT_NOLEVEL); return; }
+   if(!view.render) return;
+   init_rendercube();
+   plotlevel(); }
+
+void dec_render(int ec)
+ { if(!l) { printmsg(TXT_NOLEVEL); return; }
+   view.render=ec-ec_render_0;
+   if(view.render>1)
+    { l->whichdisplay=view.whichdisplay=0; }
+   else view.drawwhat|=DW_CUBES;
+   init_rendercube(); drawopt(in_internal); w_refreshwin(l->w); }
+   
+void dec_changeview(int ec)
+ { if(!l) { printmsg(TXT_NOLEVEL); return; }
+   view.whichdisplay^=1;
+   l->whichdisplay=view.whichdisplay;
+   init_rendercube(); w_refreshwin(l->w); drawopt(in_internal); }
+   
+void dec_wireframe(int ec)
+ { view.drawwhat^=DW_CUBES; plotlevel(); }
+
+void dec_dummy(int ec) { waitmsg("Functioncode %x not used"); }
+
+void (*do_event[ec_num_of_codes])(int ec)=
+ { dec_quit,dec_loadlevel,dec_savelevel,dec_makemacro,dec_savemacro,
+   dec_loadmacro,dec_insert,dec_insert,dec_insert,dec_insert,dec_delete,
+   dec_delete,dec_deletespecial,dec_enlargeshrink,dec_enlargeshrink,
+   dec_enterdata,dec_setexit,dec_calctxts,dec_aligntxts,dec_setlsfile,
+   dec_tagspecial,dec_usecubetag,dec_usesidetag,dec_drawwhat,
+   dec_newlevel,dec_makeroom,dec_splitcube,dec_makecorridor,dec_beam,
+   dec_gowall,dec_sidecube,dec_aligntoaxis,dec_aligntoaxis,dec_aligntoaxis,
+   dec_aligntoaxis,dec_aligntoaxis,dec_aligntoaxis,dec_playlevel,
+   dec_credits,dec_help,dec_statistics,
+   dec_move0,dec_move1,dec_move2,dec_move3,dec_move4,dec_move5,
+   dec_turn0,dec_turn1,dec_turn2,dec_turn3,dec_turn4,dec_turn5,
+   dec_cubemode,dec_sidemode,dec_pntmode,dec_thingmode,dec_wallmode,
+   dec_movemode,dec_fastquit,dec_savelevel,dec_gridonoff,
+   dec_prevcube,dec_nextcube,dec_prevside,dec_nextside,
+   dec_prevpnt,dec_nextpnt,dec_prevthing,dec_nextthing,
+   dec_prevwall,dec_nextwall,dec_tagall,dec_tag,dec_movefactor,
+   dec_movefactor,dec_rotangle,dec_rotangle,dec_visibility,dec_visibility,
+   dec_playlevel,dec_changefullname,dec_prevlevel,dec_nextlevel,
+   dec_wireframe,dec_mineillum,dec_setcornerlight,dec_setinnercubelight,
+   dec_movethingtocube,dec_missionmanager,
+   dec_savepos,dec_savepos,dec_savepos,dec_savepos,dec_savepos,dec_savepos,
+   dec_savepos,dec_savepos,dec_savepos,dec_savepos,dec_savepos,dec_savepos,
+   dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,
+   dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,
+   dec_savewinpos,dec_loadwinpos,dec_reinitgrfx,dec_changeview,
+   dec_render,dec_render,dec_render,dec_render,dec_tagflatsides,
+   dec_tagspecial };
+

@@ -1,32 +1,28 @@
-makeall: compile extract.exe hogfile.exe
-OBJ=devil.o system.o tools.o insert.o initio.o plot.o savetool.o readlvl.o \
- event.o do_bmap.o do_event.o change.o grfx.o macros.o
-CFLAGS=-Wall -O2 -m486 -g -DGNU_C -ansi
-%.exe: %.out
-	rem strip $<
-	coff2exe $<
-devil.out: $(OBJ)
+makeall: d.exe 
+include depend
+# include wins/makefile
+OBJ=devil.o userio.o tools.o tag.o insert.o calctxt.o initio.o config.o \
+ askcfg.o plot.o plottxt.o plotsys.o click.o savetool.o readlvl.o \
+ readtxt.o do_event.o do_stat.o do_ins.o do_mod.o do_light.o do_move.o \
+ do_tag.o do_side.o grfx.o do_opts.o opt_txt.o options.o macros.o title.o 
+ifdef GER
+CFLAGS=-Wall -Werror -O3 -m486 -g -DGNU_C -DGO32 -DGER -ansi -pedantic -ffast-math -Wwrite-strings -I wins -I language -c
+else
+CFLAGS=-Wall -Werror -O3 -m486 -g -DGNU_C -DGO32 -ansi -pedantic -ffast-math -Wwrite-strings -I wins -I language -c
+endif
+# %.exe: %.out
+#	rem strip $<
+#	coff2exe $<
+d.exe: $(OBJ) 
 	gcc @link
+	copy *.d depend /Y >NUL
 compile: $(OBJ)
-hogfile.out: hogfile.c
-	gcc -Wall -ansi -g hogfile.c -o hogfile.out
-extract.out: extract.c
-	gcc -Wall -ansi -g extract.c -o extract.out
+%.o: %.c
+	gcc -MMD $(CFLAGS) -o $@ $<
+plotsys.o: plotsys.c plotsys.h plotdata.h structs.h
+	gcc -I wins -I language -Wall -Werror -O3 -m486 -g -DGNU_C -c plotsys.c -o plotsys.o
+plottxt.o: plottxt.c plottxt.h plotsys.h plotdata.h structs.h
+	gcc -I wins -I language -Wall -Werror -O3 -m486 -g -DGNU_C -c plottxt.c -o plottxt.o
+title.o: title.c title.h structs.h
+	gcc -I wins -I language -Wall -O3 -m486 -g -DGNU_C -c title.c -o title.o
 
-system.o: system.c system.h structs.h
-	gcc -Wall -O2 -m486 -g -DGNU_C -c system.c -o system.o
-tools.o: tools.c tools.h grfx.h structs.h system.h
-savetool.o: savetool.c savetool.h tools.h structs.h 
-insert.o: insert.c insert.h tools.h structs.h 
-macros.o: macros.c macros.h event.h insert.h tools.h insert.h structs.h 
-readlvl.o: readlvl.c readlvl.h tools.h insert.h structs.h 
-initio.o: initio.c initio.h tools.h structs.h system.h
-plot.o: plot.c plot.h insert.h tools.h structs.h system.h
-grfx.o: grfx.c grfx.h tools.h structs.h system.h
-event.o: event.c event.h do_event.h structs.h system.h tools.h 
-do_bmap.o: do_bmap.c do_bmap.h do_event.h structs.h system.h
-do_event.o: do_event.c do_move.c do_event.h do_bmap.h change.h event.h \
- structs.h tools.h insert.h macros.h credits.h
-change.o: change.c do_side.c change.h event.h tools.h system.h structs.h
-insert.o: insert.c insert.h stdtypes.h tools.h structs.h
-devil.o: devil.c structs.h system.h plot.h initio.h readlvl.h tools.h

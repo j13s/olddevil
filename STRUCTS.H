@@ -20,39 +20,47 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <signal.h>
 #include <math.h>
+#include <limits.h>
+#include <float.h>
 #include <time.h>
+#include <wins_all.h>
+#ifdef GER
+#include <german/text.h>
+#define INIFILE "config/devilg.ini"
+#else
+#include <english/text.h>
+#define INIFILE "config/devil.ini"
+#endif
+
+#include "descdefs.h"
 
 /* Well, this is not so nice, but I need it. Perhaps you must set a flag
    also. GNU-C will align characters to longs and savetool needs packed
    structures (every type as long as in sizeof()) */
-#ifdef GNU_C
+#if defined(GNU_C) && defined(GO32)
 #define NONANSI_FLAG __attribute__ ((packed))
 #else
 #define NONANSI_FLAG 
 #endif
 
+#ifndef M_PI
+#define M_PI		3.14159265358979323846
+#endif
+#define ILLUM_GRIDSIZE 2
 #define VECTOR(c,a,b) { \
- (c)->x[0]=(double)(a)->x[1]*(b)->x[2]-(double)(a)->x[2]*(b)->x[1]; \
- (c)->x[1]=(double)(a)->x[2]*(b)->x[0]-(double)(a)->x[0]*(b)->x[2]; \
- (c)->x[2]=(double)(a)->x[0]*(b)->x[1]-(double)(a)->x[1]*(b)->x[0]; }
-/*
-#define NEXTCOMP(i) ((i)==2 ? 0 : (i)+1)
-#define PREVCOMP(i) ((i)==0 ? 2 : (i)-1)
-#define VECTORCOMP(c,a,b,i) { \
- (c)->x[i]=(double)(a)->x[NEXTCOMP(i)]*(b)->x[PREVCOMP(i)]-  \
-  (double)(a)->x[PREVCOMP(i)]*(b)->x[NEXTCOMP(i)]; }
-#define VECTOR2COMP(c,a,b,i,j) { VECTORCOMP(c,a,b,i); VECTORCOMP(c,a,b,j); }
-*/
-#define SCALAR(a,b) ((double)(a)->x[0]*(b)->x[0]+ \
- (double)(a)->x[1]*(b)->x[1]+(double)(a)->x[2]*(b)->x[2])
-#define LENGTH(a) sqrt((double)SCALAR(a,a))
-#define DW_BITMAP 0x40
-#define DW_GRID 0x20
-#define DW_DATA 0x10
+ (c)->x[0]=(float)(a)->x[1]*(b)->x[2]-(float)(a)->x[2]*(b)->x[1]; \
+ (c)->x[1]=(float)(a)->x[2]*(b)->x[0]-(float)(a)->x[0]*(b)->x[2]; \
+ (c)->x[2]=(float)(a)->x[0]*(b)->x[1]-(float)(a)->x[1]*(b)->x[0]; }
+#define SCALAR(a,b) ((float)(a)->x[0]*(b)->x[0]+ \
+ (float)(a)->x[1]*(b)->x[1]+(float)(a)->x[2]*(b)->x[2])
+#define LENGTH(a) sqrt((float)SCALAR(a,a))
+#define DW_XTAGGED 0x10
 #define DW_DOORS 0x8
-#define DW_ALLLINES 0x4
-#define DW_THINGS 0x2
+#define DW_THINGS 0x4
+#define DW_ALLLINES 0x2
 #define DW_CUBES 0x1
 #define DW_DEFAULT 0x0f
 /* colors */
@@ -64,52 +72,87 @@
 #define NUM_OF_DOORS 5
 #define HILIGHTCOLORS (DOORCOLORS+NUM_OF_DOORS)
 #define MAXHILIGHT 5
-#define MENUCOLORS (HILIGHTCOLORS+MAXHILIGHT)
-#define NUM_OF_MCOLORS 6
-#define USEDCOLORS (MENUCOLORS+NUM_OF_MCOLORS+1)
+#define USEDCOLORS (HILIGHTCOLORS+MAXHILIGHT+1)
 #define WHITE (USEDCOLORS-1)
 
 #define MAX_OBJSTR_LENGTH 15
-#define MAX_XNOBUTTON 2
-#define MAX_YNOBUTTON 3
 
-struct node 
- { 
- struct node *next,*prev; 
- int no;
- union {
-  struct cube *c;
-  struct producer *cp;
-  struct point *p;
-  struct listpoint *lp;
-  struct macro *m;
-  struct thing *t;
-  struct robot *R;
-  struct reactor *X;
-  struct item *I;
-  struct start *S;
-  struct door *d;
-  struct sdoor *sd;
-  struct infoitem *i;
-  struct node *n;
-  void *v; } d;
- };
-struct list
+enum tagtypes { tt_cube,tt_wall,tt_pnt,tt_thing,tt_door,tt_number };
+enum movetypes { mt_you,mt_obj,mt_number };
+enum infos { in_cube,in_wall,in_point,in_thing,in_door,in_internal,
+ in_number };
+enum datastructs { ds_cube,ds_wall,ds_corner,ds_thing,ds_door,ds_internal,
+ ds_leveldata,ds_sdoor,ds_producer,ds_point,ds_turnoff,ds_changedlight,
+ ds_flickeringlight,ds_number };
+enum infotype { it_selbutton,it_markbutton,it_light,it_size,it_coord,
+ it_degree,it_float,it_int,it_cubelight,it_sidelight,it_texture,
+ it_dooranim,it_thingtexture,it_thingcoord,it_uvl,it_fl_mask,
+ it_fl_delay };
+
+struct point {float x[3];};
+struct pixel {int x,y; float d;};
+struct line {struct node *s,*e;int color;};
+struct move_par_pnts
  {
- struct node *head,*dummy,*tail;
- int size;
+ struct list *pnt_list,*side_list,*cube_list;
+ struct point *ref_pnt;
+ struct node *cube;
+ int wall;
  };
-struct point {double x[3];};
-struct pixel {double x,y,d;};
+struct move_par_things
+ { int withtagged;
+   struct node *nc; };
+struct move_par_corr
+ { struct track *t;
+   struct corridor *c; };
+union move_params
+ { struct move_par_pnts p;
+   struct move_par_things t;
+   struct move_par_corr c; };
+struct corridorelement 
+ {
+ struct point center,**pnts,*rel_pnts;
+ struct node **cubes;
+ };
+struct track
+ {
+ struct point x,coords[3];
+ float length,l_c2,old_twist; /* l_c2=length of tangential vector */
+  /* old_twist == twist angle of last calculation */
+ int fixed; /* <=0 is moved from the program, >0 can be moved by the user */
+ struct track *modify_too; /* for circle, movecorr */
+ };
+struct corridor
+ {
+ struct list cubes,points;
+ struct list elements;
+ int num_pnts,num_cubes; /* in one corridor element */
+ int *connected,*front_wall;
+  /* array of size num_cubes*6. In each element j is cube_no*6+wall of
+     the neighbour cube to cube j/6 wall j%6 saved (-1 if no
+     neighbour). */
+ float depth;
+ struct list tracking; /* the points through which the corridor runs */
+ struct leveldata *ld;
+ struct point e[3]; /* default coordsystem on the startside of the corridor */
+ struct node *startcube; /* the cube where the corridor starts */
+ int startwall;
+ /* the window stuff: */
+ struct w_window *win;
+ struct w_button *b_ok,*b_cancel,*b_ins,*b_del,*b_setend,*b_depth,*b_stdform;
+ };
 struct listpoint
  {
  struct point p;
  struct list c; /* list of cubenodes. no is no of point in cube */
+ struct node *tagged;
  };
 struct thing
  {
  /* my stuff */
  struct point p[11] NONANSI_FLAG; /* 0 is center, 1..10 are the drawn lines */
+ struct node *tagged NONANSI_FLAG; /* corresponding node in taglist */
+ struct node *nc NONANSI_FLAG; /* the cube where the thing is in*/
  int color NONANSI_FLAG;
  /* descent stuff */
  unsigned char type1 NONANSI_FLAG;
@@ -137,7 +180,7 @@ struct thing
  unsigned char contain_type1 NONANSI_FLAG;
  unsigned char contain_type2 NONANSI_FLAG;
  unsigned char contain_count NONANSI_FLAG;
- };
+ }; /* Descent data length: 79 */
 struct movement_physics
  {
  long velocity[3] NONANSI_FLAG;
@@ -149,21 +192,37 @@ struct movement_physics
  long rotthrust[3] NONANSI_FLAG;
  short turnroll NONANSI_FLAG;
  short flags NONANSI_FLAG;
- };
+ }; /* length: 64 */
 struct movement_spinning
  { long spin_rate[3] NONANSI_FLAG; };
 #define MAX_AIFLAGS 11
-struct control_ai
+struct control_mine
+ { 
+ short parent_type NONANSI_FLAG;
+ short parent_num NONANSI_FLAG;
+ long parent_signature NONANSI_FLAG; 
+ };
+struct D1_control_ai
  {
  unsigned char behavior  NONANSI_FLAG;
  unsigned char flags[MAX_AIFLAGS] NONANSI_FLAG;
  unsigned short hide_cube NONANSI_FLAG;
- unsigned short hide_index  NONANSI_FLAG;
+ unsigned short hide_index  NONANSI_FLAG; 
  unsigned short path_length NONANSI_FLAG;
  unsigned short cur_path_index NONANSI_FLAG;
  unsigned short start_cube NONANSI_FLAG;
  unsigned short end_cube  NONANSI_FLAG;
- };
+ }; /* length: 24 */
+struct D2_control_ai
+ {
+ unsigned char behavior  NONANSI_FLAG;
+ unsigned char flags[MAX_AIFLAGS] NONANSI_FLAG;
+ unsigned short hide_cube NONANSI_FLAG;
+ unsigned short hide_index  NONANSI_FLAG; 
+ unsigned short path_length NONANSI_FLAG;
+ unsigned char cur_path_index NONANSI_FLAG;
+ unsigned char dying_sound_playing NONANSI_FLAG;
+ }; /* length: 20 */
 struct control_light
  { long intensity NONANSI_FLAG; };
 struct control_powerup
@@ -188,11 +247,18 @@ struct item
  struct control_powerup c NONANSI_FLAG;
  struct render_powerup r NONANSI_FLAG;
  };
-struct robot
+struct D1_robot
  {
  struct thing t NONANSI_FLAG;
  struct movement_physics m NONANSI_FLAG;
- struct control_ai c NONANSI_FLAG;
+ struct D1_control_ai c NONANSI_FLAG;
+ struct render_polyobj r NONANSI_FLAG;
+ };
+struct D2_robot
+ {
+ struct thing t NONANSI_FLAG;
+ struct movement_physics m NONANSI_FLAG;
+ struct D2_control_ai c NONANSI_FLAG;
  struct render_polyobj r NONANSI_FLAG;
  };
 struct start
@@ -201,20 +267,25 @@ struct start
  struct movement_physics m NONANSI_FLAG;
  struct render_polyobj r NONANSI_FLAG;
  };
+struct mine
+ {
+ struct thing t NONANSI_FLAG;
+ struct movement_physics m NONANSI_FLAG;
+ struct control_mine c NONANSI_FLAG;
+ struct render_polyobj r NONANSI_FLAG;
+ };
 struct reactor
  {
  struct thing t NONANSI_FLAG;
  struct render_polyobj r NONANSI_FLAG;
  };
-enum sdoortypes { sdtype_door,sdtype_cube };
 struct sdoor
  {
- char type_0 NONANSI_FLAG; /* always 0 */
- short flags NONANSI_FLAG;
+ unsigned char type NONANSI_FLAG;
+ unsigned char flags NONANSI_FLAG;
+ unsigned short num NONANSI_FLAG;
  long value NONANSI_FLAG; /* 0x00050000 */
- long time NONANSI_FLAG; /* -1 */
- char link_num NONANSI_FLAG; /* -1 */
- unsigned short int num  NONANSI_FLAG;
+ long link_num NONANSI_FLAG; /* -1 */
  unsigned short int cubes[10] NONANSI_FLAG;
  unsigned short int walls[10] NONANSI_FLAG;
  /* my stuff */
@@ -240,20 +311,27 @@ struct door
  unsigned char key NONANSI_FLAG;
  unsigned short stuff NONANSI_FLAG; /* 0 */
  /* my stuff */
+ unsigned char edoor NONANSI_FLAG; /* open at end? */
+ unsigned char switchtype NONANSI_FLAG; /* needed that you can change the
+  switchtype from 'No switch' to anything else(the button must be activated)*/
  struct node *d NONANSI_FLAG; /* door from other side */
- unsigned char edoor NONANSI_FLAG;
- struct node *sd NONANSI_FLAG;
-  /* the sdoor corresponding to this door */
+ struct node *sd NONANSI_FLAG; /* the sdoor corresponding to this door */
  struct list sdoors NONANSI_FLAG; /* doors opening this door */
  struct node *c NONANSI_FLAG;
  struct wall *w NONANSI_FLAG;
  struct point p NONANSI_FLAG;
+ struct node *tagged NONANSI_FLAG; /* corresponding node in taglist */
+ short old_txt1 NONANSI_FLAG; /* old texture 1 of the wall */
+ unsigned char *txt_data NONANSI_FLAG;
  };
 struct corner
  {
- short int xpos,ypos NONANSI_FLAG;
- short int light NONANSI_FLAG;
+ short int x[2] NONANSI_FLAG;
+ unsigned short int light NONANSI_FLAG;
  };
+struct movewall
+ { struct node *cube;
+   unsigned char wall,move_pnts; };
 struct wall
  {
  short int texture1,texture2 NONANSI_FLAG;
@@ -277,147 +355,116 @@ struct wall
   */
  struct corner corners[4] NONANSI_FLAG;
  /* my stuff */
+ int txt2_direction NONANSI_FLAG;
  struct node *p[4] NONANSI_FLAG;
+ struct node *tagged[4] NONANSI_FLAG;
  int no NONANSI_FLAG;
- unsigned short int orientation NONANSI_FLAG; 
-  /* 0,1,2,3 rotating second txt */
+ int locked NONANSI_FLAG;
+ struct node *ls NONANSI_FLAG; /* lightsource */
+ struct node *fl NONANSI_FLAG; /* flickering light */
  };
 struct producer
  {
  /* producer produces all roboter with the number of the setted bit */
- unsigned long prodwhat NONANSI_FLAG;
+ unsigned long prodwhat[2] NONANSI_FLAG;
  unsigned long hitpoints NONANSI_FLAG; /* 0x01f40000=32768000 */
  unsigned long interval NONANSI_FLAG; /* 0x00050000=327680 */
  unsigned short cubenum NONANSI_FLAG;
  unsigned short stuffnum NONANSI_FLAG;
-  /* is the same as value in cube */
+  /* stuffnum is not used in Descent */
  /* my stuff */
  struct node *c NONANSI_FLAG;
  };
 struct cube
  {
- unsigned short int nextcubes[6] NONANSI_FLAG;
- unsigned short int pts[8] NONANSI_FLAG;
  unsigned char type NONANSI_FLAG;
  char prodnum NONANSI_FLAG;
- unsigned short int value,light NONANSI_FLAG;
+ unsigned char value NONANSI_FLAG;
+ unsigned char flags NONANSI_FLAG; /* is set by Descent ?? */
+ unsigned short int light NONANSI_FLAG;
+ unsigned short int high_light NONANSI_FLAG;
+ unsigned short int pts[8] NONANSI_FLAG;
+ unsigned short int nextcubes[6] NONANSI_FLAG;
+ /* value: count every cube with type==4 and write this number in value. */
  unsigned char doors[6] NONANSI_FLAG;
  /* my stuff */
  struct list sdoors NONANSI_FLAG;
  struct wall *walls[6] NONANSI_FLAG;
  struct node *p[8],*nc[6],*d[6] NONANSI_FLAG;
  struct node *cp NONANSI_FLAG; /* producer */
+ struct node *tagged NONANSI_FLAG; /* corresponding node in taglist */
+ struct node *tagged_walls[6] NONANSI_FLAG;
+ struct polygon *polygons[12] NONANSI_FLAG;
+ unsigned char recalc_polygons[6] NONANSI_FLAG;
+ struct list things NONANSI_FLAG;
  };
-struct texture
+struct flickering_light
  {
- char rname[8] NONANSI_FLAG;
- unsigned char ruxsize,rxsize NONANSI_FLAG;
- unsigned char rysize NONANSI_FLAG;
- unsigned char type1,type2 NONANSI_FLAG;
- unsigned long int offset NONANSI_FLAG;
- /* my stuff */
- char name[9] NONANSI_FLAG;
- unsigned short xsize,ysize NONANSI_FLAG;
+ short int cube NONANSI_FLAG,wall NONANSI_FLAG;
+ unsigned long mask NONANSI_FLAG,timer NONANSI_FLAG,delay NONANSI_FLAG;
+ /* my_data */
+ struct node *c;
+ }; 
+struct turnoff
+ {
+ unsigned short cube NONANSI_FLAG;
+ unsigned char side NONANSI_FLAG;
+ unsigned char num_changed NONANSI_FLAG;
+ unsigned short offset NONANSI_FLAG;
  };
-/*
- sizes: 0x108,0x18,0x10,0x36,0x0,0x2a,0x10
- sdoors=description of switch walls.
- edoors=doors opening when the reactor was blown
- wdoors=producer description */
-struct levelhead1
+struct changedlight
  {
- /* header */
- char lvlp[4] NONANSI_FLAG;
- unsigned long int version NONANSI_FLAG; /* 0x1 */
- unsigned long int minedata_offset NONANSI_FLAG; /* 0x14 */
- unsigned long int gamedata_offset NONANSI_FLAG;
- unsigned long int hostagetxt_offset NONANSI_FLAG; /* not used */
- unsigned char version0 NONANSI_FLAG; /* always 0 */
-#ifdef SHAREWARE
- unsigned long numpts NONANSI_FLAG,
-  numcubes NONANSI_FLAG;
-#else
- unsigned short numpts NONANSI_FLAG,
-  numcubes NONANSI_FLAG;
-#endif
+ unsigned short cube NONANSI_FLAG;
+ unsigned char side NONANSI_FLAG;
+ unsigned char stuff NONANSI_FLAG; /* always 0?? */
+ unsigned char sub[4] NONANSI_FLAG; /* between 0-32. 32 is dark,0 is bright */
  };
-struct levelhead2
+struct ls_effect
  {
- /* header for things etc. */
- unsigned short signature NONANSI_FLAG; /* 0x6705 */
- unsigned short version NONANSI_FLAG; /* reg. version=0x19 */
- long sizedir NONANSI_FLAG;
- char mine_filename[15] NONANSI_FLAG; /* never used by anyone */
- long level NONANSI_FLAG; /* always zero in not saved games I suppose */
- unsigned long posguile NONANSI_FLAG,sizeguile NONANSI_FLAG; 
- unsigned long posthings NONANSI_FLAG,
-  numthings NONANSI_FLAG,sizethings NONANSI_FLAG; 
-  /* size=0x108 */
- unsigned long posdoors NONANSI_FLAG,
-  numdoors NONANSI_FLAG,sizedoors NONANSI_FLAG; 
-  /* size=0x18 */
- unsigned long posopendoors NONANSI_FLAG,
-  numopendoors NONANSI_FLAG,sizeopendoors NONANSI_FLAG; 
-  /* num=0, size=0x10 */
- /* doors opening if entering a sector */
- unsigned long possdoors NONANSI_FLAG,
-  numsdoors NONANSI_FLAG,sizesdoors NONANSI_FLAG; 
-  /* size=0x36 */
- unsigned long stuff2[3] NONANSI_FLAG;  /* always zero */
- /* doors opening after blown the reactor */
- unsigned long posedoors NONANSI_FLAG,
-  numedoors NONANSI_FLAG,sizeedoors NONANSI_FLAG; 
-  /* size=0x2a */
- /* doors open with walls */
- unsigned long posproducer NONANSI_FLAG,
-  numproducer NONANSI_FLAG,sizeproducer NONANSI_FLAG; 
-  /* size=0x10 */
+ struct node *cube; /* destination cube */
+ unsigned short add_light[24];
+ unsigned char smoothed[24];
+ }; 
+struct lightsource
+ {
+ struct node *cube;
+ char w; /* source cube and wall */
+ struct list effects; /* list of ls_effects */
  };
-struct levelhead3
- {
- unsigned short num_of_saved_pofs NONANSI_FLAG; 
-  /* seems to be a bug in the specs: this number is in my registered
-     levels always 25 not as it should be 78 */
-#ifdef SHAREWARE
- char pofs[728] NONANSI_FLAG;
-  /* a long list of pofs (56*13 byte) */
-#else
- char pofs[1014] NONANSI_FLAG;
-  /* a long list of pofs (78*13 byte) */
-#endif
- char guile[0x74] NONANSI_FLAG;  /* don't know, don't mind */
+#define NUM_SAVED_POS 12
+struct saved_position
+ { 
+ struct point e0,e[3];
+ float max_vis,distcenter;
  };
 struct leveldata
  {
- struct levelhead1 lh1;
- struct levelhead2 lh2;
- struct levelhead3 lh3;
-#ifdef SHAREWARE
- unsigned char end[9];
-  /* always 0x00000000 0xffffffff 0x0a */
-#endif
- /* my stuff. the first part (lists and doors) must be exactly like the
-    macro structure */
- struct list pts,cubes,things,doors,sdoors,producers;
+ struct list pts,cubes,things,doors,sdoors,producers,turnoff,changedlights,
+  lightsources,flickeringlights;
  struct edoor *edoors;
  char *fullname;
- char *lname; /* name of the file */
+ char *filename;
+ char *pigname;
+ struct w_window *w;
+ struct node *secretcube,*secretstart;
+ long secret_orient[9];
+ struct node *exitcube;
+ int exitwall;
+ struct node *pcurrcube,*pcurrthing,*pcurrdoor;
+ struct wall *pcurrwall;
+ int currpnt,currwall; /* 0..3 currpnt of currwall / 0..5 cwall of ccube */
+ struct node *rendercube;  /* the cube where the rendering starts */
+ int inside; /* are we inside or outside of the level (left window) */
+ struct list tagged[tt_number],tagged_corners; /* cubes,walls,pts,things */
+ struct list lines;
+ int whichdisplay; /* ==0 one display, ==1 two for each level */
+ struct point e0,e[3];
+ int levelsaved,levelillum;
+ struct node *n;
+ struct corridor *cur_corr;
+ struct saved_position saved_pos[NUM_SAVED_POS];
+ int x_size[2],y_size[2];  /* window size for single&double mode */
  };
-struct macro
- {
- struct list pts,cubes,things,doors,sdoors,producers;
- char *shorttxt,*longtxt,*filename;
- int groupno,wallno; /* wallno is the wall where the macro is tagged on */
-  /* groupno is -1 if macro is not saved yet */
- };
-struct eventcode
- {
- int no;
- int flags,kbstat,key,where;
- char *txt;
- };
-enum evwcodes { ecw_screen, ecw_plot, ecw_uppermenu, ecw_lowermenu,
- ecw_menuline, ecw_movebuttons, ecw_num_of_boxes };
 struct objtype
  {
  int no;
@@ -425,162 +472,233 @@ struct objtype
  };
 struct objdata
  { 
- int no;
- char *str;
  int size;
  struct objtype **data;
  };
-enum tagtypes { tt_cube,tt_wall,tt_pnt,tt_thing,tt_door,tt_number };
-enum infos { in_cube,in_wall,in_corner,in_thing,in_door,in_internal,
- in_number };
-enum datastructs { ds_cube,ds_wall,ds_corner,ds_thing,ds_door,ds_internal,
- ds_leveldata,ds_sdoor,ds_producer,ds_point,ds_number };
-enum infoclass { ic_dontchange,ic_display,ic_progchanges };
 struct infoitem
  {
- char *txt; /* description and normal printf-like format string with
-  only one variable */
+ enum infotype type; /* type of data */
+ char *txt; /* description */
  enum datastructs infonr; /* to get the corresponding structure */
- int offset,row,column,menulength,numchildren,class; 
-  /* offset: pos. in structure; row,column: position in menu;
-     menulength: length in menu; class<0 for side effects (->class 1),
-     otherwise enum infoclass */
+ enum infos tagnr; /* to find the corresponding tag list, 
+   if tagnr>=in_internal this field is not done with tagged objects */
+ int multifuncnr; /* for selection button=numchildren, for tag button
+  =maximum number of tagged options, for texture group:
+   0 texture itself
+   1-5 texture 1, top,up,down,bottom,name
+   6-10 texture 2, top,up,down,bottom,name
+  otherwise not relevant */
+ int offset,length,numchildren;  /* offset,length: pos. in structure; */
  struct infoitem **children; 
- int *numechildren,*numdchildren;
-  /* how many entries in children (display and all) */
+ int *numinchildren; /* how many entries in children */
   /* children=infoitems depending on this infoitem */
  unsigned long *itemchildren;
   /* itemchildren=array of the numbers belonging to children */
  struct objdata *od; /* =NULL if normal field, otherwise the list of objs
   for this field. */
- int length; /* in bytes max. 4 */
- unsigned int **sideeffs; /* where to put the nums of the sideeffect.
-  1. depth = number of following entries (at least two)
-  2. number = number of starting structure (like ds_...) 
-  3. pointers = offset of pointer 
-  4. length = length of entry in bytes 
-  use for this getsideno, setsideno, dosideeffects */
- int numsideeffs; /* how many side effects */
  int sidefuncnr; /* call which function */
+ struct w_button *b; /* the button for this infoitem */
  };
-struct macrogroup
- {
- struct objtype ot;
- struct list macros;
- };
-enum txttypes { txt1_normal,txt2_normal,txt1_wall,txt2_wall,txt_number };
+/* num_security is the number of extra lighttables at the end and the 
+ beginning of the table, to handle the rounding errors which occur during
+ the plotting of a texture */
 struct viewdata
  {
- double dist,distscala; /* this is the distance viewpoint-screen */
- double maxvisibility,visscala; /* maxdistance which will be drawn */
- double movefactor; /* how fast we will move */
- double pmovefactor,movescala; /* how fast the points will move */
- double rotangle; /* how fast will we turn */
- double protangle,rotscala; /* how fast will we turn */
- double gridlength,gridscala;
- double maxconndist; /* for connectcubes */
- double clickphi; /* this is the angle for clicking */
- double tsize; /* size of things */
- double dsize; /* size of beat out of doors */
- struct point e0; /* Pos. of screen (in the middle) */
- int gridonoff,plottimes;
- /* this is what you can set */
+ float dist NONANSI_FLAG,distscala NONANSI_FLAG;
+  /* this is the distance viewpoint-screen */
+ float maxvisibility NONANSI_FLAG,visscala NONANSI_FLAG;
+  /* maxdistance which will be drawn */
+ float movefactor NONANSI_FLAG; /* how fast we will move */
+/* 20 */ 
+ float pmovefactor NONANSI_FLAG,movescala NONANSI_FLAG; 
+  /* how fast the points will move */
+ float rotangle NONANSI_FLAG; /* how fast will we turn */
+ float protangle NONANSI_FLAG,rotscala NONANSI_FLAG;
+  /* how fast will we turn */
+/* 40 */  
+ int bm_movefactor NONANSI_FLAG; /* how fast are the lines in fit bitmap
+  not needed anymore! */
+ float flatsideangle NONANSI_FLAG; /* for dec_tagflatsides */
+ float bm_stretchfactor NONANSI_FLAG; 
+ float gridlength NONANSI_FLAG,gridscala NONANSI_FLAG;
+/* 60 */ 
+ float maxconndist NONANSI_FLAG,maxuserconnect NONANSI_FLAG;
+  /* for connectcubes,connect */
+ int clickradius NONANSI_FLAG; /* min. radius of clicking circle */
+ float tsize NONANSI_FLAG; /* size of things */
+ float dsize NONANSI_FLAG; /* size of beat out of doors */
+/* 80 */ 
+ struct point e0 NONANSI_FLAG; /* Pos. of screen (in the middle) */
+ float mapangle NONANSI_FLAG; /* angle for lines in descent-like map */
+ int gridonoff NONANSI_FLAG;
+/* 100 */ 
+ int askone NONANSI_FLAG,asktagged NONANSI_FLAG;
+ int displayed_group NONANSI_FLAG;
+ /* This is the length for getting a quarter of intensity of light */
+ float illum_quarterway NONANSI_FLAG;
+ /* Brightness of Textures */
+ float illum_brightness NONANSI_FLAG;
+/* 120 */ 
+ /* The basic value for every corner */
+ unsigned short illum_minvalue NONANSI_FLAG;
+/* 122 */ 
+ /* Some options for warning */
+ int warn_convex NONANSI_FLAG,warn_doublekeys NONANSI_FLAG,
+  warn_tworeactors NONANSI_FLAG,warn_thingoutofbounds NONANSI_FLAG,
+  warn_gridrot NONANSI_FLAG;
+/* 142 */  
+ int drawwhat NONANSI_FLAG;
+ float distcenter NONANSI_FLAG; /* distance from two views to center */
+ int whichdisplay NONANSI_FLAG; /* ==0 one display, ==1 two for each level.*/
+ int doubleclick NONANSI_FLAG;
+ int render NONANSI_FLAG; /* ==1->change cube with position */
+ unsigned short int gamma_corr NONANSI_FLAG; 
+ int coord_axis NONANSI_FLAG;
+/* 168 */ 
+ float minclicksodist NONANSI_FLAG;
+  /* minimum distance screen<->object for clicking */
  struct point e[3]; /* orientation of screen (left-handed system) */
- char *pigname; /* name of .pig file */
- unsigned int numkeymacros;
- int drawwhat;
  /* for the user-defined keys */
- struct eventcode *events;
- int noevents;
- int bounds[ecw_num_of_boxes][4]; /* bounds of the four possible boxes */
- /* this is what system.c sets */
- int maxxsize,maxysize,xsize,ysize,xoffset,yoffset,fontheight,fontwidth,
-  smenuwidth,smenuheight;
- double xviewphi,yviewphi; /* this is the cos(view angle) */
- struct point x0,m0; /* x0 viewpoint, m0 line viewpoint-center of screen */
- double mincorner; /* the maximum angle - that means min. cos(angle) -
+ struct w_keycode *ec_keycodes;
+ char **txt_keycode;
+ int num_keycodes;
+ float mincorner; /* the maximum angle - that means min. cos(angle) -
     in a cube */
- double minweirdwall; /* the min cos(angle) of lines in a wall */
+ float minweirdwall; /* the min cos(angle) of lines in a wall */
  /* some other things */
- struct objdata *menuline;
- int nummenus;
- struct macro *pcurrmacro,**keymacros;
- char *macropath,*levelpath;
- struct objdata macros;
  int color[USEDCOLORS];
- int mouse;
- double mousesensivity;
- int brightness;
- char *palettename;
- struct objdata txtnums[txt_number],doornums;
- int *doorstarts;
- int txtoffset;
- struct texture **txtref;
- int numtxtref;
- struct texture *txts;
- int numtxtdir,txt_bmoffset;
- unsigned char *txt_buffer,*txt_sbuffer;
- FILE *pigfile;
- int fit_maxxnum,fit_maxynum,fit_xpos,fit_ypos;
- int txt_xpos,txt_ypos;
- struct list tagged[tt_number]; /* cubes,walls,pts,things */
+ unsigned char *lightcolors;
  enum tagtypes currmode;
- struct node *pcurrcube,*oldpcurrcube,*pcurrthing,*oldpcurrthing,
-  *pcurrdoor,*oldpcurrdoor;
+ enum movetypes movemode;
+ /* these things should only be in the level structure but I started
+  with these things in here and had no sense to change this in the
+  whole program */
+ struct node *pcurrcube,*pcurrthing,*pcurrdoor;
  struct wall *pcurrwall;
- int currpnt,currwall; /* 0..3 currpnt of currwall / 0..5 cwall of ccube */
- struct node *exitcube;
- int exitwall;
- struct point *oldpcurrpnt;
- int menuoffset; /* first line to display */
- char *menubuffer;
- int showwhat;
- int bxsize,bysize,numbuttons;
- char **bnames;
+ int currpnt,currwall;
+ /* 0..3 currpnt of currwall / 0..5 cwall of ccube */
+ /* the opened levels&macros */
+ struct w_button *levelbutton;
+ struct w_b_choose *b_macros,*b_levels; /* the button for the level/macro */
+ struct list levels;
+ struct leveldata *pcurrmacro;
+ struct w_window *txt_window,*movewindow;
+ /* the default objects */
+ struct node *pdeflevel,*pdefcube; /* cube for defwall */
+ int defwall;
+ };
+enum txttypes { txt1_normal,txt2_normal,txt1_wall,txt2_wall,txt_door,
+ txt_all,txt_thing,txt_number };
+struct pig_txt
+ {
+ char rname[9] NONANSI_FLAG;
+ unsigned char rlxsize NONANSI_FLAG;
+ unsigned char rysize NONANSI_FLAG;
+ unsigned char ruxsize NONANSI_FLAG;
+ unsigned char type1 NONANSI_FLAG,type2 NONANSI_FLAG;
+ unsigned long int offset NONANSI_FLAG;
+ /* my stuff */
+ char name[9];
+ unsigned short xsize,ysize;
+ int pigno,num_anims,anim_t2;
+  /* anim_t2 indicates if animation is for texture 1 (==0) or 2 (==1) */
+ unsigned char *data;
+ };
+#define NUM_LIGHTCOLORS 32
+#define NUM_SECURITY 3
+struct palette
+ { char name[9]; unsigned char palette[3*256]; 
+   unsigned char lighttables[(NUM_SECURITY*2+NUM_LIGHTCOLORS)*256]; };
+struct ham_txt
+ {
+ unsigned long flags NONANSI_FLAG,light NONANSI_FLAG,hitpoints NONANSI_FLAG;
+ short anim_seq NONANSI_FLAG,shoot_out_txt NONANSI_FLAG;
+ short xspeed NONANSI_FLAG,yspeed NONANSI_FLAG;
+ /* my stuff */
+ short int pigno,rdlno,txtlistno[txt_number];
+ struct pig_txt *pig;
+ unsigned short my_light[ILLUM_GRIDSIZE*ILLUM_GRIDSIZE];
+  /* this is a grid over the texture indicating the brightness of each point
+     of the texture */
+ };
+struct pigdata
+ {
+ char *current_pigname,*default_pigname;
+ char *txt_buffer,*door_buffer,*thing_buffer;
+ struct ws_bitmap *txt_bm,*door_bm,*thing_bm;
+ FILE *pigfile;
+ int num_pigtxts;
+ struct pig_txt *pig_txts; /* Array of textures read out of PIG-file,
+  index is number of texture in pig-file */
+ int num_rdltxts;
+ struct ham_txt *rdl_txts; /* Array of pointer to txts for num out of RDL,
+  index is number of texture in rdl-file */
+ int num_txtlist[txt_number];
+ struct ham_txt **txtlist[txt_number];
+  /* for every texture type a alphabetical list of pointers to textures */ 
+ int num_anims;
+ char *anim_txt_names; /* string with names of textures which are animated
+  like doors and therefore have several rdl-numbers for an anim. */
+ int *anim_starts; /* start of animations. index is animation number,
+  value is rdl_num */
+ struct ham_txt **anims; /* Array of pointer to txts for doors,
+  index is number of animation in rdl-file */
+ int pig_bmoffset; /* start of texture data in pig-file */
+ };
+struct initdata
+ {
+ enum descent d_ver; 
+ char *fontname,*cfgname,*lastname,*menuname,*batchfilename,*lightname,
+  *convtablename;
+ char *macropath,*levelpath,*cfgpath,*missionpath,levelext[4],*alllevelexts,
+  *txtlistpath,*playmsnpath;
+ char *pigpaths[desc_number];
+ int xres,yres;
+ int numbuttons;
+ char *bnames[in_number];
  int waittime;
  struct infoitem *info[in_number];
- int infonum[in_number],descripnum[in_number],maxrow[in_number],menuheight;
-  /* infonum=number of displayed items, descripnum=number of all items 
-     maxrow=maxrow of displayed items
-     menuheight=number of lines which can be displayed */
- struct infoitem *curmenuitem;
+ int infonum[in_number]; /* number of displayed items */
+ int *convtxts,*convanims,num_convtxts,num_convanims,def_t1,def_t2;
  };
 
 /* if m is a coordsystem in MATRIXMULT the vectors are in the columns */
-#define MATRIXMULT(e,m,v) { int i;\
- for(i=0;i<3;i++) \
-  ((e)->x[i])=((m)[0].x[i]*(v)->x[0]+(m)[1].x[i]*(v)->x[1]+ \
-   (m)[2].x[i]*(v)->x[2]); }
+#define MATRIXMULT(e,m,v) { int mm_i;\
+ for(mm_i=0;mm_i<3;mm_i++) \
+  ((e)->x[mm_i])=((m)[0].x[mm_i]*(v)->x[0]+(m)[1].x[mm_i]*(v)->x[1]+ \
+   (m)[2].x[mm_i]*(v)->x[2]); }
 /* and in INVMATRIXMULT in the rows */
-#define INVMATRIXMULT(e,m,v) { int i;\
- for(i=0;i<3;i++) \
-  ((e)->x[i])=((m)[i].x[0]*(v)->x[0]+(m)[i].x[1]*(v)->x[1]+ \
-   (m)[i].x[2]*(v)->x[2]); }
+#define INVMATRIXMULT(e,m,v) { int mm_i;\
+ for(mm_i=0;mm_i<3;mm_i++) \
+  ((e)->x[mm_i])=((m)[mm_i].x[0]*(v)->x[0]+(m)[mm_i].x[1]*(v)->x[1]+ \
+   (m)[mm_i].x[2]*(v)->x[2]); }
    
 void normalize(struct point *p);
 void my_exit(void);
 
 extern FILE *errf;
 extern struct viewdata view;
+extern struct initdata init;
+extern struct pigdata pig;
 extern struct leveldata *l;
-extern int altkeys[26];
+extern struct palette palettes[NUM_PALETTES];
 /* stdtypes.h */
-enum control_types { ct_none=0,ct_ai=1,ct_slew=5,ct_powerup=13,
- ct_control=16 };
-enum movement_types { mt_none=0,mt_physics=1 };
-enum render_types { rt_polyobj=1,rt_hostage=4,rt_powerup=5 };
 extern int wallpts[6][4];
 extern int wallno[8][2][3];
 extern int oppwalls[6];
+extern int nb_pnts[8][3];
+extern int nb_sides[6][4];
 extern struct corner stdcorners[4];
-extern struct door stddoor;
+extern struct door stdncdoor,stdnonncdoor;
 extern struct sdoor stdsdoor;
 extern struct point stdcubepts[8];
 extern struct producer stdproducer;
 extern long stdorientation[9];
 extern struct item stditem,stdhostage;
-extern struct robot stdrobot;
-extern struct start stdstart,stdcoopstart;
+extern struct D1_robot D1_stdrobot;
+extern struct D2_robot D2_stdrobot;
+extern struct mine stdmine;
+extern struct start stdstart,stdcoopstart,stdsecretstart;
 extern struct reactor stdreactor;
-extern char *structname[ds_number];
-  
+extern unsigned long robotsize[NUM_ROBOTS],reactorsize[NUM_REACTORS],
+ reactorpolyobj[NUM_REACTORS];

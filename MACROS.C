@@ -17,11 +17,12 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
     
 #include "structs.h"
-#include "system.h" /* just for event.h */
+#include "userio.h"
 #include "tools.h"
 #include "savetool.h"
 #include "insert.h"
-#include "event.h"
+#include "readlvl.h"
+#include "tag.h"
 #include "macros.h"
 
 /* make a coordsystem naxis out of cube c in the following way:
@@ -36,7 +37,7 @@ void getcubecoords(struct cube *c,int wall,int pnt,struct point *naxis,
  {
  int j;
  struct point *c0=&naxis[inout],*c1=&naxis[inout^1];
- double f;
+ float f;
  for(j=0;j<3;j++)
   {
   c0->x[j]=c->p[wallpts[wall][(pnt+1)&3]]->d.p->x[j]-
@@ -51,54 +52,38 @@ void getcubecoords(struct cube *c,int wall,int pnt,struct point *naxis,
   naxis[1].x[j]=naxis[1].x[j]-f*naxis[0].x[j];
  /* now we have two normed vectors, get the third one: */
  normalize(&naxis[1]); 
- VECTOR(&naxis[2],&naxis[1],&naxis[0])
- }
- 
-int readdescription(char **ltxt)
- {
- if((*ltxt=malloc(strlen("BLABLABLA")+1))==NULL)
-  return 0;
- strcpy(*ltxt,"BLABLABLA");
- return 1;
+ VECTOR(&naxis[2],&naxis[0],&naxis[1])
  }
  
 /* copies all in l tagged cubes with doors and all in tl
    tagged things to a macro */
-struct macro *buildmacro(struct list *l,struct list *tl)
+struct leveldata *buildmacro(struct list *l,struct list *tl)
  {
  struct node *n,*tn,*sn,*nn;
- struct macro *m;
+ struct leveldata *m;
  struct cube *c;
  struct producer *cp;
  struct listpoint *lp;
  struct door *d;
  struct sdoor *sd;
  struct thing *t;
+ struct flickering_light *fl;
  int i,j;
- struct point coords[3],*offset,p;
- if((m=malloc(sizeof(struct macro)))==NULL)
-  { printmsg("No mem for macro."); return 0; }
- initlist(&m->cubes); initlist(&m->pts); initlist(&m->doors);
- initlist(&m->things); initlist(&m->sdoors); initlist(&m->producers);
- m->wallno=view.currwall;
- /* make coordsystem */
- offset=view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p;
- getcubecoords(view.pcurrcube->d.c,view.currwall,view.currpnt,coords,0);
+ checkmem(m=emptylevel());
  /* first make lists */
  for(tn=l->head;tn->next!=NULL;tn=tn->next)
   {
   n=tn->d.n;
-  if((c=calloc(sizeof(struct cube),1))==NULL)
-   { printmsg("No mem for cube."); freemacro(m); return NULL; }
-  nn=addnode(&m->cubes,n->no,c);
+  checkmem(c=MALLOC(sizeof(struct cube)));
+  checkmem(nn=addnode(&m->cubes,n->no,c));
   *c=*n->d.c;
+  c->tagged=NULL; initlist(&c->things);
+  for(j=0;j<6;j++) c->tagged_walls[j]=NULL;
   if(c->cp!=NULL)
    {
-   if((cp=malloc(sizeof(struct producer)))==NULL)
-    { printmsg("No mem for producer."); return NULL; }
+   checkmem(cp=MALLOC(sizeof(struct producer)));
    *cp=*c->cp->d.cp;
-   if((sn=addnode(&m->producers,c->cp->no,cp))==NULL)
-    { printmsg("Can't add node for producer."); return NULL; }
+   checkmem(sn=addnode(&m->producers,c->cp->no,cp));
    c->cp=sn;
    cp->c=nn;
    }
@@ -106,47 +91,48 @@ struct macro *buildmacro(struct list *l,struct list *tl)
    {
    if((sn=findnode(&m->pts,n->d.c->p[j]->no))==NULL)
     {
-    if((lp=malloc(sizeof(struct listpoint)))==NULL)
-     { printmsg("No mem for point."); freemacro(m); return NULL; }
-    for(i=0;i<3;i++) p.x[i]=n->d.c->p[j]->d.lp->p.x[i]-offset->x[i];
-    INVMATRIXMULT(&lp->p,coords,&p);
-    initlist(&lp->c);
-    if((sn=addnode(&m->pts,n->d.c->p[j]->no,lp))==NULL)
-     { printmsg("Can't create point node."); freemacro(m); return NULL; }
+    checkmem(lp=MALLOC(sizeof(struct listpoint)));
+    lp->p=n->d.c->p[j]->d.lp->p;
+    initlist(&lp->c); lp->tagged=NULL;
+    checkmem(sn=addnode(&m->pts,n->d.c->p[j]->no,lp));
     }
    else
     lp=sn->d.lp;
    c->p[j]=sn;
-   addnode(&lp->c,j,nn);
+/*   checkmem(addnode(&lp->c,j,nn)); this is wrong here because it is done
+ in initlevel */
    }
   for(j=0;j<6;j++)
    {
    if(n->d.c->walls[j]!=NULL)
     {
-    if((c->walls[j]=malloc(sizeof(struct wall)))==NULL)
-     { printmsg("No mem for wall."); freemacro(m); return NULL; } 
+    checkmem(c->walls[j]=MALLOC(sizeof(struct wall)));
     *c->walls[j]=*n->d.c->walls[j];
-    for(i=0;i<4;i++)
-     c->walls[j]->p[i]=c->p[wallpts[j][i]];
+    for(i=0;i<4;i++) 
+     { c->walls[j]->p[i]=c->p[wallpts[j][i]];
+       c->walls[j]->tagged[i]=NULL; }
+    c->walls[j]->ls=NULL; 
+    if(c->walls[j]->fl)
+     { checkmem(fl=MALLOC(sizeof(struct flickering_light)));
+       *fl=*c->walls[j]->fl->d.fl; fl->c=nn;
+       checkmem(c->walls[j]->fl=addnode(&m->flickeringlights,
+        c->walls[j]->fl->no,fl)); }
     }
    if(n->d.c->d[j]!=NULL)
     {
-    if((d=malloc(sizeof(struct door)))==NULL)
-     { printmsg("No mem for door."); freemacro(m); return NULL; }
+    checkmem(d=MALLOC(sizeof(struct door)));
     *d=*n->d.c->d[j]->d.d;
+    d->tagged=NULL; d->old_txt1=-1;
     d->c=nn; d->w=c->walls[j];
-    if((sn=addnode(&m->doors,n->d.c->d[j]->no,d))==NULL)
-     { printmsg("Can't create door node."); freemacro(m); return NULL; }
-    c->d[j]=sn;
+    checkmem(sn=addnode(&m->doors,n->d.c->d[j]->no,d));
+    c->d[j]=sn; d->sdoor=0xff; initlist(&d->sdoors);
     if(d->sd!=NULL)
      {
-     if((sd=malloc(sizeof(struct sdoor)))==NULL)
-      { printmsg("No mem for switch."); freemacro(m); return NULL; }
+     checkmem(sd=MALLOC(sizeof(struct sdoor)));
      *sd=*d->sd->d.sd;
-     if((d->sd=addnode(&m->sdoors,d->sd->no,sd))==NULL)
-      { printmsg("Can't add node for switch."); freemacro(m); return NULL; }
-     sd->d=sn;
-     }
+     checkmem(d->sd=addnode(&m->sdoors,d->sd->no,sd));
+     sd->d=sn; d->sdoor=d->sd->no;
+     } 
     }
    }
   }
@@ -155,13 +141,10 @@ struct macro *buildmacro(struct list *l,struct list *tl)
   {
   j=getsize(ds_thing,tn->d.n->d.t)+(unsigned char *)&tn->d.n->d.t->type1-
    (unsigned char *)tn->d.n->d.t;
-  if((t=malloc(j))==NULL)
-   { printmsg("No mem for thing."); return 0; }
+  checkmem(t=MALLOC(j));
   memcpy(t,tn->d.n->d.t,j);
-  for(i=0;i<3;i++) p.x[i]=t->p[0].x[i]-offset->x[i];
-  INVMATRIXMULT(&t->p[0],coords,&p);
-  if(addheadnode(&m->things,tn->d.n->no,t)==NULL)
-   { printmsg("Can't add thing."); return 0; }
+  t->tagged=NULL; t->cube=t->nc ? t->nc->no : -1; t->nc=NULL;
+  checkmem(addheadnode(&m->things,tn->d.n->no,t));
   }
  /* ok! now make the neighbour cubes pointer */
  for(n=m->cubes.head;n->next!=NULL;n=n->next)
@@ -173,9 +156,12 @@ struct macro *buildmacro(struct list *l,struct list *tl)
     if((n->d.c->nc[j]=findnode(&m->cubes,n->d.c->nc[j]->no))==NULL)
      {
      if(n->d.c->d[j]!=NULL)
-      { freenode(&m->doors,n->d.c->d[j],free); n->d.c->d[j]=NULL; 
+      { if(n->d.c->d[j]->d.d->sd) 
+         freenode(&m->sdoors,n->d.c->d[j]->d.d->sd,free);
+        freenode(&m->doors,n->d.c->d[j],free); n->d.c->d[j]=NULL; 
         n->d.c->walls[j]->texture2=0; }
-     if(n->d.c->walls[j]==NULL) n->d.c->walls[j]=insertwall(n,j,0);
+     if(n->d.c->walls[j]==NULL) n->d.c->walls[j]=insertwall(n,j,-1,-1,-1);
+     n->d.c->nc[j]=NULL;
      }
     }
    }
@@ -185,12 +171,13 @@ struct macro *buildmacro(struct list *l,struct list *tl)
   {
   for(j=0,i=0;j<n->d.sd->num;j++)
    if((n->d.sd->target[i]=findnode(getsdoortype(n->d.sd)==sdtype_door ?
-    &m->doors : &m->cubes,n->d.sd->target[j]->no))!=NULL) i++;
+    &m->doors : &m->cubes,n->d.sd->target[j]->no))!=NULL) i++; 
   n->d.sd->num=i;
   }
  sortlist(&m->cubes,0); /* so we get no higher numbers than size */
  sortlist(&m->things,0); sortlist(&m->doors,0); sortlist(&m->pts,0); 
  sortlist(&m->sdoors,0); sortlist(&m->producers,0);
+ sortlist(&m->flickeringlights,0);
  /* making the numbers */
  for(n=m->cubes.head;n->next!=NULL;n=n->next)
   {
@@ -199,10 +186,8 @@ struct macro *buildmacro(struct list *l,struct list *tl)
    {
    n->d.c->doors[j]=(n->d.c->d[j]==NULL) ? 0xff : n->d.c->d[j]->no;
    if(n->d.c->d[j]!=NULL)
-    {
-    n->d.c->d[j]->d.d->cubenum=n->no;
-    n->d.c->d[j]->d.d->wallnum=j;
-    }
+    { n->d.c->d[j]->d.d->cubenum=n->no;
+      n->d.c->d[j]->d.d->wallnum=j; }
    n->d.c->nextcubes[j]=(n->d.c->nc[j]==NULL) ? 0xffff : n->d.c->nc[j]->no;
    } 
   if(n->d.c->cp) 
@@ -210,82 +195,65 @@ struct macro *buildmacro(struct list *l,struct list *tl)
   else n->d.c->prodnum=-1;
   }
  for(n=m->sdoors.head;n->next!=NULL;n=n->next)
+  {
+  n->d.sd->d->d.d->sdoor=n->no;
   for(j=0;j<n->d.sd->num;j++)
    {
-   n->d.sd->d->d.d->sdoor=n->no;
    if(getsdoortype(n->d.sd)==sdtype_door)
     { n->d.sd->cubes[j]=n->d.sd->target[j]->d.d->cubenum;
       n->d.sd->walls[j]=n->d.sd->target[j]->d.d->wallnum; }
    else
-    { n->d.sd->cubes[j]=n->d.sd->target[j]->no;
-      n->d.sd->walls[j]=0; }
+    n->d.sd->cubes[j]=n->d.sd->target[j]->no; 
    }
- m->shorttxt=m->longtxt=NULL;
- m->groupno=-1; /* not saved yet */
- m->filename=NULL; /* no corresponding file */
+  }
+ for(n=m->flickeringlights.head;n->next!=NULL;n=n->next)
+  n->d.fl->cube=n->d.fl->c->no;
+ checkmem(m->fullname=MALLOC(strlen(TXT_DEFAULTMACRONAME)+1));
+ sprintf(m->fullname,TXT_DEFAULTMACRONAME,view.b_levels->num_options);
+ m->filename=NULL; 
+ m->exitcube=(m->cubes.size>0) ? m->cubes.head : NULL;
+ m->exitwall=view.currwall;
+ m->currwall=m->currpnt=0;
+ initlevel(m);
+ m->levelsaved=0;
+ for(i=0;i<3;i++)
+  {
+  m->e0.x[i]=view.e0.x[i];
+  for(j=0;j<3;j++) m->e[j].x[i]=view.e[j].x[i];
+  }
  return m;
  }
-
-int savemacro(FILE *f,struct macro *m)
+ 
+/* Insert macro m in current level. Return 1 if successful, -1 if
+ macro was inserted but not connected and 0 if not successful */
+int insertmacro(struct leveldata *m,int connectnow,float scaling)
  {
- struct node *exit;
- int ok;
- /* numerate the list new: */
- if(fwrite("MACRO",1,5,f)!=5)
-  { printmsg("Can't save header."); return 0; }
- if(fwrite(&m->groupno,sizeof(int),1,f)!=1)
-  { printmsg("Can't save macro group number."); return 0; }
- if(!fwritestring(f,m->shorttxt))
-  { printmsg("Can't save short string."); return 0; }
- if(fwrite(&m->wallno,sizeof(int),1,f)!=1)
-  { printmsg("Can't save macro wall number."); return 0; }
- if(!fwritestring(f,m->longtxt))
-  { printmsg("Can't save short string."); return 0; }
- exit=view.exitcube; view.exitcube=NULL;
- ok=savelist(f,&m->pts,savepoint,1) && 
-  savelist(f,&m->cubes,savecube,1) && savelist(f,&m->doors,savedoor,1) && 
-  savelist(f,&m->things,savething,1) && savelist(f,&m->sdoors,savesdoor,1) &&
-  savelist(f,&m->producers,saveproducer,1);
- view.exitcube=exit;
- return ok;
- }
-
-int readmacro(struct macro *m)
- {
- FILE *f;
- int ok;
- char buffer[strlen(view.macropath)+strlen(m->filename)+1];
- strcpy(buffer,view.macropath); strcat(buffer,m->filename);
- if((f=fopen(buffer,"rb"))==NULL)
-  { printmsg("Can't open macro file %s.",buffer); return 0; }
- free(m->shorttxt);
- if(!readmacroheader(f,m))
-  { fclose(f); printmsg("Can't read macroheader."); return 0; }
- if(fread(&m->wallno,sizeof(int),1,f)!=1)
-  { fprintf(errf,"Can't read wall number in macrofile %s\n",buffer); 
-    fclose(f); return 0; }
- if((m->longtxt=freadstring(f))==NULL)
-  { fprintf(errf,"Can't read longtxt for macro %s\n",buffer);return 0; }
- ok=readlist(f,&m->pts,readpnt,-1) && readlist(f,&m->cubes,readcube,-1) &&
-  readlist(f,&m->doors,readdoor,-1) && readlist(f,&m->things,readthing,-1) &&
-  readlist(f,&m->sdoors,readsdoor,-1) && 
-  readlist(f,&m->producers,readproducer,-1);
- fclose(f);
- if(!ok)
-  printmsg("Can't read macro data.");
- return ok;
- }
-   
-int insertmacro(struct macro *m,int connectnow,double scaling)
- {
- struct point naxis[3],*offset;
+ struct point naxis[3],*offset,*eoffset,eaxis[3],hp1,hp2;
  struct listpoint *lp;
  struct thing *t;
  int i,j;
  struct cube *c;
  struct node *n;
+ my_assert(m!=NULL && l!=NULL);
+ if(view.pcurrcube->d.c->nc[view.currwall]!=NULL)
+  { printmsg(TXT_CUBETAGGEDON); return 0; }
+ if(view.pcurrwall==NULL) { printmsg(TXT_NOCURRSIDE); return 0; }
+ if(m->exitcube==NULL || m->exitcube->d.c->walls[m->exitwall]==NULL)
+  { printmsg(TXT_NOCONNECTSIDE,m->fullname); return 0; }
+ if(((l->cubes.size<=MAX_DESCENT_CUBES && 
+  l->cubes.size+view.pcurrmacro->cubes.size>MAX_DESCENT_CUBES) || 
+  (l->pts.size<=MAX_DESCENT_VERTICES &&
+   l->pts.size+view.pcurrmacro->pts.size>MAX_DESCENT_VERTICES) ||
+  (l->doors.size<=MAX_DESCENT_WALLS &&
+   l->doors.size+view.pcurrmacro->doors.size>MAX_DESCENT_WALLS) ||
+  (l->things.size<=MAX_DESCENT_OBJECTS &&
+   l->things.size+view.pcurrmacro->things.size>MAX_DESCENT_OBJECTS)) &&
+  !yesnomsg(TXT_TOOMANYITEMS))
+  return 0;
+ untagall(tt_cube); untagall(tt_door); untagall(tt_thing);
  /* the translation */
  offset=view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]->d.p;
+ eoffset=m->exitcube->d.c->p[wallpts[m->exitwall][0]]->d.p;
  /* ok: insert macro in plot:
     adding on the current wall, point 0 on current point.
     macros are always saved as this point in the origin and
@@ -297,74 +265,114 @@ int insertmacro(struct macro *m,int connectnow,double scaling)
     so that x and y-axis are exchanged...
     everything clear? */
  /* getting the transformation matrix */
+ getcubecoords(m->exitcube->d.c,m->exitwall,0,eaxis,0);
  getcubecoords(view.pcurrcube->d.c,view.currwall,view.currpnt,naxis,1);
  /* now we have the three basis vectors of the macro-coord-system
     in the normal coord-system that means we have the 
     transformation matrix */
+ sortlist(&m->cubes,0); sortlist(&m->pts,0); sortlist(&m->doors,0);
+ sortlist(&m->things,0); sortlist(&m->producers,0); sortlist(&m->sdoors,0);
+ sortlist(&m->flickeringlights,0);
  sortlist(&l->cubes,m->cubes.size); sortlist(&l->pts,m->pts.size);
  sortlist(&l->things,m->things.size); sortlist(&l->doors,m->doors.size);
+ sortlist(&l->sdoors,m->sdoors.size); 
+ sortlist(&l->producers,m->producers.size);
+ sortlist(&l->flickeringlights,m->flickeringlights.size);
  /* inserting the points */
  for(n=m->pts.head;n->next!=NULL;n=n->next)
   {
-  if((lp=malloc(sizeof(struct listpoint)))==NULL)
-   { printmsg("No mem to create point."); return 0; }
+  checkmem(lp=MALLOC(sizeof(struct listpoint)));
   /* rotating points */
-  MATRIXMULT(&lp->p,naxis,&n->d.lp->p);
+  for(i=0;i<3;i++) hp1.x[i]=n->d.lp->p.x[i]-eoffset->x[i];
+  INVMATRIXMULT(&hp2,eaxis,&hp1);
+  MATRIXMULT(&lp->p,naxis,&hp2);
   /* and move&scale them */
   for(i=0;i<3;i++) lp->p.x[i]=offset->x[i]+lp->p.x[i]*scaling;
   fittogrid(&lp->p);
-  initlist(&lp->c);
-  if(!addheadnode(&l->pts,n->no,lp))
-   { printmsg("Can't add point.\n"); return 0; } 
+  initlist(&lp->c); lp->tagged=NULL;
+  checkmem(addheadnode(&l->pts,n->no,lp));
   }
  /* the things */
  for(n=m->things.head;n->next!=NULL;n=n->next)
   {
   j=getsize(ds_thing,n->d.t)+(unsigned char *)&n->d.t->type1-
    (unsigned char *)n->d.t;
-  if((t=malloc(j))==NULL)
-   { printmsg("No mem for thing."); return 0; }
-  memcpy(t,n->d.t,j);
-  MATRIXMULT(&t->p[0],naxis,&n->d.t->p[0]);
+  checkmem(t=MALLOC(j));
+  memcpy(t,n->d.t,j); t->tagged=NULL;
+  for(i=0;i<3;i++) hp1.x[i]=n->d.t->p[0].x[i]-eoffset->x[i];
+  INVMATRIXMULT(&hp2,eaxis,&hp1);
+  MATRIXMULT(&t->p[0],naxis,&hp2);
   for(i=0;i<3;i++) t->p[0].x[i]=offset->x[i]+t->p[0].x[i]*scaling;
-  setthingpts(t);
-  if(addheadnode(&l->things,n->no,t)==NULL)
-   { printmsg("Can't add thing."); return 0; }
+  /* Now turn the orientation of the thing */
+  for(j=0;j<3;j++)
+   {
+   for(i=0;i<3;i++) hp1.x[i]=n->d.t->orientation[j*3+i];
+   INVMATRIXMULT(&hp2,eaxis,&hp1);
+   MATRIXMULT(&hp1,naxis,&hp2);
+   for(i=0;i<3;i++) n->d.t->orientation[j*3+i]=hp1.x[i];
+   }
+  setthingpts(t); 
+  checkmem(addheadnode(&l->things,n->no,t));
   }
- /* inserting the doors, sdoors and producers */
- if(!copylist(&l->doors,&m->doors,sizeof(struct door)))
-  { printmsg("Can't copy doors."); return 0; }
- if(!copylist(&l->sdoors,&m->sdoors,sizeof(struct sdoor)))
-  { printmsg("Can't copy switches."); return 0; }
- if(!copylist(&l->producers,&m->producers,sizeof(struct producer)))
-  { printmsg("Can't copy producers."); return 0; }
+ /* inserting the doors, sdoors and producers and flickering lights */
+ checkmem(copylist(&l->doors,&m->doors,sizeof(struct door)));
+ for(n=m->doors.head;n->next!=NULL;n=n->next) n->d.d->tagged=NULL;
+ checkmem(copylist(&l->sdoors,&m->sdoors,sizeof(struct sdoor)));
+ checkmem(copylist(&l->producers,&m->producers,sizeof(struct producer)));
+ for(n=m->flickeringlights.head;n->next!=NULL;n=n->next)
+  n->d.fl->cube=n->d.fl->c->no;
+ checkmem(copylist(&l->flickeringlights,&m->flickeringlights,
+  sizeof(struct flickering_light)));
  /* now insert all cubes */
  for(n=m->cubes.tail;n->prev!=NULL;n=n->prev)
   {
-  if((c=malloc(sizeof(struct cube)))==NULL)
-   { printmsg("No mem for inserting cube.\n"); return 0; }
-  *c=*n->d.c;
+  checkmem(c=MALLOC(sizeof(struct cube)));
+  *c=*n->d.c; c->tagged=NULL;
+  for(j=0;j<8;j++) c->pts[j]=c->p[j]->no;
   for(j=0;j<6;j++)
    {
+   c->nextcubes[j]=c->nc[j]!=NULL ? c->nc[j]->no : 0xffff;
+   c->doors[j]=c->d[j]!=NULL ? c->d[j]->no : 0xff;
+   if(c->cp) { c->prodnum=c->cp->no; c->cp->d.cp->cubenum=n->no; }
+   else c->prodnum=-1;
    if(n->d.c->walls[j]!=NULL)
     {
-    if((c->walls[j]=malloc(sizeof(struct wall)))==NULL)
-     { printmsg("No mem for new walls."); return 0; }
-    *c->walls[j]=*n->d.c->walls[j];
+    checkmem(c->walls[j]=MALLOC(sizeof(struct wall)));
+    *c->walls[j]=*n->d.c->walls[j]; c->walls[j]->fl=NULL;
     }
    }
-  addheadnode(&l->cubes,n->no,c);
+  checkmem(addheadnode(&l->cubes,n->no,c));
   }
  for(n=l->cubes.head;n->no<m->cubes.size;n=n->next)
-  initcube(n);
+  if(!initcube(n))
+   { n=n->next; freenode(&l->cubes,n->prev,freecube); }
+ for(n=l->things.head;n->no<m->things.size;n=n->next)
+  setthingcube(n->d.t);
  for(n=l->doors.head;n->no<m->doors.size;n=n->next)
-  initlist(&n->d.d->sdoors);
+  { freelist(&n->d.d->sdoors,NULL); initlist(&n->d.d->sdoors); }
  for(n=l->doors.head;n->no<m->doors.size;n=n->next)
-  initdoor(n);
+  {
+  n->d.d->cubenum=n->d.d->c->no;
+  if(n->d.d->sd)
+   {
+   n->d.d->sdoor=n->d.d->sd->no;
+   for(i=0;i<n->d.d->sd->d.sd->num;i++)
+    if(getsdoortype(n->d.d->sd->d.sd)==sdtype_door)
+     { n->d.d->sd->d.sd->cubes[i]=n->d.d->sd->d.sd->target[i]->d.d->c->no;
+       n->d.d->sd->d.sd->walls[i]=n->d.d->sd->d.sd->target[i]->d.d->wallnum; }
+    else n->d.d->sd->d.sd->cubes[i]=n->d.d->sd->d.sd->target[i]->no; 
+   }
+  else n->d.d->sdoor=0xff;
+  if(!initdoor(n))
+   { n=n->next; freenode(&l->doors,n->prev,freedoor); }
+  }
+ for(n=l->flickeringlights.head;n->no<m->flickeringlights.size;n=n->next)
+  n->d.fl->cube=n->d.fl->c->no;
  /* now connect the current cube with the cube 0 of the macro */
  if(connectnow)
-  if(!connect(view.pcurrcube,view.currwall,l->cubes.head,m->wallno))
-   return 0; 
+  if(!connectcubes(NULL,view.pcurrcube,view.currwall,l->cubes.head,
+   m->exitwall))
+   return -1; 
  return 1;
  } 
  

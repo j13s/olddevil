@@ -17,7 +17,10 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
     
 #include "structs.h"
+#include "userio.h"
 #include "tools.h"
+#include "tag.h"
+#include "calctxt.h"
 #include "insert.h"
 #include "stdtypes.h"
 
@@ -29,65 +32,104 @@ void fittogrid(struct point *p)
   p->x[i]=floor(p->x[i]/view.gridlength+0.5)*view.gridlength; 
  }
  
-struct node *insertthing(struct node *c,int t1)
+/* insert a copy of thing t in cube c */
+struct node *insertthing(struct node *c,struct node *t)
  {
  struct node *n;
- struct thing *t;
+ struct thing *nt;
  int i,j;
- t=changething(NULL,t1,view.pcurrcube->d.c);
+ my_assert(c!=NULL);
+ nt=changething(NULL,t==NULL ? NULL : t->d.t,t==NULL ? tt1_item : 
+  t->d.t->type1,c->d.c);
+ if(nt==NULL) { printmsg(TXT_CANTINSERTTHING); return NULL; }
+ nt->tagged=NULL;
+ if(nt->type1!=4 && nt->type2!=14 && t!=NULL) nt->type2=t->d.t->type2;
  for(j=0;j<3;j++)
   {
-  t->p[0].x[j]=0.0;
+  nt->p[0].x[j]=0.0;
   for(i=0;i<8;i++)
-   t->p[0].x[j]+=c->d.c->p[i]->d.p->x[j]/8.0;
+   nt->p[0].x[j]+=c->d.c->p[i]->d.p->x[j]/8.0;
   }
- setthingpts(t);
- if((n=addnode(&l->things,l->things.size,t))==NULL)
-  { printmsg("Can't add node to thing list."); free(t); return NULL; }
+ checkmem(n=addnode(&l->things,l->things.size,nt));
+ setthingpts(nt); setthingcube(nt);
  return n;
  }
  
-struct wall *insertwall(struct node *c,int wallnum,int txt2)
+struct wall *insertwall(struct node *c,int wallnum,int txt1,int txt2,int dir)
  {
  struct wall *w;
  int j;
- if(c->d.c->walls[wallnum]!=NULL)
-  { printmsg("There's already a wall."); return NULL; }
- if((w=malloc(sizeof(struct wall)))==NULL)
-  { printmsg("No mem for wall."); return NULL; }
- w->texture2=txt2; w->texture1=0;
- w->no=wallnum;
+ my_assert(c!=NULL);
+ if(c->d.c->walls[wallnum]==NULL)
+  { checkmem(w=MALLOC(sizeof(struct wall))); }
+ else w=c->d.c->walls[wallnum];
+ if(view.pdefcube && view.pdefcube->d.c->walls[view.defwall]) 
+  *w=*view.pdefcube->d.c->walls[view.defwall];
+ else
+  { w->texture1=w->texture2=w->txt2_direction=0; }
+ if(txt1>=0) w->texture1=txt1;
+ if(txt2>=0) w->texture2=txt2;
+ if(dir>=0) w->txt2_direction=dir;
+ w->no=wallnum; w->locked=0; w->ls=NULL; w->fl=NULL;
  for(j=0;j<4;j++)
   {
+  w->tagged[j]=NULL;
   w->p[j]=c->d.c->p[wallpts[wallnum][j]];
-  w->corners[j]=stdcorners[j];
+  if(!view.pdefcube || !view.pdefcube->d.c->walls[view.defwall])
+   w->corners[j]=stdcorners[j];
   }
  c->d.c->walls[wallnum]=w;
- for(j=0;j<4;j++) newwallpnt(c->d.c,w,w->p[j]->d.p);
- if(view.currwall==wallnum && view.pcurrcube->no==c->no) 
+ recalcwall(c->d.c,wallnum);
+ if(view.currwall==wallnum && view.pcurrcube!=NULL && 
+  view.pcurrcube->no==c->no) 
   view.pcurrwall=w;
  return w;
  }
  
-struct node *insertsingledoor(struct node *c,int wallnum,int animtxt,
- int walltxt)
+struct node *insertsingledoor(struct node *c,int wallnum)
  {
  struct door *d;
  struct node *n;
- if(c->d.c->nc[wallnum]==NULL)
-  { printmsg("No neighbour."); return NULL; }
- if(insertwall(c,wallnum,walltxt)==NULL) return NULL;
- if((d=malloc(sizeof(struct door)))==NULL)
-  { printmsg("No mem for door.\n"); return NULL; }
- *d=stddoor;
- d->cubenum=c->no; d->wallnum=wallnum;
- d->d=NULL;
- d->sd=NULL;
- if((n=addnode(&l->doors,l->doors.size,d))==NULL)
-  { printmsg("No mem for node.\n"); free(d); d->c->d.c->walls[wallnum]=NULL;
-    free(d->w); return NULL; }
- initlist(&d->sdoors);
- initdoor(n);
+ struct sdoor *sd;
+ my_assert(c!=NULL && wallnum>=0 && wallnum<6 && 
+  (init.d_ver>=d2_10_sw || (c->d.c->nc[wallnum]!=NULL || 
+  c->d.c->walls[wallnum]==NULL)));
+ checkmem(d=MALLOC(sizeof(struct door)));
+ if(c->d.c->nc[wallnum]!=NULL)
+  {
+  if(view.pcurrdoor && view.pcurrdoor->d.d->w)
+   { checkmem(insertwall(c,wallnum,view.pcurrdoor->d.d->w->texture1,
+      view.pcurrdoor->d.d->w->texture2,
+      view.pcurrdoor->d.d->w->txt2_direction)); }
+  else
+   if(pig.anims[stdncdoor.animtxt]->pig->anim_t2)
+    {checkmem(insertwall(c,wallnum,0,pig.anims[stdncdoor.animtxt]->rdlno,0));}
+   else
+    checkmem(insertwall(c,wallnum,pig.anims[stdncdoor.animtxt]->rdlno,0,0));
+  if(view.pcurrdoor && view.pcurrdoor->d.d->type1!=door1_switchwithwall)
+   *d=*view.pcurrdoor->d.d;
+  else *d=stdncdoor;
+  }
+ else
+  { if(view.pcurrdoor && view.pcurrdoor->d.d->type1==door1_switchwithwall)
+     { *d=*view.pcurrdoor->d.d; 
+       c->d.c->walls[wallnum]->texture2=view.pcurrdoor->d.d->w->texture2; }
+    else { *d=stdnonncdoor;c->d.c->walls[wallnum]->texture2=std_switch_t2; } }
+ d->cubenum=c->no; d->wallnum=wallnum; d->sd=NULL;
+ d->d=NULL; initlist(&d->sdoors);
+ checkmem(n=addnode(&l->doors,-1,d));
+ if(d->sdoor!=0xff && d->sdoor!=switch_exit && d->sdoor!=switch_secretexit)
+  {
+  my_assert(view.pcurrdoor!=NULL);
+  checkmem(sd=MALLOC(sizeof(struct sdoor)));
+  *sd=*view.pcurrdoor->d.d->sd->d.sd; sd->d=n;
+  checkmem(d->sd=addnode(&l->sdoors,-1,sd));
+  d->sdoor=d->sd->no; 
+  if(d->sd->no>254) 
+   { d->sdoor=0xff; FREE(d->sd); FREE(sd); d->sd=NULL; }
+  }
+ else d->sdoor=0xff;
+ if(!initdoor(n)) { killnode(&l->doors,n); my_assert(0); }
  c->d.c->d[wallnum]=n;
  return n;
  } 
@@ -95,77 +137,101 @@ struct node *insertsingledoor(struct node *c,int wallnum,int animtxt,
 int insertsdoor(struct node *d)
  {
  struct sdoor *sd;
- if((sd=malloc(sizeof(struct sdoor)))==NULL)
-  { printmsg("No mem for switch."); return 0; }
- *sd=stdsdoor;
- sd->d=d;
- if((d->d.d->sd=addnode(&l->sdoors,l->sdoors.size,sd))==NULL)
-  { printmsg("Can't insert node for switch."); free(sd); return 0;}
+ checkmem(sd=MALLOC(sizeof(struct sdoor)));
+ *sd=stdsdoor; sd->d=d;
+ if(d->d.d->type1==door1_switchwithwall) sd->flags|=switchflag_once;
+ checkmem(d->d.d->sd=addnode(&l->sdoors,l->sdoors.size,sd));
  return 1;
  }
  
-struct node *insertdoor(struct node *c,int wallnum,int animtxt,int walltxt)
+struct node *insertdoor(struct node *c,int wallnum)
  {
  struct node *n;
  int i,wall;
- if((n=insertsingledoor(c,wallnum,animtxt,walltxt))==NULL) return NULL;
- for(i=0,wall=-1;i<6;i++)
-  if(c->d.c->nc[wallnum]->d.c->nc[i]!=NULL)
-   if(c->d.c->nc[wallnum]->d.c->nc[i]->no==c->no) {wall=i; break;}
- if(wall==-1)
-  { printmsg("Can't find neighbours."); deletedoor(n); return NULL; }
- if((n->d.d->d=insertsingledoor(c->d.c->nc[wallnum],wall,animtxt,walltxt))==
-  NULL) { deletedoor(n); return NULL; } 
- n->d.d->d->d.d->d=n;
+ checkmem(n=insertsingledoor(c,wallnum));
+ if(c->d.c->nc[wallnum])
+  {
+  for(i=0,wall=-1;i<6;i++)
+   if(c->d.c->nc[wallnum]->d.c->nc[i]!=NULL)
+    if(c->d.c->nc[wallnum]->d.c->nc[i]->no==c->no) {wall=i; break;}
+  my_assert(wall!=-1);
+  checkmem(n->d.d->d=insertsingledoor(c->d.c->nc[wallnum],wall));
+  n->d.d->d->d.d->d=n;
+  }
+ else my_assert(init.d_ver>=d2_10_sw);
  return n;
  }
+
+void floatpnt(struct node *c,int pn)
+ {
+ int j;
+ struct listpoint *olp=c->d.c->p[pn]->d.lp,*lp;
+ struct node *np;
+ checkmem(lp=MALLOC(sizeof(struct listpoint)));
+ for(np=olp->c.head;np->next!=NULL;np=np->next)
+  if(np->d.n->no==c->no) break;
+ my_assert(np->next!=NULL);
+ freenode(&olp->c,np,NULL);
+ lp->p=olp->p;
+ initlist(&lp->c); lp->tagged=NULL;
+ checkmem(addnode(&lp->c,pn,c));
+ checkmem(np=addnode(&l->pts,l->pts.size,lp));
+ c->d.c->p[pn]=np; 
+ for(j=0;j<3;j++)
+  c->d.c->walls[wallno[pn][0][j]]->p[wallno[pn][1][j]]=np;
+ }
  
-void deleteconnect(struct node *c,int wn)
+void justdelconnect(struct node *c,int wn)
  {
  struct node *nc;
- int j,nwn;
- struct listpoint *lp;
+ int nwn;
  struct wall *w;
- if((nc=c->d.c->nc[wn])==NULL) 
-  { printmsg("No neighbour cube."); return; }
- if(c->d.c->d[wn]!=NULL)
-  { printmsg("First kill the wall."); return; }
+ nc=c->d.c->nc[wn];
+ my_assert(nc!=NULL && c!=NULL && c->d.c->d[wn]==NULL && 
+  c->d.c->walls[wn]==NULL);
  for(nwn=0;nwn<6;nwn++)
-  if(nc->d.c->nc[nwn]->no==c->no) break; 
- if(nwn==6) 
-  { printmsg("Can't find corresponding side in neighbour cube."); return; }
- if((w=insertwall(nc,nwn,0))==NULL) return;
- nc->d.c->nc[nwn]=NULL;
- if((w=insertwall(c,wn,0))==NULL) return;
- c->d.c->nc[wn]=NULL;
- /* now double points */
- for(j=0;j<4;j++)
+  if(nc->d.c->nc[nwn]!=NULL && nc->d.c->nc[nwn]->no==c->no) break; 
+ my_assert(nwn<6);
+ checkmem(w=insertwall(nc,nwn,-1,-1,-1)); nc->d.c->nc[nwn]=NULL;
+ checkmem(w=insertwall(c,wn,-1,-1,-1)); c->d.c->nc[wn]=NULL;
+ }
+ 
+void insertpnt(struct node *c,int pn)
+ {
+ int j;
+ struct listpoint *olp=c->d.c->p[pn]->d.lp;
+ /* kill all connections */
+ if(olp->c.size<2) return;
+ for(j=0;j<3;j++)
+  if(c->d.c->nc[wallno[pn][0][j]]!=NULL) justdelconnect(c,wallno[pn][0][j]);
+ floatpnt(c,pn);
+ }
+ 
+/* delete the connection on cube c side wn. If fast==1 float all points
+ which are only connected with the cube c after deleting the connection. */
+void deleteconnect(struct node *c,int wn,int fast)
+ {
+ int i,j;
+ my_assert(c!=NULL && wn>=0 && wn<6 && c->d.c->nc[wn]!=NULL && 
+  c->d.c->d[wn]==NULL);
+ justdelconnect(c,wn);
+ if(fast)
   {
-  if((lp=malloc(sizeof(struct listpoint)))==NULL)
-   { printmsg("No mem for listpoint."); return; }
-  for(nc=w->p[j]->d.lp->c.head;nc->next!=NULL;nc=nc->next)
-   if(nc->d.n->no==c->no) break;
-  if(nc->next==NULL)
-   { printmsg("Can't find cube in pointlist."); return; }
-  freenode(&w->p[j]->d.lp->c,nc,NULL);
-  lp->p=w->p[j]->d.lp->p;
-  initlist(&lp->c);
-  if(addnode(&lp->c,wallpts[wn][j],c)==NULL)
-   { printmsg("Can't add node to cubelist in point."); return; }
-  if((nc=addnode(&l->pts,l->pts.size,lp))==NULL)
-   { printmsg("Can't add point to pointlist."); return; }
-  w->p[j]=nc;
-  c->d.c->p[wallpts[wn][j]]=nc;
+  for(i=0;i<4;i++)
+   {
+   for(j=0;j<3;j++) if(c->d.c->nc[wallno[wallpts[wn][i]][0][j]]!=NULL) break;
+   if(j==3) floatpnt(c,wallpts[wn][i]);
+   }
   }
  }
  
 void killtarget(struct sdoor *sd,int n)
  {
  int i,j;
+ my_assert(sd!=NULL);
  for(i=0;i<sd->num;i++) 
   if(sd->target[i]->no==n) break;
- if(i==sd->num)
-  { printmsg("Can't kill target %d",n); return; }
+ if(i==sd->num) { printmsg(TXT_CANTKILLTARGET,n); return; }
  for(j=i;j<sd->num-1;j++) sd->target[j]=sd->target[j+1];
  sd->num--; 
  }
@@ -173,111 +239,149 @@ void killtarget(struct sdoor *sd,int n)
 void killsdoorlist(struct list *l,int no)
  {
  struct node *n;
+ my_assert(l!=NULL);
  for(n=l->head;n->next!=NULL;n=n->next)
   killtarget(n->d.n->d.d->sd->d.sd,no);
  }
  
+/* Remove all links to the switch sd in its targets. -> The switch sd
+ switches 0 targets after this function was called */
 void cleansdoor(struct sdoor *sd)
  {
  int k;
  struct list *tl;
  struct node *n;
+ my_assert(sd!=NULL);
  for(k=0;k<sd->num;k++)
   {
-  if(getsdoortype(sd)==sdtype_door) tl=&sd->target[k]->d.d->sdoors;
-  else tl=&sd->target[k]->d.c->sdoors;
-  if((n=findnode(tl,sd->d->no))==NULL)
-   { fprintf(errf,"Can't find corresponding door %d to sdoor.",sd->d->no);
-     my_exit(); }
-  freenode(tl,n,NULL);
+  switch(getsdoortype(sd))
+   {
+   case sdtype_door: tl=&sd->target[k]->d.d->sdoors; break;
+   case sdtype_cube: case sdtype_side:
+    tl=&sd->target[k]->d.c->sdoors; break;
+   default: tl=NULL;
+   }
+  if(tl)
+   if((n=findnode(tl,sd->d->no))==NULL)
+    waitmsg(TXT_CLEANNODOORFORSWITCH,sd->d->no);
+   else freenode(tl,n,NULL);
+  sd->target[k]=NULL;
   }
  sd->num=0;
  }
  
+/* Kill the switch n */ 
 void deletesdoor(struct node *n)
  {
- cleansdoor(n->d.sd);
+ my_assert(n!=NULL);
+ cleansdoor(n->d.sd); 
+ if(n->d.sd->d) n->d.sd->d->d.d->sd=NULL;
  freenode(&l->sdoors,n,free);
  }
  
 void deletesingledoor(struct node *n)
  {
+ my_assert(n!=NULL && n->d.d->c!=NULL);
  n->d.d->c->d.c->d[n->d.d->wallnum]=NULL;
- free(n->d.d->c->d.c->walls[n->d.d->wallnum]);
- n->d.d->c->d.c->walls[n->d.d->wallnum]=NULL;
- if(view.pcurrwall==n->d.d->w) view.pcurrwall=NULL;
- free(n->d.d->w);
- if(n->d.d->d) n->d.d->d->d.d->d=NULL;
- if(n->d.d->sd) cleansdoor(n->d.d->sd->d.sd);
- view.oldpcurrdoor=NULL;
+ if(n->d.d->c->d.c->nc[n->d.d->wallnum])
+  {
+  if(n->d.d->c->d.c->walls[n->d.d->wallnum]->ls)
+   freenode(&l->lightsources,n->d.d->c->d.c->walls[n->d.d->wallnum]->ls,
+    freelightsource);
+  if(n->d.d->c->d.c->walls[n->d.d->wallnum]->fl)
+   freenode(&l->flickeringlights,n->d.d->c->d.c->walls[n->d.d->wallnum]->fl,
+    free);
+  FREE(n->d.d->c->d.c->walls[n->d.d->wallnum]);
+  n->d.d->c->d.c->walls[n->d.d->wallnum]=NULL;
+  if(view.pcurrwall==n->d.d->w) view.pcurrwall=NULL;
+  if(view.pdefcube==n->d.d->c && view.defwall==n->d.d->wallnum)
+   { view.pdeflevel=NULL; view.pdefcube=NULL; view.defwall=0; }
+  if(n->d.d->d) n->d.d->d->d.d->d=NULL;
+  }
+ else 
+  { my_assert(init.d_ver>=d2_10_sw);
+    n->d.d->w->texture2=0; /* delete the switch */ }
+ if(n->d.d->sd) deletesdoor(n->d.d->sd);
  if(n->no==view.pcurrdoor->no) 
   { view.pcurrdoor=view.pcurrdoor->prev->prev ? view.pcurrdoor->prev :
      view.pcurrdoor->next;
     if(view.pcurrdoor->next==NULL) view.pcurrdoor=NULL; }
  killsdoorlist(&n->d.d->sdoors,n->no);
+ untag(tt_door,n);
  freenode(&l->doors,n,freedoor);
  }
  
 void deletedoor(struct node *n)
  {
- struct node *d2=n->d.d->d;
+ struct node *d2;
+ my_assert(n!=NULL);
+ d2=n->d.d->d;
  if(d2!=NULL) deletesingledoor(d2);
  deletesingledoor(n);
  }
  
-void deletecube(struct node *n)
+/* deletes cube n. if cubes==NULL || pts==NULL the cube is deleted
+ in the current level */
+void deletecube(struct list *cubes,struct list *pts,struct node *n)
  {
  int k,m,w;
- struct cube *nc,*c=n->d.c;
+ struct cube *nc,*c;
  struct listpoint *lp;
- struct node *wall,*cn;
- if(n->no==view.pcurrcube->no) 
-  { 
-  view.pcurrcube=view.pcurrcube->prev->prev ? view.pcurrcube->prev :
-   view.pcurrcube->next;
-  if(!view.pcurrcube->next)
-   { printmsg("Can't kill last cube."); view.pcurrcube=view.pcurrcube->prev;
-     return; } 
+ struct node *cn;
+ my_assert(n!=NULL);
+ c=n->d.c;
+ if(cubes==NULL || pts==NULL)
+  {
+  if(l->exitcube && l->exitcube->no==n->no) l->exitcube=NULL;
+  untag(tt_cube,n);
+  cubes=&l->cubes; pts=&l->pts;
+  if(n->no==view.pcurrcube->no)
+   { 
+   for(k=0;k<6;k++) if(c->nc[k]!=NULL) break;
+   if(k==6)
+    view.pcurrcube=view.pcurrcube->prev->prev ? view.pcurrcube->prev :
+     view.pcurrcube->next;
+   else
+    { view.pcurrcube=c->nc[k];
+      for(m=0;m<6;m++) 
+       if(view.pcurrcube->d.c->nc[m]==n)
+        { view.currwall=m; break; } }
+   my_assert(view.pcurrcube->next);
+   }
+  if(n==view.pdefcube)
+   { view.pdeflevel=NULL; view.pdefcube=NULL; view.defwall=0; }
+  view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
   }
  for(k=0;k<6;k++)
+  {
   if(c->nc[k]!=NULL)
    {
    nc=c->nc[k]->d.c;
    for(m=0,w=-1;m<6;m++)
     if(nc->nc[m]!=NULL && nc->nc[m]->no==n->no) { w=m; break; }
-   if(w==-1)
-    { fprintf(errf,"Can't find neighbour.\n"); my_exit(); }
-   nc->nc[w]=NULL;
-   insertwall(c->nc[k],w,0);
+   my_assert(w!=-1 && c->nc[k]->d.c->walls[w]==NULL);
+   nc->nc[w]=NULL; insertwall(c->nc[k],w,-1,-1,-1);
    }
-  else
-   if((wall=findnode(&view.tagged[tt_wall],n->no*6+k))!=NULL)
-    freenode(&view.tagged[tt_wall],wall,NULL);
- if(view.oldpcurrcube->no==n->no) view.oldpcurrcube=NULL;
+  untag(tt_wall,n,k);
+  }
  for(k=0;k<8;k++)
   {
   lp=c->p[k]->d.lp;
-  for(cn=lp->c.head;cn->next!=NULL;cn=cn->next)
-   if(cn->d.n->no==n->no) break;
-  if(cn->next==NULL)
-   { fprintf(errf,"deletecube: Can't find cube in point (%d)\n",lp->c.size); 
-     my_exit(); }
-  freenode(&lp->c,cn,NULL);
-  if(lp->c.size<=0) freenode(&l->pts,c->p[k],freelistpnt);
+  for(cn=lp->c.head->next;cn!=NULL;cn=cn->next)
+   if(cn->prev->d.n->no==n->no) freenode(&lp->c,cn->prev,NULL);
+  if(lp->c.size<=0) 
+   { untag(tt_pnt,c->p[k]); freenode(pts,c->p[k],freelistpnt); }
   }
- if(view.exitcube->no==n->no) view.exitcube=NULL;
  if(c->cp!=NULL) freenode(&l->producers,c->cp,free);
  killsdoorlist(&c->sdoors,n->no);
- for(wall=view.tagged[tt_pnt].head;wall->next!=NULL;wall=wall->next)
-  if(wall->no/24==n->no) freenode(&view.tagged[tt_pnt],wall,NULL);
- freenode(&l->cubes,n,freecube);
- view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
+ for(cn=c->things.head;cn->next!=NULL;cn=cn->next)
+  cn->d.t->cube=NULL;
+ freelist(&c->things,NULL); 
+ freenode(cubes,n,freecube);
  }
 
 /* replace point oldp with point newp in all cubes of oldp
-   starting at node sn (if NULL starting at head).
-   returns 0 if there are more than eight cubes for one point,
-   1 otherwise. */
+   starting at node sn (if NULL starting at head). */
 int changepnt(struct node *oldp,struct node *newp,struct node *sn)
  {
  struct node *n,*cn;
@@ -285,7 +389,7 @@ int changepnt(struct node *oldp,struct node *newp,struct node *sn)
  int i;
  if(oldp==newp) return 1; /* points are the same */
  /* change all old points in new points. */
- for(cn=(sn==NULL) ? oldp->d.lp->c.head : sn;cn->next!=NULL;cn=cn->next)
+ for(cn=(sn==NULL) ? oldp->d.lp->c.head : sn->next;cn->next!=NULL;cn=cn->next)
   {
   n=cn->d.n; pn=cn->no;
   n->d.c->p[pn]=newp;
@@ -294,45 +398,45 @@ int changepnt(struct node *oldp,struct node *newp,struct node *sn)
    if(n->d.c->walls[wallno[pn][0][i]])
     n->d.c->walls[wallno[pn][0][i]]->p[wallno[pn][1][i]]=newp; 
   }
- for(cn=(sn==NULL) ? oldp->d.lp->c.head : sn;cn->next!=NULL;cn=cn->next)
+ for(cn=(sn==NULL) ? oldp->d.lp->c.head : sn->next;cn->next!=NULL;cn=cn->next)
   freenode(&oldp->d.lp->c,cn,NULL);
  return 1;
  }
  
 /* connect cube c1, wall w1 with cube c2, wall w2. fitting wall w2.
-   both walls must exist.
+   both walls must exist. If pts==NULL delete in current level.
    returns 0 if connection is not possible, otherwise 1 */
-int connect(struct node *nc1,int w1,struct node *nc2,int w2)
+int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
+ int w2)
  {
  struct wall *pw2;
  struct cube *c1,*c2;
  int i,j,k,cp[4];
  struct node *pnts[4][2],*on[4]; /* the four changed points [0]:old [1]:new */
  struct point *p1,p2;
- double dist;
- if(nc1->no==nc2->no)
-  { printmsg("Can't connect cube with itself."); return 0; }
+ float dist;
+ my_assert(nc1!=NULL && nc2!=NULL && w1>=0 && w1<6 && w2>=0 && w2<6);
  c1=nc1->d.c; c2=nc2->d.c;
  pw2=c2->walls[w2];
- if(pw2==NULL || c1->walls[w1]==NULL)
-  { fprintf(errf,"Cube has no wall: %d %d %p / %d %d %p\n",nc1->no,w1,
-    c1->walls[w1],nc2->no,w2,c2->walls[w2]);
-    my_exit(); }
+ my_assert(pw2!=NULL || c1->walls[w1]!=NULL);
+ if(nc1->no==nc2->no) { printmsg(TXT_CONNCUBEITSELF,nc1->no); return 0; }
+ if(c1->d[w1]!=NULL || c2->d[w2]!=NULL)
+  { printmsg(TXT_CONNWALLINWAY,nc1->no,w1,nc2->no,w2); return 0; }
  /* search nearest points  */
  for(j=0;j<4;j++)
   {
   p1=c1->walls[w1]->p[j]->d.p;
-  for(i=0,cp[j]=-1,dist=1.0e7;i<4;i++)
+  for(i=0,cp[j]=-1,dist=view.maxuserconnect;i<4;i++)
    {
    for(k=0;k<3;k++)
     p2.x[k]=pw2->p[i]->d.p->x[k]-p1->x[k];
    if(dist>LENGTH(&p2)) { dist=LENGTH(&p2); cp[j]=i; }
    }
   if(cp[j]==-1)
-   { printmsg("Cube 2 too far away."); return 0; }
+   { printmsg(TXT_CONNCUBETOOFARAWAY,nc1->no,w1,nc2->no,w2); return 0; }
   for(i=0;i<j;i++)
    if(cp[i]==cp[j])
-    { printmsg("Connection ambiguous."); return 0; }
+    { printmsg(TXT_CONNAMBIGUOUS,nc1->no,w1,nc2->no,w2); return 0; }
   }
  /* copy the new four points on the old four points of the current wall and
    free the new four */
@@ -356,20 +460,33 @@ int connect(struct node *nc1,int w1,struct node *nc2,int w2)
   return 0;
   }
  /* connection is correct: let's kill all old things */
- c2->nc[w2]=nc1; free(c2->walls[w2]); c2->walls[w2]=NULL;
- c1->nc[w1]=nc2; free(c1->walls[w1]); c1->walls[w1]=NULL;
+ if(c2->walls[w2]->ls) 
+  freenode(&l->lightsources,c2->walls[w2]->ls,freelightsource);
+ if(c2->walls[w2]->fl)
+  freenode(&l->flickeringlights,c2->walls[w2]->fl,free);
+ if(c1->walls[w1]->ls) 
+  freenode(&l->lightsources,c1->walls[w1]->ls,freelightsource);
+ if(c1->walls[w1]->fl)
+  freenode(&l->flickeringlights,c1->walls[w1]->fl,free);
+ c2->nc[w2]=nc1; FREE(c2->walls[w2]); c2->walls[w2]=NULL;
+ c1->nc[w1]=nc2; FREE(c1->walls[w1]); c1->walls[w1]=NULL;
  /* free old points and calculate new textures */
  for(j=0;j<4;j++)
   {
   if(pnts[j][0]->no!=pnts[j][1]->no)
    {
-   freenode(&l->pts,pnts[j][0],free);  
+   freenode(pts==NULL ? &l->pts : pts,pnts[j][0],free);  
    newcorners(pnts[j][1]); 
    }
   }
- if(view.exitcube->no==nc1->no || view.exitcube->no==nc2->no)
-  view.exitcube=NULL;
- printmsg("Connected cube %d,%d with cube %d,%d",nc1->no,w1,nc2->no,w2);
+ if((view.pdefcube==nc1 && view.defwall==w1) ||
+  (view.pdefcube==nc2 && view.defwall==w2))
+  { view.pdeflevel=NULL; view.pdefcube=NULL; view.defwall=0; }
+ if(pts==NULL)
+  if(l->exitcube!=NULL && ((l->exitcube->no==nc1->no && l->exitwall==w1) || 
+   (l->exitcube->no==nc2->no && l->exitwall==w2))) l->exitcube=NULL;
+ view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
+ printmsg(TXT_CUBESCONNECTED,nc1->no,w1,nc2->no,w2);
  return 1;
  }
 
@@ -378,6 +495,8 @@ void makedoorpnt(struct door *d)
  {
  int j;
  struct point diff1,diff2,cp,*p[4];
+ my_assert(d!=NULL);
+ if(d->w==NULL) return;
  for(j=0;j<4;j++) p[j]=d->w->p[j]->d.p;
  for(j=0;j<3;j++)
   { diff1.x[j]=p[2]->x[j]-p[0]->x[j];
@@ -391,427 +510,248 @@ void makedoorpnt(struct door *d)
  
 /* init of all pointers&point in a door. cubenum and wallnum must be set,
    sdoors must be inited */
-void initdoor(struct node *n)
+int initdoor(struct node *n)
  {
- int i;
- struct door *d=n->d.d;
+ int i,j;
+ struct door *d;
  struct sdoor *sd;
  struct node *sdn;
+ my_assert(n!=NULL && n->d.d!=NULL);
+ d=n->d.d;
  if((d->c=findnode(&l->cubes,d->cubenum))==NULL)
-  { fprintf(errf,"Can't find cube %lu for door.\n",d->cubenum); my_exit(); }
+  { waitmsg(TXT_NOCUBEFORDOOR,d->cubenum); return 0; }
  if(d->wallnum>5)
-  { fprintf(errf,"Wrong wall number %lu (cube=%lu) in door.\n",d->wallnum,
-     d->cubenum); my_exit(); }
+  { waitmsg(TXT_WRONGWALLINDOOR,d->wallnum,d->cubenum); return 0; }
  d->w=d->c->d.c->walls[d->wallnum];
  if(d->w==NULL)
-  { fprintf(errf,"Door: wall number %lu (cube=%lu) == NULL.\n",d->wallnum,
-     d->cubenum); my_exit(); }
- if(d->c->d.c->nc[d->wallnum]==NULL)
-  { fprintf(errf,"Warning: Door cube has no neighbour: %lu %lu\n",d->cubenum,
-     d->wallnum);  }
- d->d=NULL;
- d->edoor=0;
+  { waitmsg(TXT_NOWALLFORDOOR,d->cubenum,d->wallnum); return 0; }
+ if(init.d_ver<d2_10_sw && d->c->d.c->nc[d->wallnum]==NULL)
+  waitmsg(TXT_NONCFORDOOR,d->cubenum,d->wallnum); 
+ d->d=NULL; d->edoor=0; d->switchtype=switch_nothing;
+ d->tagged=NULL;
+ d->old_txt1=d->animtxt>=pig.num_anims || pig.anims[d->animtxt]==NULL || 
+  pig.anims[d->animtxt]->pig==NULL || !pig.anims[d->animtxt]->pig->anim_t2 ?
+  -1 : d->w->texture1;
  for(i=0;i<6;i++)
   if(d->c->d.c->nc[d->wallnum] && d->c->d.c->nc[d->wallnum]->d.c->nc[i]==d->c)
    { d->d=d->c->d.c->nc[d->wallnum]->d.c->d[i]; break; }
  if(d->sdoor!=0xff)
   {
   if((d->sd=findnode(&l->sdoors,d->sdoor))==NULL)
-   { fprintf(errf,"Can't find sdoor %d for door.\n",(int)d->sdoor);
-     my_exit(); }
-  sd=d->sd->d.sd;
-  sd->d=n;
-  for(i=0;i<sd->num;i++)
+   { waitmsg(TXT_NOSWITCHFORDOOR,(int)d->sdoor,n->no);
+     d->sdoor=0xff; d->sd=NULL; }
+  else
    {
-   if((sdn=findnode(&l->cubes,sd->cubes[i]))==NULL)
-    {fprintf(errf,"Can't find cube %hd for sdoor.\n",sd->cubes[i]);
-     my_exit();}
-   if(getsdoortype(sd)==sdtype_door)
+   sd=d->sd->d.sd;
+   d->switchtype=sd->type;
+   sd->d=n;
+   for(i=0;i<sd->num;i++)
     {
-    if(sd->walls[i]>5) 
-     { fprintf(errf,"Illegal wall number %d for sdoor %d.\n",sd->walls[i],
-        d->sd->no); my_exit(); }
-    if((sd->target[i]=sdn->d.c->d[sd->walls[i]])==NULL)
-     { fprintf(errf,"No door on cube %d wall %d for sdoor %d.\n",
-        sd->cubes[i],sd->walls[i],d->sd->no); my_exit(); }
-    addnode(&sd->target[i]->d.d->sdoors,n->no,n);
-    }
-   else
-    {
-    sd->target[i]=sdn;
-    addnode(&sd->target[i]->d.c->sdoors,n->no,n);
+    if((sdn=findnode(&l->cubes,sd->cubes[i]))==NULL)
+     {
+     waitmsg(TXT_NOCUBEFORSWITCH,sd->cubes[i]);
+     sd->num--;
+     for(j=i;j<sd->num;j++) 
+      { sd->cubes[j]=sd->cubes[j+1]; sd->walls[j]=sd->walls[j+1]; }
+     continue;
+     }
+    switch(getsdoortype(sd))
+     {
+     case sdtype_door:
+      if(sd->walls[i]>5) 
+       { 
+       waitmsg(TXT_WRONGWALLFORSWITCH,sd->walls[i],d->sd->no);        
+       sd->num--;
+       for(j=i;j<sd->num;j++) 
+        { sd->cubes[j]=sd->cubes[j+1]; sd->walls[j]=sd->walls[j+1]; }
+       continue;
+       }
+      if((sd->target[i]=sdn->d.c->d[sd->walls[i]])==NULL)
+       { 
+       waitmsg(TXT_NODOORFORSWITCH,sd->cubes[i],sd->walls[i],d->sd->no);
+       sd->num--;
+       for(j=i;j<sd->num;j++) 
+        { sd->cubes[j]=sd->cubes[j+1]; sd->walls[j]=sd->walls[j+1]; }
+       continue;
+       }
+      addnode(&sd->target[i]->d.d->sdoors,n->no,n);
+      break;
+     case sdtype_cube: case sdtype_side:
+      sd->target[i]=sdn;
+      addnode(&sd->target[i]->d.c->sdoors,n->no,n);
+      break;
+     default: break;
+     }
     }
    }
   }
  else d->sd=NULL;
  makedoorpnt(d);
+ return 1;
  }
- 
+
 /* init of all pointers in a cube. the fields c->pts,c->nextcubes,c->doors
    must be set. */
-void initcube(struct node *n)
+int initcube(struct node *n)
  {
  int j,k;
  struct listpoint *lp;
  struct cube *c=n->d.c;
+ initlist(&c->sdoors); initlist(&c->things);
  for(j=0;j<8;j++)
   {
   if((c->p[j]=findnode(&l->pts,(int)c->pts[j]))==NULL)
-   { fprintf(errf,"Can't find cubepoint %d.\n",(int)c->pts[j]); my_exit(); }
+   { return yesnomsg(TXT_NOCUBEPNT,(int)c->pts[j]) ? -1 : 0; }
   lp=c->p[j]->d.lp;
-  addnode(&lp->c,j,n);
+  checkmem(addnode(&lp->c,j,n));
   }
  for(j=0;j<6;j++)
   {
-  if(c->nextcubes[j]==0xffff)
-   c->nc[j]=NULL;
+  c->polygons[j*2]=NULL; c->polygons[j*2+1]=NULL; c->recalc_polygons[j]=1;
+  c->tagged_walls[j]=NULL; 
+  if(c->nextcubes[j]>=0x7fff)
+   { c->nc[j]=NULL; 
+     /*for exit:*/ if(c->walls[j]==NULL) insertwall(n,j,-1,-1,-1); }
   else
    if((c->nc[j]=findnode(&l->cubes,(int)c->nextcubes[j]))==NULL)
-    { fprintf(errf,"Can't find neighbour cube %d.\n",(int)c->nextcubes[j]);
-      my_exit(); }
+    { if(yesnomsg(TXT_NONCFORCUBE,(int)c->nextcubes[j],n->no)) return -1;
+      c->walls[j]=NULL; c->nc[j]=NULL; c->nextcubes[j]=0xffff; 
+      insertwall(n,j,-1,-1,-1); }
   if(c->doors[j]==0xff)
    c->d[j]=NULL;
   else
    if((c->d[j]=findnode(&l->doors,(int)c->doors[j]))==NULL)
-    { fprintf(errf,"Can't find door %d.\n",(int)c->doors[j]); my_exit(); }
-  if(c->walls[j]!=NULL)
-   for(k=0;k<4;k++)
-    c->walls[j]->p[k]=c->p[wallpts[j][k]];
+    { if(yesnomsg(TXT_NODOORFORCUBE,(int)c->doors[j],n->no)) return -1;
+      c->d[j]=NULL; c->doors[j]=0xff; }
+  for(k=0;k<4;k++)
+   if(c->walls[j]!=NULL)
+    { c->walls[j]->p[k]=c->p[wallpts[j][k]];
+      c->walls[j]->tagged[k]=NULL; }
   }
- initlist(&c->sdoors);
+ c->tagged=NULL;
  if(c->type==4 && c->prodnum>=0) /* producer */
   {
   if((c->cp=findnode(&l->producers,c->prodnum))==NULL)
-   { fprintf(errf,"Can't find producer %d for cube %d.\n",
-      (int)c->prodnum,n->no); my_exit(); } 
+   { if(yesnomsg(TXT_NOPRODFORCUBE,(int)c->prodnum,n->no)) return -1;
+     c->prodnum=0; }
+  else c->cp->d.cp->c=n;
   }
  else c->cp=NULL;
+ return 1;
  }
 
-void newcubecorners(struct cube *c,int pointnum)
+/* test if the cubes is convex or weird.
+   return 1 if cube is alright, 0 otherwise */
+int testcube(struct node *nc,int withmsg)
  {
- int i;
- for(i=0;i<3;i++)
-  newwallpnt(c,c->walls[wallno[pointnum][0][i]],c->p[pointnum]->d.p);
- }
-
-void newwall_offset(struct cube *c,struct wall *w,int op0,int op1)
- {
- struct point p[2],p1,p2,op,turnaxis;
- int j,p1xoffs,p1yoffs,op2,op3,centerx,centery;
- struct pixel ex,ey;
- double x,lx,y;
-/*                        0 1 2 3 corner
-  wall 0 (left side):   7 6 2 3
-  wall 1 (ceiling):     0 4 7 3 
-  wall 2 (right side):  0 1 5 4
-  wall 3 (floor):       2 6 5 1
-  wall 4 (front):       4 5 6 7
-  wall 5 (back):        3 2 1 0 */
- if(w==NULL) return;
- if(op1<op0) { j=op0; op0=op1; op1=j; }
- op2=(op1+1)&3; op3=(op0-1)&3;
- /* save the old orientation of the texture */
- p1xoffs=w->corners[op0].xpos; p1yoffs=w->corners[op0].ypos;
- ex.x=w->corners[op1].xpos-p1xoffs;
- ex.y=w->corners[op1].ypos-p1yoffs;
- lx=sqrt(ex.x*ex.x+ex.y*ex.y);
- if(lx==0)
-  { ex.x=1; ex.y=0; lx=1; }
- ex.x/=lx; ex.y/=lx;
- /* that was the first norm vector, now the one orthogonal */
- ey.y=ex.x; ey.x=-ex.y;
- /* the first point stays in (p1offsx,p1offsy),
-    the second point is in the old direction but perhaps in another
-    length */
- for(j=0;j<3;j++)
-  p[0].x[j]=w->p[op1]->d.p->x[j]-w->p[op0]->d.p->x[j];
- w->corners[op1].xpos=(short int)(ex.x*LENGTH(&p[0])/640.0)+p1xoffs;
- w->corners[op1].ypos=(short int)(ex.y*LENGTH(&p[0])/640.0)+p1yoffs;
- /* OK. now the last point must be divided in one who goes
-    parallel to p[op0]->p[op1] and one who's orthogonal */
- for(j=0;j<3;j++)
-  p1.x[j]=w->p[op3]->d.p->x[j]-w->p[op0]->d.p->x[j];
- normalize(&p[0]);
- x=SCALAR(&p[0],&p1);
- for(j=0;j<3;j++)
-  p[1].x[j]=p1.x[j]-x*p[0].x[j];
- /* in p[1] is now the part of p1 that's not in px direction and
-    x the length of p[1] in p[0] direction.
-    p[0] direction is in the plane ex, the orthognal direction ey,
-    so we get the point in the plane with */
- w->corners[op3].xpos=(short int)((ey.x*LENGTH(&p[1])+ex.x*x)/640.0)+p1xoffs;
- w->corners[op3].ypos=(short int)((ey.y*LENGTH(&p[1])+ex.y*x)/640.0)+p1yoffs;
- /* now the last point: */
- /* NEW */
- /* turn last point into the plane of the three others: */
- /* get the coordsystem of the turn axis */
- for(j=0;j<3;j++) turnaxis.x[j]=w->p[op3]->d.p->x[j]-w->p[op1]->d.p->x[j];
- normalize(&turnaxis);
- for(j=0;j<3;j++)
+ unsigned short int newpnum=0,j,l1n,l2n,l3n;
+ struct point l1,l2,l3,e;
+ float ll1;
+ struct node *nt;
+ /* test if two points are equal */
+ for(l1n=0;l1n<6;l1n++)
+  for(l2n=0;l2n<4;l2n++)
+   {
+   for(l3n=0;l3n<3;l3n++)
+    l1.x[l3n]=nc->d.c->p[wallpts[l1n][l2n]]->d.p->x[l3n]-
+     nc->d.c->p[wallpts[l1n][(l2n+1)&3]]->d.p->x[l3n]; 
+   ll1=LENGTH(&l1);
+   if(ll1<=640.0 || ll1>32700*640.0)
+    { if(withmsg) printmsg(TXT_TPLINETOOLONG,l2n,(l2n+1)&3,l1n,nc->no);
+      return 0; }
+   } 
+ for(nt=nc->d.c->things.head;nt->next!=NULL;nt=nt->next) 
+  setthingcube(nt->d.t);
+ if(!view.warn_convex) return 1;
+ /* Test if all cubes convex and all walls are not weird */
+ for(newpnum=0;newpnum<8;newpnum++)
   {
-  op.x[j]=(w->p[op3]->d.p->x[j]+w->p[op1]->d.p->x[j])/2.0;
-  p1.x[j]=w->p[op2]->d.p->x[j]-op.x[j];
+  for(j=0;j<3;j++)
+   {
+   if(newpnum<4)
+    { l1n=newpnum+4; l2n=(newpnum+1)&0x3;l3n=(newpnum-1)&0x3; }
+   else
+    { l1n=newpnum-4; l3n=(newpnum==7) ? 4 : newpnum+1;
+      l2n=(newpnum==4) ? 7 : newpnum-1; }
+   l1.x[j]=nc->d.c->p[l1n]->d.p->x[j] - nc->d.c->p[newpnum]->d.p->x[j];
+   l2.x[j]=nc->d.c->p[l2n]->d.p->x[j] - nc->d.c->p[newpnum]->d.p->x[j];
+   l3.x[j]=nc->d.c->p[l3n]->d.p->x[j] - nc->d.c->p[newpnum]->d.p->x[j];
+   }
+  normalize(&l1); normalize(&l2); normalize(&l3);
+  /* test if l1,l2,l3 are a right-handed system */
+  VECTOR(&e,&l3,&l2);
+  if(SCALAR(&e,&l1)<=view.mincorner)
+   { if(withmsg) printmsg(TXT_TPCUBENOTCONVEX,nc->no,newpnum); return 0; }
+     /* this was a nearly left-handed system */
   }
- x=SCALAR(&p1,&turnaxis);
- y=sqrt(LENGTH(&p1)*LENGTH(&p1)-x*x);
- /* now x,y are the coordinates of the point parallel/orthogonal to the
-    turnaxis */
- /* now make the coordsystem of the other three points */
- for(j=0;j<3;j++) p2.x[j]=w->p[op0]->d.p->x[j]-op.x[j];
- lx=SCALAR(&p2,&turnaxis);
- for(j=0;j<3;j++) p2.x[j]-=turnaxis.x[j]*lx;
- normalize(&p2);
- /* -p2.x[j] because the point lies on the other side of the turnaxis */
- for(j=0;j<3;j++) 
-  p1.x[j]=op.x[j]+turnaxis.x[j]*x-p2.x[j]*y-w->p[op0]->d.p->x[j];
- /* Ok, in p1 is now the point turned into the plane of the three other 
-    points. */
- /* END NEW 
- for(j=0;j<3;j++)
-  p1.x[j]=w->p[op2]->d.p->x[j]-w->p[op0]->d.p->x[j]; */
- normalize(&p[1]);
- x=SCALAR(&p1,&p[0]);
- y=SCALAR(&p1,&p[1]);
- w->corners[op2].xpos=(short int)((ex.x*x+ey.x*y)/640.0)+p1xoffs;
- w->corners[op2].ypos=(short int)((ex.y*x+ey.y*y)/640.0)+p1yoffs; 
- centerx=centery=0;
- for(j=0;j<4;j++)
-  { centerx+=w->corners[j].xpos; centery+=w->corners[j].ypos; }
- for(j=0;j<4;j++)
-  { w->corners[j].xpos-=(centerx/4/2048)*2048;
-    w->corners[j].ypos-=(centery/4/2048)*2048; }
- for(j=0;j<4;j++)
-  if(c->d[w->no]!=NULL)
-   makedoorpnt(c->d[w->no]->d.d);
+ /* test weird walls */
+ for(j=0;j<6;j++)
+  {
+  for(l1n=0;l1n<3;l1n++)
+   l1.x[l1n]=nc->d.c->p[wallpts[j][3]]->d.p->x[l1n]-
+    nc->d.c->p[wallpts[j][2]]->d.p->x[l1n];
+  for(l1n=0;l1n<3;l1n++)
+   l2.x[l1n]=nc->d.c->p[wallpts[j][0]]->d.p->x[l1n]-
+    nc->d.c->p[wallpts[j][1]]->d.p->x[l1n];
+  if(fabs(SCALAR(&l1,&l2))<=view.minweirdwall*LENGTH(&l1)*LENGTH(&l2))
+   {
+   for(l1n=0;l1n<3;l1n++)
+    l1.x[l1n]=nc->d.c->p[wallpts[j][3]]->d.p->x[l1n]-
+     nc->d.c->p[wallpts[j][0]]->d.p->x[l1n];
+   for(l1n=0;l1n<3;l1n++)
+    l2.x[l1n]=nc->d.c->p[wallpts[j][2]]->d.p->x[l1n]-
+     nc->d.c->p[wallpts[j][1]]->d.p->x[l1n];
+   /* weird wall? */
+   if(fabs(SCALAR(&l1,&l2))<=view.minweirdwall*LENGTH(&l1)*LENGTH(&l2)) 
+    { if(withmsg) printmsg(TXT_TPWEIRDWALL,j,nc->no); return 0; }
+      /* weird wall! */
+   }
+  }
+ return 1;
  }
- 
-void newwallpnt(struct cube *c,struct wall *w,struct point *np)
- { newwall_offset(c,w,0,1); }
  
 /* test if one of the cubes depending on point np is not convex or weird.
    return 1 if all cubes are alright, 0 otherwise */
 int testpnt(struct node *np)
  {
- unsigned short int newpnum=0,j,l1n,l2n,l3n;
- struct point l1,l2,l3,e;
  struct node *nc;
- /* test if two points are equal */
- for(nc=np->d.lp->c.head;nc->next!=NULL;nc=nc->next)
-  for(l1n=0;l1n<7;l1n++)
-   for(l2n=l1n+1;l2n<8;l2n++)
-    {
-    for(l3n=0;l3n<3 &&
-     nc->d.n->d.c->p[l1n]->d.p->x[l3n]==nc->d.n->d.c->p[l2n]->d.p->x[l3n];
-     l3n++);
-    if(l3n==3) { printmsg("Pnt %d and %d in Cube %d are equal.",
-     l1n,l2n,nc->d.n->no); return 0; }
-    } 
- /* Test if all cubes convex and all walls are not weird */
- for(nc=np->d.lp->c.head;nc->next!=NULL;nc=nc->next)
-  {
-  for(newpnum=0;newpnum<8;newpnum++)
-   {
-   for(j=0;j<3;j++)
-    {
-    if(newpnum<4)
-     { l1n=newpnum+4; l2n=(newpnum+1)&0x3;l3n=(newpnum-1)&0x3; }
-    else
-     { l1n=newpnum-4; l3n=(newpnum==7) ? 4 : newpnum+1;
-       l2n=(newpnum==4) ? 7 : newpnum-1; }
-    l1.x[j]=nc->d.n->d.c->p[l1n]->d.p->x[j] - 
-     nc->d.n->d.c->p[newpnum]->d.p->x[j]; /* that looks great */
-    l2.x[j]=nc->d.n->d.c->p[l2n]->d.p->x[j] - 
-     nc->d.n->d.c->p[newpnum]->d.p->x[j];
-    l3.x[j]=nc->d.n->d.c->p[l3n]->d.p->x[j] - 
-     nc->d.n->d.c->p[newpnum]->d.p->x[j];
-    }
-   normalize(&l1); normalize(&l2); normalize(&l3);
-   /* test if l1,l2,l3 are a right-handed system */
-   VECTOR(&e,&l3,&l2);
-   if(SCALAR(&e,&l1)<=view.mincorner)
-    { printmsg("Cube %d at point %d not convex",nc->d.n->no,newpnum); 
-      return 0; }
-     /* this was a nearly left-handed system */
-   }
-  /* test weird walls */
-  for(j=0;j<6;j++)
-   {
-   for(l1n=0;l1n<3;l1n++)
-    l1.x[l1n]=nc->d.n->d.c->p[wallpts[j][3]]->d.p->x[l1n]-
-     nc->d.n->d.c->p[wallpts[j][2]]->d.p->x[l1n];
-   for(l1n=0;l1n<3;l1n++)
-    l2.x[l1n]=nc->d.n->d.c->p[wallpts[j][0]]->d.p->x[l1n]-
-     nc->d.n->d.c->p[wallpts[j][1]]->d.p->x[l1n];
-   if(fabs(SCALAR(&l1,&l2))<=view.minweirdwall*LENGTH(&l1)*LENGTH(&l2))
-    {
-    for(l1n=0;l1n<3;l1n++)
-     l1.x[l1n]=nc->d.n->d.c->p[wallpts[j][3]]->d.p->x[l1n]-
-      nc->d.n->d.c->p[wallpts[j][0]]->d.p->x[l1n];
-    for(l1n=0;l1n<3;l1n++)
-     l2.x[l1n]=nc->d.n->d.c->p[wallpts[j][2]]->d.p->x[l1n]-
-      nc->d.n->d.c->p[wallpts[j][1]]->d.p->x[l1n];
-    /* weird wall? */
-    if(fabs(SCALAR(&l1,&l2))<=view.minweirdwall*LENGTH(&l1)*LENGTH(&l2)) 
-     { printmsg("Wall %d of cube %d weird.",j,nc->d.n->no); return 0; }
-     /* weird wall! */
-    }
-   }
-  }
+ for(nc=np->d.lp->c.head;nc->next!=NULL;nc=nc->next) 
+  if(!testcube(nc->d.n,1)) return 0;
  return 1;
  }
 
-void newcorners(struct node *np)
+/* n=cube node. i=wallnum. Searches a side which is near the side
+   n,i and connects it with n,i. Returns 0 if connectcubes is not successful,
+   1 is returned if the cubes are connected. -1 is returned if no
+   corresponding side is found. */
+int connectsides(struct node *n,int i)
  {
- struct node *nc;
- for(nc=np->d.lp->c.head;nc->next!=NULL;nc=nc->next)
-  newcubecorners(nc->d.n->d.c,nc->no); 
- }
-
-/* gives wall with neighbourcube to points wp1, wp2 on wall w1 */
-int findalignwalltoline(struct wall *w1,int wp1,int wp2)
- {
- int cn1,i,j;
- for(i=0,cn1=-1;i<3;i++)
-  if((cn1=wallno[wallpts[w1->no][wp1]][0][i])!=w1->no)
-   for(j=0;j<3;j++)
-    if(cn1==wallno[wallpts[w1->no][wp2]][0][j]) 
-     return cn1;
- fprintf(errf,"Can't find arrange cube??\n"); my_exit();
- return 0;
- }
- 
-void arrangebitmaps(struct node *start_c,struct wall *start_w,struct list *ws)
- {
- int cn1,wp1,wp2,w2p1,w2p2,i,j;
- struct wall *w,*w1;
- struct node *nw,*nc,*c,*run;
- struct node **save;
- struct list walls;
- if(start_w==NULL) 
-  { printmsg("No wall there."); return; }
- /* I must do it with a list otherwise go32 crashes. perhaps stack overflow?*/
- initlist(&walls);
- if((save=(struct node **)malloc(sizeof(struct node *)*2))==NULL)
-  { printmsg("Sorry, not enough mem."); freelist(&walls,free); return; }
- save[0]=start_c; save[1]=(struct node *)start_w;
- if(!addnode(&walls,start_c->no,save))
-  { printmsg("Sorry, not enough mem."); freelist(&walls,free); return; }   
- for(run=walls.head;run->next!=NULL;run=run->next)
-  {
-  c=*((struct node **)run->d.d); w1=*((struct wall **)run->d.d+1);
-  for(wp1=0;wp1<4;wp1++)
-   {
-   wp2=(wp1+1)&3;
-   /* first get the cube of every line in the wall which is equal and
-      not the cube corresponding to w1 (cause there's no neighbour, 
-      there's a side). */
-   cn1=findalignwalltoline(w1,wp1,wp2);
-   if((nc=c->d.c->nc[cn1])==NULL) continue;
-   /* now find the right wall */
-   for(i=0,w=NULL;i<6 && w==NULL;i++)
-    if(nc->d.c->walls[i]!=NULL && (nc->d.c->nc[i]==NULL || 
-     nc->d.c->nc[i]->no!=c->no))
-     for(j=0;j<4;j++)
-      if(nc->d.c->walls[i]->p[j]->no==w1->p[wp1]->no && 
-       (nc->d.c->walls[i]->p[(j+1)&0x3]->no==w1->p[wp2]->no ||
-        nc->d.c->walls[i]->p[(j-1)&0x3]->no==w1->p[wp2]->no))
-       { w=nc->d.c->walls[i]; break; }
-   if(w==NULL) continue;
-   /* OK, w should be one wall next to w1, now look, if it's tagged */
-   if((nw=findnode(ws,nc->no*6+w->no))==NULL) continue;
-   freenode(ws,nw,NULL); /* untag wall */
-   /* Search the shared points */
-   for(i=0,w2p1=w2p2=-1;i<4;i++)
-    if(w->p[i]->no==w1->p[wp1]->no) w2p1=i;
-    else if(w->p[i]->no==w1->p[wp2]->no) w2p2=i;
-   if(w2p1<0 || w2p2<0) 
-    { printmsg("Arrange bitmaps: couldn't find shared points.????");
-      continue; }
-   w->corners[w2p1].xpos=w1->corners[wp1].xpos;
-   w->corners[w2p1].ypos=w1->corners[wp1].ypos;
-   w->corners[w2p2].xpos=w1->corners[wp2].xpos;
-   w->corners[w2p2].ypos=w1->corners[wp2].ypos;
-   newwall_offset(nc->d.c,w,w2p1,w2p2);
-   if((save=malloc(sizeof(struct node *)*2))==NULL)
-    { printmsg("Sorry, not enough mem."); freelist(&walls,free); return; }
-   save[0]=nc; save[1]=(struct node *)w;
-   if(!addnode(&walls,nc->no,save))
-    { printmsg("Sorry, not enough mem."); freelist(&walls,free); return; }   
-   }
-  freenode(&walls,run,free);
-  }
- freelist(&walls,free);
- }
- 
-int connectcubes(struct list *taggedcubes)
- {
- struct node *n,*np,*sn,*cn,*ncp[4];
- int i,j,k,ok,wallnum;
+ struct node *sn,*cn;
+ int j,k,m,wallnum,found=-1;
  struct point d;
- struct list fndcubes;
- if(view.currmode!=tt_cube)
-  { printmsg("Only in cubemode allowed."); return 1; }
- initlist(&fndcubes);
- for(n=taggedcubes->head;n->next!=NULL;n=n->next)
-  for(i=0;i<6;i++)
-   if(n->d.n->d.c->nc[i]==NULL)
+ float min_d,nd;
+ my_assert(i>=0 && i<6 && n!=NULL && n->d.c->nc[i]==NULL);
+ for(cn=l->cubes.head,sn=NULL,min_d=view.maxconndist*4.0;cn->next!=NULL;
+  cn=cn->next)
+  {
+  if(cn==n) continue;
+  for(wallnum=0;wallnum<6;wallnum++)
+   if(!cn->d.c->nc[wallnum])
     {
-    freelist(&fndcubes,NULL);
-    for(j=0;j<4;j++)
+    for(m=0;m<4;m++)
      {
-     sn=n->d.n->d.c->walls[i]->p[j];
-     for(np=l->pts.head,ok=0;np->next!=NULL;np=np->next)
+      for(j=0,nd=0.0;j<4;j++) 
       {
-      for(k=0;k<3;k++) d.x[k]=np->d.p->x[k]-sn->d.p->x[k];
-      if(LENGTH(&d)<=view.maxconndist) 
-       { 
-       for(cn=np->d.lp->c.head;cn->next!=NULL;cn=cn->next)
-        {
-        if((j==0 || findnode(&fndcubes,cn->d.n->no*4+j-1)) &&
-	 cn->d.n->no!=n->no)
-         { if(!addnode(&fndcubes,cn->d.n->no*4+j,cn))
-	    { printmsg("Sorry, not enough mem."); freelist(&fndcubes,NULL);
-	      return 1; }
-	   ok=1; }
-	}
-       }
+      for(k=0;k<3;k++) d.x[k]=cn->d.c->p[wallpts[wallnum][3-j]]->d.p->x[k]-
+       n->d.c->p[wallpts[i][(j+m)&3]]->d.p->x[k];
+      nd+=LENGTH(&d);
+      if(nd>=min_d) break;
       }
-     if(!ok) break; /* no pnt found for this pnt of the wall->next wall */
+     if(nd<min_d) { sn=cn; found=wallnum; min_d=nd; }
      }
-    if(!ok) continue; /* next wall */
-    /* all four points have an near other pnt */
-    for(cn=fndcubes.head,sn=NULL;cn->next!=NULL;cn=cn->next)
-     if(cn->no%4==3) { sn=cn; break; }
-    if(sn==NULL) continue;  /* no cube between the four points */
-    /* find the other three entries */
-    ncp[3]=sn;
-    for(j=0;j<3;j++)
-     if((ncp[j]=findnode(&fndcubes,(ncp[3]->no/4)*4+j))==NULL)
-      { printmsg("Can't find lower three points???"); freelist(&fndcubes,
-        NULL); return 1; }
-    /* ncp is a node -> the node from list c from lp ->
-       the cubenode -> cube */
-    /* find the wallnumber */
-    for(wallnum=0;wallnum<6;wallnum++)
-     {
-     for(j=0;j<4;j++)
-      {
-      for(k=0;k<4;k++) if(wallpts[wallnum][j]==ncp[k]->d.n->no) break;
-      if(k==4) break;
-      }
-     if(j==4) break;
-     }
-    if(wallnum==6)
-     { printmsg("Can't get wallnum???"); freelist(&fndcubes,NULL);return 1; }
-    /* test if found cube is connected */
-    if(ncp[0]->d.n->d.n->d.c->nc[wallnum]!=NULL)
-     { printmsg("Cube %d has already a neighbour on wall %d",
-        ncp[0]->d.n->d.n->no,wallnum); continue; }
-    /* connect the two cubes */
-    connect(ncp[0]->d.n->d.n,wallnum,n->d.n,i);
-    } /* if no neighbourcube */
- return 6;
+    }
+  }
+ return (sn!=NULL ? connectcubes(NULL,sn,found,n,i) : -1);
  }
 
 int move_pntlist(struct list *l,struct point *r)
@@ -819,8 +759,8 @@ int move_pntlist(struct list *l,struct point *r)
  struct point *save,*p;
  struct node *n,*sn;
  int i;
- if((save=malloc(sizeof(struct point)*l->size))==NULL)
-  { printmsg("No mem for saving old coords."); return 1; }
+ if((save=MALLOC(sizeof(struct point)*l->size))==NULL)
+  { printmsg(TXT_NOMEMFOROLDCOORDS); return 1; }
  for(sn=l->head,p=save;sn->next!=NULL;sn=sn->next,p++)
   {
   n=sn->d.n;
@@ -839,7 +779,7 @@ int move_pntlist(struct list *l,struct point *r)
   }
  else
   for(n=l->head;n->next!=NULL;n=n->next) newcorners(n->d.n);
- free(save);
+ FREE(save);
  return 6;
  }
 
@@ -855,10 +795,148 @@ void growshrink(struct node **ps,int *pntnos,int groworshrink)
   }
  for(j=0;j<pntnos[0];j++) oldpnts[j]=*ps[pntnos[j+1]]->d.p; 
  for(j=0;j<pntnos[0];j++)
+  {
   for(i=0;i<3;i++)
    ps[pntnos[j+1]]->d.p->x[i]=(ps[pntnos[j+1]]->d.p->x[i]-center.x[i])*
     (groworshrink ? view.distscala : 1/view.distscala)+center.x[i];
+  fittogrid(ps[pntnos[j+1]]->d.p);
+  }
  for(j=0,ok=1;j<pntnos[0];j++)
   if(!testpnt(ps[pntnos[j+1]])) { ok=0;break; }
  if(!ok) for(j=0;j<pntnos[0];j++) *ps[pntnos[j+1]]->d.p=oldpnts[j];
+ else for(j=0;j<pntnos[0];j++) newcorners(ps[pntnos[j+1]]);
  }
+
+/* make stdcube at the origin */ 
+struct node *newcube(struct leveldata *ld)
+ {
+ struct cube *nc;
+ struct listpoint *lp;
+ struct node *nnc,*nlp;
+ int i,j;
+ checkmem(nc=MALLOC(sizeof(struct cube)));
+ /* do the init stuff for the cube */
+ nc->type=0; nc->prodnum=-1; nc->value=0; initlist(&nc->sdoors);
+ nc->cp=NULL; nc->tagged=NULL; initlist(&nc->things);
+ for(j=0;j<6;j++) 
+  { nc->nc[j]=NULL; nc->d[j]=NULL; nc->tagged_walls[j]=NULL; }
+ checkmem(nnc=addnode(&ld->cubes,-1,nc));
+ for(j=0;j<8;j++) 
+  {
+  checkmem(lp=MALLOC(sizeof(struct listpoint)));
+  checkmem(nlp=addnode(&ld->pts,-1,lp)); initlist(&lp->c); lp->tagged=NULL;
+  checkmem(addnode(&lp->c,j,nnc)); nc->p[j]=nlp;
+  lp->p=stdcubepts[j];
+  }
+ /* and now make the walls */
+ for(i=0;i<6;i++)
+  {
+  checkmem(nc->walls[i]=MALLOC(sizeof(struct wall)));
+  nc->walls[i]->texture1=nc->walls[i]->texture2=0;
+  nc->walls[i]->txt2_direction=0;
+  for(j=0;j<4;j++) 
+   { nc->walls[i]->corners[j]=stdcorners[j];
+     nc->walls[i]->p[j]=nc->p[wallpts[i][j]];
+     nc->walls[i]->tagged[j]=NULL; }
+  nc->walls[i]->no=i; nc->walls[i]->locked=0; nc->walls[i]->ls=NULL;
+  nc->walls[i]->fl=NULL;
+  }
+ return nnc;
+ }
+
+/* insert a cube at c,wallnum. If cubes and pts==NULL, insert the cube
+ in the current level otherwise insert it in the lists cubes and pts.
+ If depth<0 use an reasonable length otherwise use depth. */
+struct node *insertcube(struct list *cubes,struct list *pts,struct node *c,
+ int wallnum,float depth)
+ {
+ struct cube *nc;
+ struct node *nnc,*nlp;
+ struct listpoint *lp;
+ struct wall *w;
+ struct point d,n1,n2,e1,e2;
+ float length;
+ int i,j;
+ my_assert(c!=NULL && wallnum>=0 && wallnum<6 && l!=NULL);
+ if(cubes==NULL || pts==NULL) { cubes=&l->cubes; pts=&l->pts; }
+ checkmem(nc=MALLOC(sizeof(struct cube)));
+ /* do the init stuff for the cube */
+ nc->type=0; nc->prodnum=-1; nc->value=0; initlist(&nc->sdoors);
+ nc->cp=NULL; nc->tagged=NULL; initlist(&nc->things);
+ for(j=0;j<6;j++) 
+  { nc->nc[j]=NULL; nc->d[j]=NULL; nc->tagged_walls[j]=NULL;
+    nc->polygons[j*2]=nc->polygons[j*2+1]=NULL;
+    nc->recalc_polygons[j]=1; }
+ checkmem(nnc=addnode(cubes,-1,nc));
+ /* Calculate the 'depth'-vector for the new cube */
+ if(depth<=0.0)
+  { for(j=0;j<3;j++) 
+     for(i=0,d.x[j]=0;i<4;i++)
+      d.x[j]+=(c->d.c->p[wallpts[wallnum][i]]->d.p->x[j]-
+       c->d.c->p[wallpts[oppwalls[wallnum]][3-i]]->d.p->x[j])/4.0;
+    depth=LENGTH(&d); }
+ /* Calculate the normalvector on the side */
+ for(i=0;i<3;i++)
+  { e1.x[i]=c->d.c->p[wallpts[wallnum][3]]->d.p->x[i]-
+     c->d.c->p[wallpts[wallnum][0]]->d.p->x[i];
+    e2.x[i]=c->d.c->p[wallpts[wallnum][1]]->d.p->x[i]-
+     c->d.c->p[wallpts[wallnum][0]]->d.p->x[i]; }
+ VECTOR(&n1,&e1,&e2); length=depth/LENGTH(&n1);
+ for(j=0;j<3;j++) n1.x[j]*=length;
+ for(i=0;i<3;i++)
+  { e1.x[i]=c->d.c->p[wallpts[wallnum][1]]->d.p->x[i]-
+     c->d.c->p[wallpts[wallnum][2]]->d.p->x[i];
+    e2.x[i]=c->d.c->p[wallpts[wallnum][3]]->d.p->x[i]-
+     c->d.c->p[wallpts[wallnum][2]]->d.p->x[i]; }
+ VECTOR(&n2,&e1,&e2); length=depth/LENGTH(&n2);
+ for(j=0;j<3;j++) n2.x[j]*=length;
+ for(j=0;j<3;j++) d.x[j]=(n1.x[j]+n2.x[j])/2;
+ /* Assign the points. The new cube is the same way numbered as the
+    old is. */
+ for(i=0;i<4;i++)
+  {
+  nc->p[wallpts[oppwalls[wallnum]][3-i]]=c->d.c->p[wallpts[wallnum][i]];
+  checkmem(addnode(&c->d.c->p[wallpts[wallnum][i]]->d.lp->c,
+   wallpts[oppwalls[wallnum]][3-i],nnc));
+  checkmem(lp=MALLOC(sizeof(struct listpoint)));
+  checkmem(nlp=addnode(pts,-1,lp));
+  initlist(&lp->c); lp->tagged=NULL;
+  checkmem(addnode(&lp->c,wallpts[wallnum][i],nnc));
+  nc->p[wallpts[wallnum][i]]=nlp;
+  for(j=0;j<3;j++)
+   lp->p.x[j]=nc->p[wallpts[oppwalls[wallnum]][3-i]]->d.p->x[j]+d.x[j];
+  }
+ /* and now make the walls */
+ for(i=0;i<6;i++)
+  {
+  if(i==oppwalls[wallnum]) { nc->walls[i]=NULL; continue; }
+  checkmem(nc->walls[i]=MALLOC(sizeof(struct wall)));
+  w=c->d.c->walls[i]!=NULL && c->d.c->d[i]==NULL ? 
+   c->d.c->walls[i] : (view.pdefcube==NULL ? NULL : 
+   view.pdefcube->d.c->walls[view.defwall]);
+  nc->walls[i]->texture1=w==NULL ? 0 : w->texture1;
+  nc->walls[i]->texture2=w==NULL ? 0 : w->texture2;
+  nc->walls[i]->txt2_direction=w==NULL ? 0 : w->txt2_direction;
+  for(j=0;j<4;j++) 
+   { nc->walls[i]->corners[j]=w==NULL ? stdcorners[j] : w->corners[j];
+     nc->walls[i]->p[j]=nc->p[wallpts[i][j]];
+     nc->walls[i]->tagged[j]=NULL; }
+  nc->walls[i]->no=i; nc->walls[i]->locked=0; nc->walls[i]->ls=NULL;
+  nc->walls[i]->fl=NULL;
+  recalcwall(nc,i);  
+  }
+ /* and know kill the wall in the other cube */
+ c->d.c->nc[wallnum]=nnc; nc->nc[oppwalls[wallnum]]=c;
+ FREE(c->d.c->walls[wallnum]); c->d.c->walls[wallnum]=NULL;
+ if(cubes==NULL && pts==NULL)
+  {
+  l->levelsaved=l->levelillum=0;
+  if(view.pdefcube==c && view.defwall==wallnum)
+   { view.pdeflevel=NULL; view.pdefcube=NULL; view.defwall=0; }
+  if(l->exitcube!=NULL && l->exitcube->no==c->no && l->exitwall==wallnum)
+   l->exitcube=NULL;
+  view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
+  }
+ return nnc;
+ }
+

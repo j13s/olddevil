@@ -1,9 +1,9 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
-    credits.h - the credits. if you falsify it, devil will format
+    credits.h - the credits. if you falsify it, Devil will format
      your harddisk and let your monitor explode. if you've done some
-     work on devil you can put a note inside but better idea is to
+     work on Devil you can put a note inside but better idea is to
      sent me your work so I can do the note inside and your work in
-     devil.
+     Devil.
     Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
@@ -19,31 +19,28 @@
     You should have received a copy of the GNU General Public License
     along with this program (file COPYING); if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-    
-char *cred_txt[] = {
- "DEVIL - Version 0.99 - Date: 10.04.95",
+
+#include "version.h"    
+
+const char *cred_txt[] = {
+ "DEVIL - Version "VERSION" - Date: "__DATE__" Time: "__TIME__,
  "DESCENT Editor for Vertices,Items and Levels at all",
- "---------------------------------------------------",
- "Copyright (C) 1995 Achim Stremplat.",
- "DEVIL comes with ABSOLUTELY NO WARRANTY.",
- "This is free software, and you are welcome to",
- "redistribute it under certain conditions.",
- "For further information see file 'COPYING'",
- "---------------------------------------------------",
- "Pfuuah, I hate these copyright notices, but I",
- "suppose I don't want to pay your descent if you'll",
- "destroy it.",
- "More than normal thanks must go to",
- "- Boris Postler (for the docs and testing).",
- "- Bob Sip for doing the Borland-C version.",
- "- G.P.Smith for doing the OS/2 version.",
- "- The guys from Parallax for making a great game.",
- "--------------------------------------------------",
- "Normal thanks must go to:",
- "- All the guys reporting bugs, making suggestions.",
- "- All the people who created GNU-C.",
- "- The Pizza World in Karlsruhe.",
- "---------------------------------------------------",
- "Sorry that this version comes a bit late but",
- "always remember Windows 96 - oh sorry 97.",
+ "For the latest release try:",
+ " http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html (with source)",
+ "--------------------------------------------------------------------------",
+ "Devil is sponsored by the German Gamer's Magazin PC Player.",
+ "--------------------------------------------------------------------------",
+ "Copyright 1995 Achim Stremplat. DEVIL comes with ABSOLUTELY NO WARRANTY.",
+ "This is free software, and you are welcome to redistribute it under",
+ "certain conditions. For further information see file 'COPYING'",
+ "Distribution with commercial or shareware programs is allowed",
+ "but requires notification of the author by mail or email.",
+ "--------------------------------------------------------------------------",
+ "Thanks must go to",
+ "- Boris Schneider from PC Player for support.",
+ "- The guys from Parallax for making a great",
+ "  game&support&my new computer system.",
+ "--------------------------------------------------------------------------",
+ "If debugging is the procedure to fix bugs in a program,",
+ "then programming is the procedure to create bugs.",
  NULL };
