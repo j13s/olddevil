@@ -1,0 +1,452 @@
+<HTML><HEAD>
+<!-- This document was created from RTF source by rtftohtml version $Revision: 3.4 $ -->
+<TITLE>Devil - 8 APPENDICES</TITLE></HEAD>
+<BODY BACKGROUND="" BGCOLOR="#FFFFFF" TEXT=#000000>
+<A HREF="doc08.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <IMG SRC="images/norightg.gif" ALT="next" border=0>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+<hr size=4>
+<H1>
+8 APPENDICES</H1>
+<UL>
+<LI><A HREF="#Heading111">8.1 THE KEYS</A>
+<LI><A HREF="#Heading112">8.2 COMPLETE TERMINOLOGY</A>
+<LI><A HREF="#Heading113">8.3 CONVEX CUBES AND TWISTED SIDES</A>
+<LI><A HREF="#Heading114">8.4 A WORD OR TWO ABOUT FRAME-RATE</A>
+<LI><A HREF="#Heading115">8.5 CALCULATING THE OUTLINE OF A SIDE</A>
+<LI><A HREF="#Heading116">8.6 MAXIMUM NUMBERS OF OBJECTS IN DESCENT</A>
+<LI><A HREF="#Heading117">8.7 .BLK FILE FORMAT</A>
+<LI><A HREF="#Heading118">8.8 ERROR MESSAGES DURING SAVE</A>
+</UL>
+<hr size=4>
+
+<h2>
+<A NAME="Heading111">8.1 THE KEYS</A></h2>
+
+*
+Shift+esc: Exit Devil, ignoring any changes.<p>
+*	Esc: `File-&gt;Quit'.<p>
+*	F1: The `hotkey' list.<p>
+*	F2: Save the current level under the last used file name.<p>
+*	F3: `Edit-&gt;Make room'.<p>
+*	F4: `Edit-&gt;Split cube'.<p>
+*	F5: Descent-Map on/off.<p>
+*	Tab: Change move mode.<p>
+*	Shift+Tab: Cube-lines on/off.<p>
+*	Ctrl+Shift+Spacebar: Reinitialize Graphics. Useful in texture modes if Devil
+only displays a black Screen.<p>
+*	d: Switch between double and single views.<p>
+*	Shift+1, Shift+2, Shift+3, Shift+4: The four rendering modes in the sequence
+`Off', `On for current cube', `On', `On with collision'.<p>
+*	5: `Move-&gt;Beam to current object'<p>
+*	7: `Move-&gt;Go to Wall'<p>
+*	9: `Move-&gt;Change to sidecube'<p>
+*	Ctrl+Spacebar: `Tag-&gt;special'<p>
+*	Shift+Spacebar: Tag/untag all objects of the current mode (right mouse-button
+on `Tag')<p>
+*	Spacebar: Tag/untag the current object (left mouse-button on `Tag')<p>
+*	Shift+Del: `Edit-&gt;Delete tagged'<p>
+*	Del: `Edit-&gt;Delete'<p>
+*	Backspace: `Edit-&gt;Delete special'<p>
+*	Shift+Enter: `Edit-&gt;fast Insert'<p>
+*	Ins: `Edit-&gt;Insert'<p>
+*	 +: `Edit-&gt;enlarge object'<p>
+*	-: `Edit-&gt;shrink object'<p>
+*	m: `Groups-&gt;Make group'<p>
+*	M: `Edit-&gt;Set connection side/exit'<p>
+*	g: Grid on/off<p>
+*	Ctrl+c: Cube mode<p>
+*	Ctrl+s: Side mode<p>
+*	Ctrl+e: Edge mode<p>
+*	Ctrl+p: Point mode<p>
+*	Ctrl+d: Thing mode<p>
+*	Ctrl+w: Wall mode<p>
+*	L/l: previous/next Level<p>
+*	W/w: previous/next Cube<p>
+*	S/s: previous/next Side<p>
+*	E/e: previous/next Edge<p>
+*	P/p: previous/next Point<p>
+*	D/d: previous/next Thing<p>
+*	Z/z: previous/following Wall<p>
+*	0: Select Side 0, Edge 0<p>
+*	Ctrl-x: Align to positive x-Axis<p>
+*	Ctrl-X: Align to negative x-Axis<p>
+*	Ctrl-y: Align to positive y-Axis<p>
+*	Ctrl-Y: Align to negative y-Axis<p>
+*	Ctrl-z: Align to positive z-Axis<p>
+*	Ctrl-Y: Align to negative z-Axis<p>
+*	Alt+*: Increase rotation angle<p>
+*	Alt+/: Reduce rotation angle<p>
+*	*: Increase move-factor<p>
+*	/: Decrease move-factor<p>
+*	A: Increase depth of vision, referred to as `visibility' in Devil.<p>
+*	Y/Z: Decrease depth of vision<p>
+*	Ctrl+F1..F10: Save position 1 - 10<p>
+*	Shift+F1..F10: Go to position 1 - 10<p>
+*	Ctrl+F11: Go to position which shows entire level<p>
+*	Shift+F11: Back to position you were before you pressed Ctrl+F11.<p>
+*	Ctrl+F12: Go to position which shows entire corridor.<p>
+*	Shift+F12: Back to position you were before you Ctrl+F12.<p>
+In the following section, `n' refers to a key on the numeric-keypad when
+NumLock is off and `N' refers to a key on the numeric keypad when NumLock is
+on.<p>
+*	n2 / Shift + N2:			Slide up<p>
+*	n8 / Shift + N8:			Slide down<p>
+*	N2 / Shift + n2:			Turn yourself / look down<p>
+*	N8 / Shift + n8:			Turn yourself / look up.<p>
+<p>
+*	n4 / Shift + N4:			Slide left<p>
+*	n6 / Shift + N6:			Slide right<p>
+*	N4 / Shift + n4:			Turn yourself / look left<p>
+*	N6 / Shift + n6:			Turn yourself / look right.<p>
+<p>
+*	n1 / Shift + N1:			Slide backward	(Also `y' and `z')<p>
+*	n3 / Shift + N3:			Slide forward		(Also `a')<p>
+*	N1 / Shift + n1:			Rotate yourself left<p>
+*	N3 / Shift + n3:			Rotate yourself right.<p>
+
+
+<h2>
+<A NAME="Heading112">8.2 COMPLETE TERMINOLOGY</A></h2>
+
+The following terminology is used in Devil, which I have detailed here - to
+avoid misunderstanding.<p>
+Translators note: This may be an appropriate place to note that some of these
+terms were ones used by the original Descent programmers - not something
+arbitrarily made up by Achim.<p>
+I.	A complete level consists of a Mine and the various things you can find in
+it such as Robots, Powerups and Weapons, Keys, Hostages and the Reactor.<p>
+II.	The Mine consists of adjacent segments or Cubes. Each cube has eight
+corners (called `Points' in Devil) defining six Sides with four corners each.
+(called `Edges' in Devil).<p>
+III.	A `Side' in Devil is the side of a cube, it doesn't matter whether this
+side is joined with another cube or not.<p>
+IV.	A `Connection' in Devil refers to the side of a cube which is joined to
+another cube.<p>
+V.	A `wall' in Devil means the side of a cube which is visible in Descent,
+i.e., a non-joined side or a side with a door for example.<p>
+VI.	A `Wall' in Devil refers to the connection, in which, for example, a door
+may be inserted. Under Walls you'll find doors of all types, Walls (whether you
+can fly through it or not) and also Switches, which are used to activate
+something when the player passes through them, but are not necessarily visible.
+Confusingly, in Descent 2 there are also Switches which are attached to
+non-joined sides. These also count as Walls.<p>
+VII.	An Outline in this manual refers to the frame-definition values and
+co-ordinates required by Descent to correctly map the specified texture(s) onto
+a side.<p>
+VIII.	A tagged object is (normally) drawn in blue simply to indicate that it
+has been selected in order to perform a particular action on it. The term
+"marker" is used to refer to the graphical indicator placed on an object.<p>
+IX.	The term "Edge" rather than corner has been used in most places for
+historical reasons, but still refers to the area where two or three sides
+meet.<p>
+X.	In most cases the term "button" has been used to refer to the click-able
+icons on the menus and windows, but the term `field' has been used to indicate
+an area where text can be entered and the terms toggle-switch or toggle have
+also been used where deemed appropriate.<p>
+
+
+<h2>
+<A NAME="Heading113">8.3 CONVEX CUBES AND TWISTED SIDES</A></h2>
+
+
+<IMG SRC="convex.gif" align=right>
+Descent can only handle a particular type of eight-sided object as a cube:
+convex objects, whose sides are not `too badly' twisted. `Convex Cube' means
+that you can draw a straight line from every point within the cube to every
+other point within the cube, without intersecting a wall of the cube. An
+example of a non-convex object in two dimensions is the dark-gray polygon in
+Diagram 3, the light-gray surfaces indicate the sections that would be needed
+to make it into the smallest possible convex polygon.<p>
+Geometrically expressed, it is a necessary (and mostly sufficient) condition
+for the convexity of a cube, that the angle between two sides must be &gt;=180
+degrees (measured from the inside of the cube). Twisted sides are also a
+further peculiarity: If you take a real cube, i.e. one with right angles, hold
+one side firm and turn the opposite in the same plane as which they lie, you
+can twist the other four sides without creating an angle &gt;=180 degrees
+between any two sides. To prevent cubes of this shape, Devil additionally
+checks on twisted sides, i.e. whether two opposite boundary lines of a side of
+the `cube' are twisted more than a particular value (which is determined in the
+file `devil.ini').<p>
+Translators Note:<p>
+The term "co-planar" refers to points all lying in a common plane or 2
+dimensional flat surface. Any three points are always co-planar, but when you
+add a fourth point to define a side, it can stick out and warp the side.
+Possible nasty "beating" effects and even ship-trapping can occur because the
+Descent graphics engine splits a non co-planar side into two triangles joined
+at a common line. As you fly over it, the division can switch from one pair of
+opposite vertices to the other pair, causing the beating effect. Most spirals
+and even some standard levels exhibit this effect. Devil doesn't (yet) have a
+feature to force the points of a side to be co-planar, but you can simulate
+this (partially) by setting the grid-size to (say) 5, turning it on and then
+adjusting the side in Point mode.
+
+<h2>
+<A NAME="Heading114">8.4 A WORD OR TWO ABOUT FRAME-RATE</A></h2>
+
+Translators Note:<p>
+When Descent has to map out a large number of cubes in order to display a big
+room, you may find that game-play becomes jerky as the frame-rate drops below
+12 fps. Here are a few suggestions:- <p>
+1.	Use less cubes.<br>Although this may seem obvious, you may be able to create
+a similar room by sacrificing a little detail or unnecessary effects.  Consider
+cubes with different shapes.<p>
+2.	Remove grates and other see-through areas.<br>Descent will often map out a
+complete room even if only portion of it can be seen from the current player
+position.<p>
+<p>
+1.	Use large cubes and thin cubes.<br>
+<IMG SRC="toomany.gif" align=left><br clear=all>
+Use a few large cubes for the room
+instead of lots of smaller ones and define the entrances using thin, stretched
+cubes if you can handle the effect. (Most of the standard levels from Parallax
+have entrances like these). A note of caution however: Really thin cubes can
+cause problems with Descent's ability to discern which sides are furthest away
+and you may find that far away sides get drawn in front of closer
+ones<tt>.</tt><p>
+2.	Reduce the distance you can see.<br>By "hiding" further detail around a bend
+in a tunnel, you can reduce the number of cubes which Descent maps.<p>
+3.	Try different cube geometry.<br>Presuming that Descent (like most 3-D
+engines) will completely map every side that can be seen from a particular view
+point even though it may be partially obscured by closer sides which are drawn
+later, it may be possible to re-design the room geometry so as to avoid this to
+some degree. You should also avoid a large number (&gt;5) of sides which are
+transparent and 'in a row' and through which you can see another solid side.
+This causes a lot of additional calculation.<p>
+4.	If you're really desperate, reduce the number of textures used, especially
+Texture-2 textures and try to avoid unnecessary distortion of the textures.<p>
+Note:  These "over-draw" and depth-sort difficulties often result in the
+so-called Vanishing-Wall effect, where cubes with sides are seen to "peel away"
+at certain angles, revealing the cubes behind them. Assuming that Descent
+mainly uses integer mathematics, if you have small acute angles or ones very
+near to 180 degrees, it may not be giving you enough precision to reliably
+handle these cases. With these kinds of problems it's best to try changing the
+angles more into the mid-range (around 45 degrees).
+
+<h2>
+<A NAME="Heading115">8.5 CALCULATING THE OUTLINE OF A SIDE</A></h2>
+
+The Outline of a Side is calculated as follows in Devil (a minimal knowledge
+Geometry is required to understand this, i.e. Vectors, Vector Length and
+Scalar-product): <p>
+<p>
+Let us call the points of the side in the 3d co-ordinate system of the level
+<sub>
+<IMG SRC="doc01.gif"></sub>.
+(<sub>
+<IMG SRC="doc02.gif"></sub>)
+and the points of the Outline with <sub>
+<IMG SRC="doc03.gif"></sub>
+(<sub>
+<IMG SRC="doc04.gif"></sub>).
+In order to calculate the <sub>
+<IMG SRC="doc05.gif"></sub>
+out of the <sub>
+<IMG SRC="doc06.gif"></sub>,
+we must do the following: First, <sub>
+<IMG SRC="doc07.gif"></sub>
+is set (the whole Outline can still be moved later). Then the length of the
+line <sub>
+<IMG SRC="doc08.gif"></sub>
+is determined and <sub>
+<IMG SRC="doc09.gif"></sub>
+is set (the Outline can also still be turned later). <p>
+In the following formula to determine  <sub>
+<IMG SRC="doc10.gif"></sub>
+, Scalar-product is indicated by `
+<IMG SRC="doc11.gif">'and
+the sequence of the equations is important :<p>
+<sub>
+<IMG SRC="doc12.gif"></sub><p>
+<p>
+<p>
+So far so good. Now it gets a little harder. The fourth point need not be in
+the plane which is determined by <sub>
+<IMG SRC="doc13.gif"></sub>
+and <sub>
+<IMG SRC="doc14.gif"></sub>.
+We must, therefore, turn it in the plane and then determine <sub>
+<IMG SRC="doc15.gif"></sub>.
+For that we first determine the axis to turn around (the line joining Points 1
+and 3) and then turn the point around it:<p>
+<sub>
+<IMG SRC="doc16.gif"></sub><p>
+<p>
+And finally. The q-value must still be divided by 20, since the size of a
+standard side in a level is 20*20. Apart from this there is another peculiarity
+to take note of - the correct co-ordinates are 32-bit Fixed-Floating-Point,
+with the least significant 16-bits being digits after the decimal point (or
+expressed differently: 4-byte integers). The corresponding co-ordinates of the
+Outlines are only 16-bit with the least significant 11-bit as digits after the
+decimal point, i.e. the q-values which are calculated above, must still be
+shifted right 5 times, i.e., divided by 32.<p>
+In total, therefore, the q-value must be divided by 640.<p>
+
+
+<h2>
+<A NAME="Heading116">8.6 MAXIMUM NUMBERS OF OBJECTS IN DESCENT</A></h2>
+
+Descent can only handle a limited number of objects in one level. (Devil itself
+doesn't have these limitations, but issues a warning if critical values are
+exceeded). The exact limits are (Descent 1/Descent 2):<p>
+*	800/900 Cubes<p>
+*	2800/3600 Points<p>
+*	175/254 Walls, whereby each side of a Wall is counted once.<p>
+*	350/350 Things<p>
+*	20/20 Cubes which produce robots.<p>
+*	50/?? Cubes whose type is not `Normal'.<p>
+*	100/100 Switches  ...  ---/500 on/off switching lights<p>
+*	---/10000 Edges, which can be changed by on/off switching lights<p>
+The standard length of a side is 20x20 but Descent can handle sides up to a
+size of 1000.  Use cubes with a side length over 100 with caution ... when
+flying next to the wall the display sometimes "sticks" and very often laser
+shots and missiles will not impact on the surface.<p>
+
+
+<h2>
+<A NAME="Heading117">8.7 .BLK FILE FORMAT</A></h2>
+
+Devil can read levels stored in an ASCII-format using option `Groups -&gt; read
+blk-file'.<p>
+<p>
+head:<b> DMB_BLOCK_FILE</b><p>
+<b></b>In the following lines the segments are specified:<p>
+head of segment:<b> segment &lt;segnr&gt;</b><p>
+<b></b>segnr must start with 0 and always be increased by one<p>
+The sides of this segment follow next.<p>
+There are always six sides with the numbers 0..5<p>
+head of side:<b> side &lt;sidenr&gt;</b><p>
+<b></b>side:<b> tmap_num &lt;t1&gt; tmap_num2 &lt;t2&gt;</b><p>
+<b></b>t1 and t2 are the texture numbers (as in normal levels which are not the
+same numbers as the numbers in the pig/pog-files) for texture 1 and texture
+2.<p>
+The 3 most significant bits of t2 specify the direction of texture 2 relatively
+to texture 1<p>
+(t2&amp;0xc000==0x0000-&gt;same dir.,<p>
+0x4000-&gt;t2 is rotated around 90 degrees counter-clockwise,<p>
+0x8000-&gt;180 degrees, 0xc000 270 degrees)<p>
+t2==0 --&gt; no texture 2 at all<p>
+If you don't know what texture to choose, use t1=0 and t2=0<p>
+side:<b> uvls &lt;u&gt; &lt;v&gt; &lt;l&gt;</b><p>
+<b></b>side:<b> uvls &lt;u&gt; &lt;v&gt; &lt;l&gt;</b><p>
+<b></b>side:<b> uvls &lt;u&gt; &lt;v&gt; &lt;l&gt;</b><p>
+<b></b>side:<b> uvls &lt;u&gt; &lt;v&gt; &lt;l&gt;</b><p>
+<b></b>Four lines with the uvl-coords for this side. The uv-coords specify in
+which way the texture is layed in this side. If you don't know what to do with
+this,<p>
+just use (0,0), (0,2047), (-2047,2047), (-2047,0) for each side and after you
+loaded the file in Devil tag all cubes and let Devil recalculate the textures
+<p>
+(Lights and Textures-&gt;recalculate textures).<p>
+The third value in each line is the light value.<p>
+This should be a value between 0 (0%) and 32767 (100%)<p>
+end of side.<p>
+Remember that there must be six sides for each segment even if the segment has
+a child on this side.<p>
+cont. segment:<b> children &lt;c0&gt; &lt;c1&gt; &lt;c2&gt; &lt;c3&gt;
+&lt;c4&gt; &lt;c5&gt;</b><p>
+<b></b>(c0..c5 are the numbers of the cubes connected to this cube on side
+0..5. -1 if no cube is connected.)<p>
+segment:<b> vms_vector &lt;no&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;</b><p>
+<b></b>segment:<b> vms_vector &lt;no&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;</b><p>
+<b></b>segment:<b> vms_vector &lt;no&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;</b><p>
+<b></b>segment:<b> vms_vector &lt;no&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;</b><p>
+<b></b>segment:<b> vms_vector &lt;no&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;</b><p>
+<b></b>segment:<b> vms_vector &lt;no&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;</b><p>
+<b></b>segment:<b> vms_vector &lt;no&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;</b><p>
+<b></b>segment:<b> vms_vector &lt;no&gt; &lt;x&gt; &lt;y&gt; &lt;z&gt;</b><p>
+<b></b>The eight points for this segment. The number must run from 0..7. x,y,z
+are 4-byte-integers specifying the coordinates of the points multiplied with
+65536.<p>
+(e.g. a normal cube which, in Devil, has the size 20*20*20 has these
+coordinates :-<p>
+1310720*1310720*1310720   [20*65536=1310720] ).<p>
+Points with a certain number belong to sides with a certain number: <p>
+Side 0 Pnts 7 6 2 3  (left side)<p>
+Side 1 Pnts 0 4 7 3  (ceiling)<p>
+Side 2 Pnts 0 1 5 4  (right side)<p>
+Side 3 Pnts 2 6 5 1  (floor)<p>
+Side 4 Pnts 4 5 6 7  (front)<p>
+Side 5 Pnts 3 2 1 0  (back)<p>
+The comments in brackets are just to give you some sort of orientation. They
+refer to cube 0 in the first level of Descent 1 if your position is on the
+startplace of this level)<p>
+segment:<b> static_light &lt;light&gt;</b><p>
+<b></b>The light which will be used for the objects in this cube, e.g. robots<p>
+end of segment.<b></b><p>
+<b></b><p>
+
+
+<h2>
+<A NAME="Heading118">8.8 ERROR MESSAGES DURING SAVE</A></h2>
+
+While checking a level before a save, the following error messages could be
+issued (some of these can be turned off in the Internal window):<p>
+*	"Too many doors to be opened at the end of the level (max.: 10). Ignore
+others?"<br>At the end of a level (i.e. after blowing up the reactor), up to 10
+doors can be opened. This error message appears if more than 10 doors are
+flagged `Open at end'. If `OK' is pressed, the 10 doors with the lowest numbers
+will be opened at the end. At the next load of the level, only these 10 doors
+will still be flagged `Open at end'.<p>
+*	"WARNING: More XXX than Descent can handle. Okay ?"<br>The message says
+simply that there are more objects present in the level than Descent can handle
+(for XXX you can have Cubes, Points, Things and Walls). If "OK" is pressed, the
+level is saved as is. This has the result that Descent abends with
+unpredictable errors if the level is played.<p>
+*	WARNING: Thing X outside the mine. Okay ?"<br>The thing with the number X is
+not in a cube, i.e. its co-ordinates are outside the mine. This has no effect
+on Descent (I believe) except that the thing does not appear in Descent. With
+exceptionally twisted cubes, the error message can also appear. To eliminate
+the warning in such cases, I recommend simply moving the thing a little bit
+(towards the cube center).<p>
+*	"WARNING: Incorrect number X for Player-start Y. Okay ?"<br>The Thing with
+the number Y is a Player-start and has an incorrect value in the `Nr.' field,
+i.e., a Coop-Player-start has a number other than 8-11 or an Deatchmatch
+(Anarchy) Player-start a number other than 0-7.<p>
+*	"WARNING: To many Coop-Starts (X is the fifth). Okay ?"<br>Only four
+Player-starts are permitted for `Cooperative', but at least five are present in
+the level (The Thing with the Number X is the fifth Coop-Player-start in
+numeric order).<p>
+*	"WARNING: Two Player-starts with the Nr. X: Thing Y and Z. Okay ?"<br>The
+Player-starts Y and Z have the same value in the `Nr.' field.<p>
+*	"WARNING: Two keys with the same color: Thing X and Y."<br>Should be obvious.
+This is, naturally, permitted (in Descent), but seems somewhat senseless, or
+what ?<p>
+*	"WARNING: Double Reactor/Flag: Thing %d and %d"<br>Should also be obvious. I
+believe it is also permitted, but likewise senseless.<p>
+*	"WARNING: No Player-start. Okay ?"<br>Without a player-start you cannot play
+the game.<p>
+*	"WARNING: No Player-start after return from secret level."<br>This is a
+message which only appears in Descent 2 mode. In Descent 2 the player, after
+passing through a secret exit in a secret level having played through it,
+proceeds to a particular position in the level from which he left for the
+secret level. This position is determined by the `Secret Start'. If this start
+is missing and, despite this, an exit is available in the secret level, the
+error message appears.<p>
+*	"WARNING: No exit to secret level, but a player-start for return (Thing
+X)."<br>The same as above, only the other way around.<p>
+*	"WARNING: Level illumination must probably be re-calculated if the Shootable
+lights are to function correctly. Should this be done now ?"<br>In order for
+the turning on or shooting out of light-sources to work correctly in Descent,
+the Editor must a do some "pre-work" which happens during level-illumination
+(see Section 7.2.3). This message means that level illumination has not been
+recalculated since the last modification of something which is relevant to the
+lighting. If the question is answered in the affirmative, the level
+illumination is re-calculated, if in the negative, the level is saved without
+the corresponding data; which means that the shooting or the turning off of
+lights is not possible. Take note: If Devil is allowed to proceed with level
+illumination at this point, <i>all cubes in the level</i> will have their
+lighting values re-calculated.]<p>
+*	"WARNING: More lightsources to turn/shoot off (XXX) than Descent can handle.
+(Max. 500)  Ignore?"<br>This is a warning that there is too much data for light
+sources that must be saved in the .RL2-file. In version &lt;= v2.2k only
+lightsources that are turned/shoot off were saved.<br>Since V2.2l all lighting
+data is saved, so I expect this warning to appear more frequently.
+<p>
+<P><hr size=4>
+<A HREF="doc08.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <IMG SRC="images/norightg.gif" ALT="next" border=0>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+</body></html>

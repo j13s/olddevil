@@ -1,0 +1,204 @@
+<HTML><HEAD>
+<!-- This document was created from RTF source by rtftohtml version $Revision: 3.4 $ -->
+<TITLE>Devil - 6  (ALMOST) EVERYTHING ABOUT TEXTURES</TITLE></HEAD>
+<BODY BACKGROUND="" BGCOLOR="#FFFFFF" TEXT=#000000>
+<A HREF="doc06.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc08.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+<hr size=4>
+<H1>
+6  (ALMOST) EVERYTHING ABOUT TEXTURES</H1>
+<UL>
+<LI><A HREF="#Heading68">6.1 BASICS</A>
+<LI><A HREF="#Heading69">6.2 ADJUSTING TEXTURES ON SIDES</A>
+<LI><A HREF="#Heading70">6.3 AUTOMATIC TEXTURE ALIGNMENT</A>
+<LI><A HREF="#Heading71">6.4 OVERLAYING OTHER TEXTURES</A>
+<UL>
+<LI><A HREF="#Heading72">6.4.1 WORKING WITH ANIMATED TEXTURES</A>
+<LI><A HREF="#Heading73">6.4.2 OTHER TEXTURE NOTES</A>
+</UL>
+</UL>
+<hr size=4>
+
+<h2>
+<A NAME="Heading68">6.1 BASICS</A></h2>
+
+The
+real reason for the texture functions of Devil is, for example, to make it
+possible to align a texture with lights onto a slanted Side in such a fashion
+that the lights are set in the middle so as not to display half a light.
+Readers who only want to adjust textures in this manner (which I strongly
+recommend initially ) should skip this section. Readers who want to make doors
+four times the size and other similar things, however, should read this section
+to the end.<p>
+If you want to place textures differently to normal in Descent, you must
+understand the methods and ways in which textures are handled by Descent.
+Descent requires an Outline (or frame-definition) on which the texture is to be
+pasted in order to be able to represent it. This Outline is normally calculated
+automatically by Devil, but you can also change it manually. Descent does
+nothing other than compare this Outline with that of the Side actually to be
+produced on the screen and then fills the Outline on the screen with the
+corresponding texture. This means that if in an Outline, the line from Point 0
+to Point 1 has a length of 1 and the Outline on the screen has a length of 2 ,
+the pixels which lie on these lines in the Outline are all doubled.<p>
+The standard-size of a Side in Descent is 20*20, i.e., a side this size
+corresponds to a single texture after automatic calculation.<p>
+<u>Example:</u> If a normal texture-size Outline is specified in Devil for a
+square side 40*40 in size, you have a 40*40 opening, i.e. the door is four
+times as big as usual. If the Outline is automatically calculated by Devil you
+will get four 20*20 doors because the Outline is 2*2 textures in size.
+
+<h2>
+<A NAME="Heading69">6.2 ADJUSTING TEXTURES ON SIDES</A></h2>
+
+
+<IMG SRC="align.gif" align=left>
+The most frequent problem with textures in Devil is that the lights (amongst
+other things) of a texture which is placed on a slanted wall are not in the
+middle.
+
+It can happen, for example, that the lights on a slanted wall appear as show in
+Diagram 1 instead of as they should, as shown in Diagram 2. To correct such a
+problem you can either move the texture directly with the mouse in the level
+window (see Section 3.4.2) or click on the displayed texture in the Side
+window. The latter opens a new window in which the outline of the side is
+displayed with the texture in the background.<p>
+When this "Fit texture" window is opened, the `Movemode' status is set to `Move
+texture' and the six large push-buttons apply to movement and resizing of the
+Outline. Again left and right mouse-buttons have different effects ...
+experiment !<p>
+If you click the right mouse-button in this window, you can move the texture in
+the following manner:<p>
+*	Only right mouse-button: Enlarge/Reduce the Outline; Turn.<p>
+*	Shift+right mouse-button: Shift the Outline. If the Outline `jumps' while
+moving, it is because Devil has decided that your offsets are unnecessarily
+large. Unnecessary, since the texture bitmaps are repeated every 64 pixels and
+for that reason it is not necessary to offset any co-ordinate more than 64
+pixels.<p>
+*	Left+right mouse-button:  Shrink or stretch in the x/y-direction.<p>
+Additionally you can shift individual points with the left mouse-button.<p>
+Translators Note: You can create some pretty bizarre effects by `folding' the
+outline in the align window to look like an hourglass... especially with the
+animated textures, both Devil and Descent (2) support this.<p>
+Changes to the Outline are accepted when the texture in the Side window is
+clicked again (using the left button for the Outline of the current side only,
+the right for all tagged sides).<p>
+Double-click with the left mouse-button in the texture-alignment window to
+reset the co-ordinates of the Outline of the current side to what they were
+before you activated the alignment window; if you press Shift simultaneously
+then the Outline co-ordinates are re-calculated according to the current side;
+if you press Alt simultaneously a `Standard outline' is created, i.e., the
+Outline fits the texture exactly (which, e.g., can be useful with large square
+walls four times the standard size).<p>
+You should only adjust the texture Outlines on the side once the shape of the
+side in the level has been finalized, because Devil re-calculates the Outline
+with every alteration of the shape of the side (unless the side is locked, see
+Section 4.3). Although Devil attempts to keep the position of the Outlines
+unchanged, it is sometimes just not possible.
+
+<h2>
+<A NAME="Heading70">6.3 AUTOMATIC TEXTURE ALIGNMENT</A></h2>
+
+This function is useful for textures with particular structures, which must be
+fitted together across multiple sides as, for example, the floor in the first
+room of Level 1 in Descent 1. In order to place these textures together, you
+must tag all sides whose textures should be aligned together (Menu option
+`Tag-&gt;Tag flat sides' is helpful in this regard, see Section 7.3.2) and then
+select menu option `Lights and Textures -&gt;align textures'. Devil then aligns
+the textures adjoining the current side with the textures on neighboring,
+tagged sides. `Neighboring side' means that the two sides share a common line.
+The sides which have their textures aligned will have their tagging removed.
+
+<h2>
+<A NAME="Heading71">6.4 OVERLAYING OTHER TEXTURES</A></h2>
+
+Translators Notes: <p>
+*	Avoid specifying a texture for Texture-2 which completely covers the texture
+specified for Texture-1 because this simply means wasted double texture mapping
+in Descent.<p>
+*	When you bring up a texture selection list, Devil will only display the
+"normal" textures for that type, such as grates and lights for Texture-2. You
+can specify non-standard textures (e.g., a Texture-2 texture for Texture-1 and
+visa-versa) but you will need to note the texture number in the appropriate
+list (Texture-1, Texture-2, Animation or Thing) and then type this code
+directly into the applicable texture box.<p>
+The only time you are likely to want to do this is if you want a different
+effect, like having other "normal" textures move in Descent 2. You will still
+get the sounds made by the moving Texture-1 if you use a water or lava texture
+but you can control the rate of movement to a degree. You may also have to
+adjust the lighting accordingly as lava is a <i>very </i>bright light source.
+If you want your texture to move without the accompanying sound-effects you
+should use the "moving bar" texture (349), but you cannot control the rate of
+movement and your texture will tend to scroll diagonally, and if you align it
+so that the bar texture flows straight, your texture will also be aligned in
+that direction.<p>
+*	Another use of normal-looking Texture-2 overlaying an "active" Texture-1 is
+to surprise the player. Rock21 (0)over Lava02 (378) will still damage the
+players shields and explode if shot at ... it just <i>looks</i> safe ;-).  In
+Descent 2 you can create "bouncing wall" sections by setting Texture-1 to the
+Force01 (420) or Force02 (432), expanding that to the size of a complete side
+and then hiding it behind an innocuous Texture-1. Shots and ships will be
+repelled from this side when they touch it. Unfortunately you will still hear
+the force-field hum when you are in the vacinity of this section. The texture
+used for Texture-2 will also be stretched, so if it needs to look normal, you
+can either assume that most shots will bounce off the force-field anyway or
+create a very thin cube on the side (0.1 units wide) and place the force field
+on this. You can then insert a Wall (type = illusion) in the Connection and
+place your normal Texture-1 and Texture-2 on that. A drawback of this method is
+that if the cube is very thin, the effect of the force-field extends beyond the
+wall, so that you achieve a shootable Texture-2 which is "protected"by a force
+field. (The monitor in the red-key section of the shared secret skeleton level
+example is built this way) Interestingly, sides having lava as Texture-1 and a
+force-field as Texture-2 evidence similar effects ... you will get the
+explosion if you shoot at it, not the force-field bounce.
+
+<h3>
+<A NAME="Heading72">6.4.1 WORKING WITH ANIMATED TEXTURES</A></h3>
+
+Translators Notes:<p>
+*	The animation sequences for doors, normally a second texture, do not appear
+in the lists for Texture-1 or Texture-2, but under the Animation list in the
+Wall mode window.<p>
+*	You may specify a position in an animation sequence other than the default
+closed position but you will need to enter the texture number manually ...
+increasing the texture number by one to display the next frame in the sequence.
+The number of frames in the sequence varies for each door type but the final,
+completely open frame is normally between 7 and 11 frames further on.<p>
+*	By specifying the final frame as the second texture for a side you are then
+able to align the door texture using the texture align dialog without having to
+launch Descent to see what the door will look like when open.<p>
+*	If you leave this frame as the second texture when the level is played,
+however, the door will remain "stuck" in that open position until the player
+passes through it correctly - although you will be able to see through it and
+can shoot through it. The closed door texture on the reverse side is
+unaffected, giving you the ability to shoot through a closed door without
+enemies on that side being able to see you. (and they are then totally
+embarrassed to be dead suddenly ).<p>
+*	If you move a Thing near to or into the Connection of a Wall it will look
+like the object is just in front of the door, but if you shoot the door open,
+it will not close again afterwards as the object is in the way.<p>
+*	You may hide a door behind a normal texture by first inserting the Wall and
+then changing the texture in Side mode, specifying the texture you want as
+Texture-1 and Nothing (0) as Texture-2. This trick only covers the door until
+it is first opened - the normal door textures will be displayed afterwards.
+
+<h3>
+<A NAME="Heading73">6.4.2 OTHER TEXTURE NOTES</A></h3>
+
+Translators Notes:<p>
+*	The lava fall textures in Descent 1 do not damage the players shields, but
+those in Descent 2 will. The faster a player can fly through this Connection,
+the less shield damage is done.<p>
+*	The delivered shootable light textures are Ceil024 (291), Ceil025 (293),
+Ceil028 (296) and Ceil029 (298). The blown versions of these lights is one
+number higher.<p>
+*	There is a difference between Nothing (0) and Empty (302), the latter will
+usually produce the HOM effect when used as Texture-2.
+<p>
+<P><hr size=4>
+<A HREF="doc06.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc08.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+</body></html>

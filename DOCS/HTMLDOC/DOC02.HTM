@@ -1,0 +1,201 @@
+<HTML><HEAD>
+<!-- This document was created from RTF source by rtftohtml version $Revision: 3.4 $ -->
+<TITLE>Devil - 1 BASICS FOR LEVEL-BUILDERS</TITLE></HEAD>
+<BODY BACKGROUND="" BGCOLOR="#FFFFFF" TEXT=#000000>
+<A HREF="doc01.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc03.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+<hr size=4>
+<H1>
+1 BASICS FOR LEVEL-BUILDERS</H1>
+<UL>
+<LI><A HREF="#Heading7">1.1 ELEMENTS OF A LEVEL</A>
+<LI><A HREF="#Heading8">1.2 LEVEL REPRESENTATION</A>
+<LI><A HREF="#Heading9">1.3 THE CURRENT OBJECT</A>
+<LI><A HREF="#Heading10">1.4 TAGGED OBJECTS</A>
+<LI><A HREF="#Heading11">1.5 GROUPS</A>
+<LI><A HREF="#Heading12">1.6 ADJUSTING TEXTURES</A>
+<LI><A HREF="#Heading13">1.7 USING THE LEVEL IN DESCENT/UTILIZING THE ORIGINAL LEVELS</A>
+</UL>
+<hr size=4>
+
+<h2>
+<A NAME="Heading7">1.1 ELEMENTS OF A LEVEL</A></h2>
+
+As
+those familiar with playing Descent will know, a level consists of a mine,
+inside of which things are more or less indiscriminately distributed (i.e.
+hostile Robots, Power-ups, Hostages etc.).<p>
+Internally the mine is built up out of adjacent segments or modified `cubes'
+(which don't necessarily have to be regularly shaped). Each of these segments
+consist of eight points and six sides (as with any normal cube). The points
+define the position of the cube in space and the sides contain the graphics
+which are to be seen on the walls of the cubes in Descent. Using the edges of
+the sides, you can set the lighting values of these sides.<p>
+Between two adjacent cubes you can insert a so-called `partition' or simply
+`Wall', which in most cases is a door or a Switch. A Wall always consists of
+two parts - one half for the one cube and the other half for the other cube,
+since the behavior of the Wall can be entirely different on either side (e.g. a
+door opens from one side, but not from the other). In Descent 2 there is also a
+Switch for unconnected sides. These also count as walls, being a special type
+(i.e. this type of Switch is a `Wall'-type which only consists of one part and
+which is placed on an unconnected side).<p>
+You have, therefore, six basic elements in Devil:<p>
+I.	The Cube itself - Each cube possesses attributes, (e.g. its type - whether
+it is an energy-center)  and consists of eight points and four sides.<p>
+II.	The Side - Most noticeable about the side is the texture (graphic) which is
+visible on the side in Descent. Each side has four edges.<p>
+III.	The Edge - Only important for lighting and for fine-tuning during
+texture-alignment.<p>
+IV.	The Point - This determines the position of the cube in space and simply
+consists of three co-ordinates.<p>
+V.	The Wall - Doors, Walls and Switches.<p>
+VI.	The Thing - All sorts of stuff, like Robots, Powerups etc. which are
+distributed inside the level.
+
+<h2>
+<A NAME="Heading8">1.2 LEVEL REPRESENTATION</A></h2>
+
+Devil displays the level currently being edited in a window. Multiple levels
+can be open simultaneously, but only the `current' level is ever changed. It is
+indicated by an orange-colored frame with the level name top right. The level
+is either represented via a wire-frame (similar to the `Map' in Descent but
+navigation follows that of Descent itself) or rendered as in Descent with
+textures and light (see Section 7.6.1). With the wire-frame there are two
+possible views: single or double. With `double' the window is split in the
+middle by a vertical line and a view is displayed in each of the left and right
+halves which focus on a common point but are reversed 90-degrees from each
+other.<p>
+In both cases (single or double view), a variable visibility range (depth of
+field) exists to avoid the whole level being displayed at once, since it would
+firstly be unclear and secondly would be somewhat slower. The boundary lines of
+all cubes within the visibility range are drawn.<p>
+Walls in a Connection are indicated by two protruding crosses. Things are
+differentiated by type: 3D-Crosses for Things which look the same from all
+sides (items like Power-ups and Weapons), small stick-figures for Hostages and
+a stylized spaceship for Robots and Player-starts, Reactors and Mines, larger
+symbols are larger objects. The various Thing-types also have different colors,
+a Robot is red, a Player-start is white and Items are yellow.<p>
+(A Mine ship is normally indicated in red unless it is the current thing, in
+which case it is green or blue-green if tagged and current.) Blue is reserved
+for tagged objects (see Section 1.4).<p>
+The modes with texture-rendering make the display look exactly as it does in
+Descent (although it is naturally slower and the robots are still represented
+symbolically). There are three different Rendering modes:   'Only Current
+Cube',  'On', and  'On With Collision'.<p>
+'Only Current Cube' renders just the sides of the current cube which are
+visible from your perspective. 'On' displays sides with a texture as solid when
+looking "through" the current cube and the sides of all cubes which can be seen
+from this cube, no matter where your vantage point is. You can be inside or
+outside the mine in these first two modes. 'On With Collision' puts you inside
+the mine in the current cube, only now you will collide with the sides, and
+remain inside. You can pass through Walls (doors) and fly through the entire
+level in this mode.. It may sound complicated, but is actually quite
+straightforward ...<p>
+Note: If you find that the lines seem to be disappearing from the wire-frame
+mode despite a large field-depth or that sides seem not to be rendered, it may
+be that you have rendering mode on and the textures on those sides are dark and
+have a lighting value less than 10 percent. Also, when rendering is on, Devil
+sometimes `loses' the current cube which results in a completely blank screen.
+You can reinitialize the current cube with Ctrl+Shift+Space.
+
+<h2>
+<A NAME="Heading9">1.3 THE CURRENT OBJECT</A></h2>
+
+A so-called `current' object (i.e. the current Cube, the current Side etc.)
+exists for each the six basic elements in Devil. This would normally be the
+object to apply the desired changes to. These objects are displayed differently
+in the level; the current Thing, the current Wall and the current Cube are
+indicated in green and the current Point is identified with a green star and
+the current Edge is indicated with one green line. The current Side is
+indicated by one purple line, one yellow line perpendicular to the purple line
+and two brown lines. The current Side can only be chosen from the current Cube
+and the current Edge only from the current Side.<p>
+See Section 4.6.1 for a table of Wall colors.<p>
+
+
+<h2>
+<A NAME="Heading10">1.4 TAGGED OBJECTS</A></h2>
+
+You can tag any number of the six basic elements (see Section 3.5 and Section
+4.1). Tagged objects are always represented in blue. Tagged objects are always
+represented in blue unless it is also the current object, in which case it
+becomes a blue-green color. Tagged Cubes, Edges, Points ,Walls and Things are
+simply drawn in blue instead of with the normal color. Tagged Sides are
+provided with a special, blue indicator. You can execute the same operation or
+particular special-functions on a larger group of objects by tagging them and
+then performing the operation. A group of tagged cubes can also be from copied
+from one level to another.<p>
+To tag a particular group of objects,  the Tagging-Filter can be used (see
+Section 7.3) or they can simply be tagged with the mouse "selection box" (see
+Section 3.5).<p>
+In Side mode, all sides which belong to tagged cubes can be tagged with the
+menu option `Tag-&gt;Use Cube tag'. In Point mode, the corresponding Side or
+Cube tag can be used and in Edge mode the Cube, Side or Point tag is available.
+Additionally, with `Tag-&gt;tag/untag special' in Edge-mode, all Edges related
+to the current Point can be tagged, and in Side-mode the sides can be protected
+against re-calculation of the Outline (see Section 6).<p>
+BTW: you can still use `tag points' if you want to set the light: just tag the
+points that you want to change and then use `use point tag' in Edge mode. Or
+use the special tag in Point mode (to tag all edges corresponding to this
+point) or in edge mode (to tag all edges in the current cube corresponding to
+the point of the edge)
+
+<h2>
+<A NAME="Heading11">1.5 GROUPS</A></h2>
+
+Groups (along with the corridor wizard) are the most powerful tools that Devil
+makes available to level-builders. Groups (also referred to as Macros) are
+nothing more than a collection of Cubes, Walls and Things (everything is
+possible, from a single cube to a complete level), which are tagged by the user
+and then initially created as a new level in memory. These new levels can then
+be inserted into other levels again, saved and can, naturally, also be
+reloaded. It is possible, for example, to save whole corridors and, whenever
+needed, to reproduce them or to steal the big hall out of original Descent 1
+Level 7, to reduce or to enlarge it and to insert it again etc.<p>
+This technique is effective because it's much easier to work on a small piece
+of a level.  There is less clutter and it's easier to select parts for mass
+texture and lighting changes. See Section 5.1.1 for more about Groups.<p>
+
+
+<h2>
+<A NAME="Heading12">1.6 ADJUSTING TEXTURES</A></h2>
+
+For each side, Descent requires an Outline (or frame definition) for the Side,
+into which the texture is placed undistorted. Normally Devil re-calculates
+these Outlines whenever a side is changed. As a Devil-user you must simply
+adjust the Outline correctly e.g. so that the lights on a side are in the
+middle. As this becomes problematic with textures which must be aligned
+together across the borders of two sides; Devil provides a function for this,
+see Section 6.3.<p>
+If you distort these Outlines manually, you can achieve all sorts of amusing
+effects. To have e.g. a door with side lengths twice the size as normal, you
+simply halve the default Devil-prescribed side lengths and in that fashion,
+instead of the same door four times, you obtain a door four times as big.<p>
+Those readers who want to know how this works should proceed to Section 6 or to
+the technical &amp; mathematical basics in Section 8.5.
+
+<h2>
+<A NAME="Heading13">1.7 USING THE LEVEL IN DESCENT/UTILIZING THE ORIGINAL LEVELS</A></h2>
+
+The simplest way to quickly play a level is using the menu option `Play level'
+in the `File' menu (see Section 3.1.6). You can also present a fully-playable
+level to Descent very easily. Using the `Mission Manager' (see Section 7.3.4),
+you simply compile a group of levels together into a so-called HOG-File. The
+Mission Manager automatically produces a matching .MSN or .MN2-file for this
+.HOG-File. You'll find both these files in the main `descent' directory with
+Descent 1 and in the `missions' directory with Descent 2; when the game is
+started, Descent locates these files and you can choose to play one of the
+available missions. In order to explore the complete variety of possible file
+utilities for Descent, you should look around for additional Decent tools from
+time to time in the WWW-address indicated on the title-page.<p>
+With the mission manager you can also make the original Descent levels
+available to Devil., see Section 7.3.4. about this.
+<p>
+<P><hr size=4>
+<A HREF="doc01.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc03.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+</body></html>

@@ -1,0 +1,206 @@
+<HTML><HEAD>
+<!-- This document was created from RTF source by rtftohtml version $Revision: 3.4 $ -->
+<TITLE>Devil - 5 EVERYTHING ABOUT INSERT AND DELETE...</TITLE></HEAD>
+<BODY BACKGROUND="" BGCOLOR="#FFFFFF" TEXT=#000000>
+<A HREF="doc05.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc07.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+<hr size=4>
+<H1>
+5 EVERYTHING ABOUT INSERT AND DELETE...</H1>
+<UL>
+<LI><A HREF="#Heading56">5.1  ...IN CUBE-MODE</A>
+<UL>
+<LI><A HREF="#Heading57">5.1.1 MAKING GROUPS </A>
+<LI><A HREF="#Heading58">5.1.2 INSERTING GROUPS</A>
+<LI><A HREF="#Heading59">5.1.3 READING .BLK FILES</A>
+<LI><A HREF="#Heading60">5.1.4 CUBE DELETION</A>
+</UL>
+<LI><A HREF="#Heading61">5.2 ...IN SIDE-MODE</A>
+<UL>
+<LI><A HREF="#Heading62">5.2.1 CUBE INSERTION</A>
+<LI><A HREF="#Heading63">5.2.2 SIDE INSERTION</A>
+<LI><A HREF="#Heading64">5.2.3 SIDE DELETION</A>
+</UL>
+<LI><A HREF="#Heading65">5.3 ...IN EDGE-MODE</A>
+<LI><A HREF="#Heading66">5.4 ...IN WALL- AND IN THING-MODE</A>
+</UL>
+<hr size=4>
+
+<h2>
+<A NAME="Heading56">5.1  ...IN CUBE-MODE</A></h2>
+
+
+<h3>
+<A NAME="Heading57">5.1.1 MAKING GROUPS </A></h3>
+
+In
+order to insert a large number of cubes in Devil, a Group must first be
+created. This happens by tagging the Cubes to be copied; lightsources, Things
+and existing Walls between cubes are automatically copied. Once all objects to
+be copied are tagged, a Group can be produced with the menu option
+`Groups-&gt;Make group'. A new window for a new level (normally entitled Group
+2) is opened in Devil and all the tagged objects are copied into it. You can
+move and edit this group just as you are used to doing in the main editing
+window as Devil does not differentiate between group and main windows (both are
+level windows.)<p>
+Each Group possesses a Connection-side, which is the side which is to be joined
+to the current side during insertion. This side is determined during creation
+of the Group by the current Side of the current Cube, which for that reason, is
+also copied at creation even if it is not tagged. The Connection-side can still
+be changed afterwards via the menu option `Edit-&gt;Set connection side/Exit'.
+
+<h3>
+<A NAME="Heading58">5.1.2 INSERTING GROUPS</A></h3>
+
+You need to be in Cube mode to insert Groups. The `Insert' button in the Cube
+window inserts the Group which is specified in the list labeled `Group:' The
+inserted Group will be orientated so that the Connection-side - which is the
+side with a brown Side tag marker in the middle of its side and a brown Edge
+marker on one corner - is aligned with the current Side, and the Point on the
+Connection side indicated by the brown Edge marker is placed on top of the
+current Point of the current Side. The Group Preview option, which can be used
+to display the first cube of a group to be inserted, is discussed in Section
+7.6<p>
+Translators Notes: <p>
+*	You cannot change the Edge of the "Connection side" once it has been set, so
+use Edge-mode cycling (`e') in the current level window to make the correct
+point current. (The colors of the lines of the current side (yellow, purple,
+brown) don't change, just the green line indicating the current Edge.<p>
+*	When orientating the inserted Group, Devil will first place the
+above-mentioned two points on top of one another and then attempt to align the
+level according to the two Edges emanating from these points as far as this is
+possible. Unless the current level and the Group to be inserted were both
+created with the same size grid, you should consider turning the grid off
+before inserting the Group to improve the chances of correct orientation and to
+prevent distortion of the inserted group as it is "fitted" to the current level
+grid setting.<p>
+If `Insert' is pressed using the left mouse-button, all objects in the Group
+are simply copied into the current level; if the right mouse-button is used,
+not only is the Group copied into the current level, but Devil also tries to
+join the current Side with the Connection-side of the Group. `Insert' with the
+left mouse-button simulates the `Edit-&gt;insert' menu option, `Insert' with
+the right mouse-button simulates `Edit-&gt;fast insert'. The `Edit-&gt;Insert
+special' and `Edit-&gt;Insert fast,special' menu options do the same, only you
+must also specify a scaling factor with which the group is to be enlarged when
+it is inserted (if a factor smaller than one is specified, the Group will be
+correspondingly minimized).<p>
+Translators Note:<br>When preparing to insert a Group, remember that the sides
+appear "reversed" with respect to each other. In the diagram below, the current
+Edge is indicated in the Main window by the green line, the brown Connection
+side markers are show in the Group window and the third picture is the result
+of the insert and join.<p>
+ <b>Group insert example diagrams:</b><p>
+<IMG SRC="group.gif" align=left><br clear=all>
+
+
+<h3>
+<A NAME="Heading59">5.1.3 READING .BLK FILES</A></h3>
+
+You can read the files generated by the Descent Block Builder. To be more
+specific, Devil can read levels stored in an ASCII-format, so you can create
+your own small programs to create complicated levels. The format Devil uses is
+the same as the format used by the Descent Block Builder (at least I hope so).
+I've used it because I don't want to introduce even more file formats than
+there are already, although it is not exactly what I would have done...<p>
+See Section 8.7 for the .BLK file format.<p>
+The `Groups -&gt; Read blk-file' option brings up the file dialog where you may
+specify the path for files with a .BLK suffix. The BLK-file will be loaded into
+a new level window called ASCII level.<p>
+
+
+<h3>
+<A NAME="Heading60">5.1.4 CUBE DELETION</A></h3>
+
+The removal of cubes is a simple matter: Left mouse-button on `Delete' deletes
+the current cube, right mouse-button deletes all tagged cubes. The default-side
+will be inserted on sides where a deleted cube was joined with one not deleted.
+With cubes with Walls on their sides, the Wall will also be deleted if the
+second cube of the Wall is not deleted. Additionally there is also the menu
+option `Edit-&gt;delete special'. With this, when in Cube-mode, all objects
+tagged at that time will be deleted. The idea behind this function is it be
+able to quickly remove an incorrectly inserted group.
+
+<h2>
+<A NAME="Heading61">5.2 ...IN SIDE-MODE</A></h2>
+
+
+<h3>
+<A NAME="Heading62">5.2.1 CUBE INSERTION</A></h3>
+
+A
+cube can be inserted by clicking the left or right mouse-button on `Insert', as
+long as there is no connection with another cube on the current side. If the
+left mouse-button is pressed, the inserted cube is made up of the four points
+of the current Side and then four further points which are displaced from the
+current side about the depth of the current cube (just try it out !). If the
+right mouse-button is pressed, the side opposite to the current side is created
+in `standard format' (20*20) (see Section 7.1.3). The textures used are the
+same as those in the current cube, and the Edge light values will be the
+same.<p>
+Translator's Note:<p>
+You are able to insert more than one cube from a single side. This can be
+observed by inserting a cube, distorting it from it's original position, then
+inserting another. (You will need to insert twice, once for a Side, the second
+for another cube.)  This "feature" is, in fact, supported by Descent and has
+been utilized to create interesting `4-D' sections in custom levels.
+
+<h3>
+<A NAME="Heading63">5.2.2 SIDE INSERTION</A></h3>
+
+A Side can be inserted to remove the connection between two cubes. For the
+current side this is achieved by clicking the left mouse-button on the `Insert'
+button, for tagged sides, use the right mouse-button. The default-side is
+always inserted and the corresponding light-values and textures are copied from
+the default Side. In order to really separate both cubes from each other, all
+four points should actually be duplicated wherever they are shared by both
+cubes. The reverse occurs in Devil, where not only the connection between the
+cube and the current side is removed, but also all other connections between
+the cubes which lie left, right, up and down from the current side. The menu
+option `Edit-&gt;Insert special' as well as `Edit-&gt;Insert fast special' in
+trying to avoid this, have the drawback that the cube will still always have
+common points after inserting a side.
+
+<h3>
+<A NAME="Heading64">5.2.3 SIDE DELETION</A></h3>
+
+The `Delete' button attempts to create a connection between the current side
+and a `nearby' side (left mouse-button) or all tagged sides with `nearby' sides
+(right mouse-button). `Nearby' means that Devil searches for another point for
+each of the four points of the side, which must not be further away than the
+`Conn. dist.' as specified in the Internal window. If Devil can find an
+unambiguous other point for each of the four points and if all of those four
+points belong to the same side, then both sides of the two cubes are joined
+with each other. The menu option `Edit-&gt;Delete special' joins the current
+side with a tagged side, the requirement for this function is that exactly one
+side must be tagged. The two sides will be joined if, for every point on one
+side, a point can be found on the other side which is not further away than the
+`Uconn. dist.' specified in the Internal window.
+
+<h2>
+<A NAME="Heading65">5.3 ...IN EDGE-MODE</A></h2>
+
+You cannot insert or delete points in Point mode, only in Edge mode. Points can
+only inserted, but cannot be deleted. It is only possible to insert points with
+connected sides. If a point is inserted on a connected side, a side is inserted
+on all adjacent sides of the current cube which contain this points (therefore
+max. three). Actually these points are duplicated so that, after inserting the
+point, it is possible to move a point of the current cube without distorting
+other cubes.
+
+<h2>
+<A NAME="Heading66">5.4 ...IN WALL- AND IN THING-MODE</A></h2>
+
+There are no peculiarities in these two modes, i.e., using the left or right
+mouse-button on `Insert' inserts an object, the left mouse-button on `Delete'
+deletes the current object and with the right mouse-button on `Delete' all the
+tagged objects are deleted. The special functions in the menu have no
+particular meaning with respect to Insert and Delete.
+<p>
+<P><hr size=4>
+<A HREF="doc05.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc07.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+</body></html>

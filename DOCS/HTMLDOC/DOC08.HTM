@@ -1,0 +1,699 @@
+<HTML><HEAD>
+<!-- This document was created from RTF source by rtftohtml version $Revision: 3.4 $ -->
+<TITLE>Devil - 7 ADDITIONAL FUNCTIONS</TITLE></HEAD>
+<BODY BACKGROUND="" BGCOLOR="#FFFFFF" TEXT=#000000>
+<A HREF="doc07.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc09.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+<hr size=4>
+<H1>
+7 ADDITIONAL FUNCTIONS</H1>
+<UL>
+<LI><A HREF="#Heading75">7.1 EDIT MENU</A>
+<UL>
+<LI><A HREF="#Heading76">7.1.1 DELETE SPECIAL</A>
+<LI><A HREF="#Heading77">7.1.2  STRETCH AND SHRINK</A>
+<LI><A HREF="#Heading78">7.1.3 MAKE STANDARD SIDE</A>
+<LI><A HREF="#Heading79">7.1.4 MAKE EDGE CO-PLANAR</A>
+<LI><A HREF="#Heading80">7.1.5 MAKE ROOM</A>
+<LI><A HREF="#Heading81">7.1.6 SPLIT CUBE</A>
+<LI><A HREF="#Heading82">7.1.7 CORRIDOR WIZARD</A>
+<UL>
+<LI><A HREF="#Heading83">7.1.7.1 Corridor-wizard: Polynom</A>
+<LI><A HREF="#Heading84">7.1.7.2 Corridor-wizard: Straight</A>
+<LI><A HREF="#Heading85">7.1.7.3 Corridor-wizard: Ellipse</A>
+</UL>
+<LI><A HREF="#Heading86">7.1.8 SET CONNECTION SIDE/EXIT</A>
+<LI><A HREF="#Heading87">7.1.9 ENTER DATA</A>
+</UL>
+<LI><A HREF="#Heading88">7.2  LIGHTS AND TEXTURES MENU</A>
+<UL>
+<LI><A HREF="#Heading89">7.2.1 RECALCULATE TEXTURES</A>
+<LI><A HREF="#Heading90">7.2.2 ALIGN TEXTURES</A>
+<LI><A HREF="#Heading91">7.2.3 MINE ILLUMINATING.</A>
+<UL>
+<LI><A HREF="#Heading92">7.2.3.1 The Adjust Light" option</A>
+</UL>
+<LI><A HREF="#Heading93">7.2.4 SET INNER CUBE LIGHT</A>
+</UL>
+<LI><A HREF="#Heading94">7.3 TAG</A>
+<UL>
+<LI><A HREF="#Heading95">7.3.1 THE TAGGING-FILTER</A>
+<LI><A HREF="#Heading96">7.3.2 TAG/UNTAG SPECIAL</A>
+<LI><A HREF="#Heading97">7.3.3 TAG FLAT SIDES</A>
+<LI><A HREF="#Heading98">7.3.4 USE CUBE TAG</A>
+<LI><A HREF="#Heading99">7.3.5 USE SIDE TAG</A>
+<LI><A HREF="#Heading100">7.3.6 USE POINT TAG</A>
+</UL>
+<LI><A HREF="#Heading101">7.4 THE MISSION MANAGER</A>
+<UL>
+<LI><A HREF="#Heading102">7.4.1 SHARED SECRET LEVELS</A>
+</UL>
+<LI><A HREF="#Heading103">7.5 DEVIL AND POG-FILES (CUSTOM TEXTURES IN DESCENT)</A>
+<LI><A HREF="#Heading104">7.6 THE INTERNAL-WINDOW</A>
+<UL>
+<LI><A HREF="#Heading105">7.6.1 MOVE &amp; DISPLAY</A>
+<LI><A HREF="#Heading106">7.6.2 TEXTURES &amp; ILLUM.</A>
+<LI><A HREF="#Heading107">7.6.3  MODIFY</A>
+<LI><A HREF="#Heading108">7.6.4 WARNINGS</A>
+</UL>
+<LI><A HREF="#Heading109">7.7 INFO</A>
+</UL>
+<hr size=4>
+
+<h2>
+<A NAME="Heading75">7.1 EDIT MENU</A></h2>
+
+
+<h3>
+<A NAME="Heading76">7.1.1 DELETE SPECIAL</A></h3>
+
+This
+function is discussed in Section 5.2.3
+
+<h3>
+<A NAME="Heading77">7.1.2  STRETCH AND SHRINK</A></h3>
+
+With these two functions you can stretch or shrink the tagged objects in Cube
+or Side mode about their common mid-points. The factor with which the object is
+enlarged, can be changed in the Internal menu, it goes under the name `Enlarge
+*'. This function naturally makes no sense in the other modes.<p>
+Translators Note:<p>
+When the grid is on, the Points will be set to a point on the grid. If your
+enlarge factor is too similar to the grid-size, then you may find that `nothing
+happens' when you select enlarge or shrink.  Turn the grid off in this case.
+
+<h3>
+<A NAME="Heading78">7.1.3 MAKE STANDARD SIDE</A></h3>
+
+When you select this menu option, Devil attempts to convert all tagged sides
+into `standard form', i.e., to manipulate them so that they form cubes with
+side-lengths of 20. The side is distorted `as little as possible', i.e. no
+unnecessary rotation or anything similar is done, the outcome of which should
+be quite intuitive.
+
+<h3>
+<A NAME="Heading79">7.1.4 MAKE EDGE CO-PLANAR</A></h3>
+
+This function enables you to avoid texture "beating" by making a side which has
+one tagged edge co-planar. This is done by moving the tagged edge into the
+plane of the other three edges.<p>
+
+
+<h3>
+<A NAME="Heading80">7.1.5 MAKE ROOM</A></h3>
+
+This function is useful if you want to build a room out many different cubes.
+It can be quite tedious to join all the cubes individually. This function
+attempts to join all six sides of each tagged cube with a side which is in the
+vicinity, in the same way as if you clicked on `Delete' in the Side window.
+
+<h3>
+<A NAME="Heading81">7.1.6 SPLIT CUBE</A></h3>
+
+With this function you can split the current cube into seven smaller cubes
+without changing anything else except the current cube. To do this, Devil
+initially inserts a cube into the middle of the original, which is the same
+shape as the original but is half its size, and then adds six additional cubes
+on all sides of that cube, so that the space occupied by the original cube is
+filled.
+
+<h3>
+<A NAME="Heading82">7.1.7 CORRIDOR WIZARD</A></h3>
+
+The Corridor-wizard is provided to create curved and elliptical corridors with
+any number of cubes in its cross section. When the Corridor-wizard is initially
+invoked, a standard corridor is produced on the current side if this is not
+already joined to another side. The corridor which is open in the corridor
+control window at the time is depicted in brown in the level instead of gray.
+In the corridor you normally find one or more yellow markers with which you can
+change the shape of the corridor. In addition, the corridor control window is
+displayed. Use `OK' to accept the corridor into the level or `Cancel' to delete
+the corridor without making it a permanent part of the level. With `Type' you
+choose which sort of corridor you want to make:<p>
+*	Polynom: This is a curved or twisted corridor.<p>
+*	Straight: Simply a straight corridor.<p>
+*	Ellipse: A corridor in the form of an ellipse<p>
+The `Cubesize' field allows you to specify how long each cube segment should
+be.<p>
+All types of corridors also work with multiple sides as the starting side,
+i.e., if you tag multiple, neighboring (flat) sides and start the
+Corridor-wizard with one of these sides as the current side, the initial
+cross-sectional surface of the corridor consists of the current and the tagged
+sides.<p>
+Translators Note:<p>
+Despite the above, the Corridor-wizard does not consider cube sides in the
+cross-section that are on the other side of a solid wall to the current cube.
+In order to produce a corridor using this shape as a base, you must join all
+the cubes before invoking the corridor wizard ... you can always insert the
+sides again afterwards. The corridor wizard also honors the settings for
+convex/weird, so if you find that a corridor seem to stop before it should, it
+could be that cubes in the next segment would have been non-convex.
+
+<h4>
+<A NAME="Heading83">7.1.7.1 Corridor-wizard: Polynom</A></h4>
+
+In this mode the corridor is "guided" by the yellow markers which indicate the
+direction that the corridor originated from. Marker movement works just as with
+Thing movement. Control:	A spline is made to fit a curve between the two
+markers so that the marker 			direction is the direction of the corridor at the
+marker.<p>
+		Moving the markers closer together reduces the number of cubes. (min. 3)<p>
+In the control window there are also three additional controls:<p>
+*	Insert/Delete: With these controls, additional Markers can be inserted in (or
+deleted from) the corridor in order to be able to change the shape of the
+corridor more easily.<p>
+*	`Connect End': With this control, the end of the corridor is joined to the
+current side (which may not always be possible) and then it can only be
+manipulated using the remaining markers in the rest of the corridor.
+
+<h4>
+<A NAME="Heading84">7.1.7.2 Corridor-wizard: Straight</A></h4>
+
+In this mode a single, straight corridor is produced. For this reason a marker
+is only provided at the end of the corridor.<p>
+Control:	Just a straight line between the base and end marker.<p>
+		Moving the marker closer to the base reduces the number of cubes. (Min 3)
+
+<h4>
+<A NAME="Heading85">7.1.7.3 Corridor-wizard: Ellipse</A></h4>
+
+In this mode an ellipse is produced. It has two markers, the one determines the
+larger, the other the smaller radius.<p>
+Control:	An ellipse using one marker to indicate the large radius<p>
+		and a second for the small radius.<p>
+		Moving the markers closer together reduces the number of cubes.
+
+<h3>
+<A NAME="Heading86">7.1.8 SET CONNECTION SIDE/EXIT</A></h3>
+
+This function allows you to mark a side in the level as End or Connection-side.
+It was especially important in earlier versions of Descent 1 which were
+inclined to abend when loading the level if this side was not defined. This
+side is used, in the case of creating Descent 1 levels, as the exit to the
+ending corridor. In order to have Descent generate the exit sequence (where it
+steers your Pyro through the corridor) you will need a briefing (.txb) file to
+be added to your .hog by a program other than Devil. This feature is also not
+relevant to Descent 2 levels as the ending corridor is not flown through with
+external missions. When inserting a level into another, this side becomes the
+Connection, see Section 5.1.2. about this.<p>
+<p>
+Translators Note:<p>
+*	You do not need to declare this exit in Descent 2 as transition to the next
+level will still work correctly without it, but you should still ensure that it
+cannot be seen (hide it around a bend etc.) because this side will exhibit the
+well-known "Hall Of Mirrors" effect.<p>
+*	Although you cannot provide your own exit sequences in Descent 2 (1.2), you
+can have the cut-scenes from the CD played by replacing the reactor with one of
+the Big-Boss robots which appeared in the last level for each planet.
+
+<h3>
+<A NAME="Heading87">7.1.9 ENTER DATA</A></h3>
+
+With this menu option you can change Descent data directly in a most
+uncomfortable fashion. It is actually meant for test purposes and should not
+used. This feature is useless unless you know the exact offsets and lengths of
+the data you want to change. Unless you know what you're doing, you'll probably
+just cause Devil to crash.<p>
+
+
+<h2>
+<A NAME="Heading88">7.2  LIGHTS AND TEXTURES MENU</A></h2>
+
+As from the 2.2L release of Devil, the lighting has been re-worked to such a
+degree that levels illuminated previously may not display too well in the
+rendering mode, although they will still display correctly under Descent. In
+such cases it may be adviseable to illuminate the complete mine again, as this
+is also required for the "Adjust Light"option to work
+
+<h3>
+<A NAME="Heading89">7.2.1 RECALCULATE TEXTURES</A></h3>
+
+If this menu option is selected, the Outlines of all tagged sides are
+recalculated unless they are protected against this via the special "locked
+side" tagging. This function is useful supposing you had protected a side
+against recalculation but its Outline has since changed and now you want the
+side to be recalculated or if you inserted a group and changed the scale -
+Devil does not automatically recalculates the textures in this case.
+
+<h3>
+<A NAME="Heading90">7.2.2 ALIGN TEXTURES</A></h3>
+
+This option is discussed in Section  6.3.
+
+<h3>
+<A NAME="Heading91">7.2.3 MINE ILLUMINATING.</A></h3>
+
+This function is very useful. The way it works is quite simple (to program it
+was, by contrast, quite tricky): All lighting values (i.e., those for the Edges
+and those for inner-cube light) are calculated and set according to the lights
+distributed in the level. It works as follows; all cubes in which the
+illumination should be re-calculated, must be tagged and then the menu option
+`Lights and Textures -&gt; illuminate mine' must be selected. Devil then
+processes for a while (the program shows how far it is because it can take
+quite a few minutes with a 486DX2-66 and a large level) and all light values in
+the tagged cubes are reset. If you only want to change the value for the Edges
+(and not the inner-cube light), use the menu option `Lights and Textures
+-&gt;set edge light'. If you only want to calculate the value for the
+inner-cube light, use `Lights and Textures -&gt; set inner cube light'. With
+the latter it should be noted that the calculation is done following the
+Edge-light settings and is therefore dependent on the light sources existing in
+the level.<p>
+A sudden transition from light to dark can be avoided during calculation if you
+select the `Lights and Textures' option `Set smooth edge light' instead of `Set
+edge light'.<p>
+The calculation of the Edge-lighting is influenced by the following
+parameters:<p>
+*	In the Internal window: `Quarterway'. This is the distance that light still
+travels once the intensity is reduced by a quarter. An increase in this values
+results in light-sources which have a longer range (i.e. it doesn't fade a lot
+close up, but only further away).<p>
+*	In the Internal window: `Brightness'. This is simply the factor which all of
+the strengths of the texture light-sources are multiplied by. An increase in
+this value results in light-sources which are brighter (i.e., all of the
+light-source illuminated Edges are brighter by the same factor, those which are
+relatively near and those that are far way).<p>
+*	In the light-source file (Standard files are `default.ls1' for Descent 1 and
+`default.ls2' for Descent 2): Each texture which is a light-source has a
+brightness value specified here. The texture divided into 2*2=4 sections in
+which the light can be specified individually. The light-source file to be used
+can be changed with the menu option `Change lightsource file'.<p>
+Devil goes about level-illumination as follows: Each Side is checked against
+the table in the light-source file to see whether the texture is a light-source
+or not. If it is, then Devil places "light-sources" onto the side and
+calculates their effect. To do so, the texture is divided in four sections and
+placed like that on the Side as it would appear later in Descent. <p>
+The four sections of each bitmap in the side are "replaced" with light sources;
+the intensity of these light sources are modified only if a part of the section
+lies on the side. The effect of each light source is then calculated and the
+light on the edges is set in an appropriate way to simulate these light
+effects. The light dispersion is also "smoothed" afterwards in order to avoid
+having abrupt changes of light on (nearly) flat walls.
+
+<h4>
+<A NAME="Heading92">7.2.3.1 The Adjust Light" option</A></h4>
+
+Previous versions of Devil did not save information about lightsources which do
+not change during the game when the .RL2-file was `written. This version saves
+the full information by default, unless the File menu option `save level
+without full light information' is used. (This option is useful if you
+experience difficulties with very large levels containing many lightsources due
+to the Descent limits on the number of lightsources. If this work-around is not
+sufficient, then please e-mail the DDL with details, although I don't think it
+is really necessary as the 500 lightsources and 10000 changed corners should be
+). Saving full light information will result in slightly larger levels<p>
+The `Adjust Light' button will only be active once the level has been
+illuminated with this version of Devil, and then only if the current side
+contains a recognized lightsource. This feature is only really useful when one
+of the rendering modes is on as it displays the results of your additional,
+manual adjustment of the lighting. If this button is pressed, all lightsources
+except the one on the current side are turned off and you can manually adjust
+the light from this specific lightsource alone by changing the light values of
+the edges. Once you have done this, click on the 'Adjust light' button with the
+left mouse-button to save your changes or with the right mouse-button to cancel
+your changes. In both cases the other lightsources will be turned on again. (If
+you press the 'Adjust light' button in a level which doesn't have full light
+information, 'the turning on' of the other lightsources will produce incorrect
+results.)<p>
+If the lightsource has a F.L. mask assigned to it, making it a blinking light,
+then this effect will be simulated if you click the right mouse-button in the
+level window. (The Move&amp;Display option `Flickering lights' in the Internal
+menu must be selected). A message will be displayed if the frame-rate would
+drop below the fastest displayable flickering light; you can easily test this
+if you set the timer for a lightsource to 0.01. If your system is not powerful
+enough to display as many frames as are needed for the light (e.g. you need at
+least 10 frames per second to display a blinking light with mask 10 and timer
+0.1), you can "stretch" the time-scale using the Internal menu option. (e.g. if
+you specify a value 2.0 in 'Stretch time', a light which will blink every 1/10
+second in Descent, will blink every 1/5 second in Devil). I would expect a
+frame-rate at about 10 frames on a normal system (Pentium 133, a window with
+480*480). You can speed up the whole thing a lot if you use smaller windows to
+display the level (this is due to the slow copying routines of the grx-library
+which are not that easy to avoid because I need the rest of the library).<p>
+
+
+<h3>
+<A NAME="Heading93">7.2.4 SET INNER CUBE LIGHT</A></h3>
+
+The value of the inner light of all tagged cubes is set according to the
+average edge light value of the cubes, which is useful if you wish to manually
+adjust a section without re-illuminating the whole mine. The cubes will be
+untagged on completion. This function is also discussed in Section 4.2<p>
+
+
+<h2>
+<A NAME="Heading94">7.3 TAG</A></h2>
+
+
+<h3>
+<A NAME="Heading95">7.3.1 THE TAGGING-FILTER</A></h3>
+
+This
+little-known function is actually quite useful: If you press `Ctrl' and click
+the left mouse-button on any of the buttons in the Cube, Side, Thing or Wall
+windows which can be regarded as "type" buttons, then all objects of the same
+"type" as that button will be tagged (e.g. Txt1 and Txt2 in the Side window).
+If you do the same with the right mouse-button, all objects with the same type
+will be untagged (not available with all fields).<p>
+This function also works with the textures in the texture list displays.
+
+<h3>
+<A NAME="Heading96">7.3.2 TAG/UNTAG SPECIAL</A></h3>
+
+Sides can be locked with this option. With Edges, all three edges of a corner
+in a cube are tagged. This does not function in other modes.
+
+<h3>
+<A NAME="Heading97">7.3.3 TAG FLAT SIDES</A></h3>
+
+With this menu option, all `flat' sides attached to the current side and all
+marked sides can be tagged. Flat is taken to mean that the angle between the
+two adjacent sides is less than that indicated in the Internal menu under `Tag
+flat sides'.<p>
+Sides currently tagged will not be untagged first, making this an `add'
+operation. Sides considered `flat' to any tagged side will be tagged as well,
+not only those considered `flat' to the current side.
+
+<h3>
+<A NAME="Heading98">7.3.4 USE CUBE TAG</A></h3>
+
+See Section 1.4 for a discussion about this option.<p>
+In Side mode:	All sides of tagged cubes will be tagged.<p>
+In Edge mode:	All edges of tagged tagged cubes will be tagged.<p>
+In Point mode:	All points of tagged cubes will be tagged.
+
+<h3>
+<A NAME="Heading99">7.3.5 USE SIDE TAG</A></h3>
+
+Same as above, but only for Edges and Points of course.
+
+<h3>
+<A NAME="Heading100">7.3.6 USE POINT TAG</A></h3>
+
+Same as above, but only for Edges.
+
+<h2>
+<A NAME="Heading101">7.4 THE MISSION MANAGER</A></h2>
+
+The Mission Manager (`File-&gt;Mission Manager') is used to create complete
+missions for Descent, i.e., to compile multiple levels together, insert secret
+levels etc. All levels which are present in the current directory are displayed
+in the right hand window panel, while the left hand window panel display
+contains the names of the levels and the sequence in which they will be played
+when they are saved as one mission (presented for selection under Load Mission
+in Descent) when `save hog file' is selected.<p>
+The Mission Manager does not cater for the insertion of all the various
+newly-defined files in Descent; if you want to change the textures in Descent
+for example, you will have to a different program than Devil for this (check
+the link on the title-page and Section 7.5 )<p>
+You can mark multiple levels in both the right and the left list; either by
+selecting them individually or by using a wildcard (e.g. `*') in the text field
+above the list. Devil does not respect the dot, i.e. `*.*' is not required, `*'
+suffices to mark all the levels.<p>
+With the Button `Open hog file' you can open a Hog file. The list of levels in
+this Hog file then appears in the left hand display.<p>
+Using the Buttons `-&gt;' and `&lt;-` you can add/remove levels into/out of the
+displayed sequence. When adding, a level must first be marked on the right hand
+side before it can be inserted on the left hand side or if no level is marked,
+before the first secret level can be added to the end. To insert a level in a
+particular position in the sequence, tag the level above which you want the new
+level to be added.<p>
+Removing a level from the list with the `-&gt;' button does not delete the
+saved level from disk. If you delete a level which has been marked as having a
+secret exit then the corresponding secret level will be converted back to a
+normal level.. In this case you will have to remove the secret level as well
+before re-adding because a secret level can only be declared when it is
+inserted.<p>
+With the Button `&lt;-Secret:' you can insert a secret level into the mission.
+The level number (simply counted from the top of the list on the left) which
+contains a Wall of the `Secret exit' type, must be specified in the `Secret'
+field (complete the entry by pressing Enter). The level receives a special
+indicator in the left hand list (namely the number of the level with the secret
+exit behind the level name) and is automatically placed at the bottom of the
+list.<p>
+With the button `Extract levels' you can copy single or multiple levels out of
+a Hog file and [place them into the directory specified on the right hand side
+panel. You can then load them into Devil, which is particularly useful in order
+to get to the original Descent levels, for which you simply open the Hog file
+`descent.hog' in the Descent directory. Data pertaining to secret levels is not
+available in this file, however, but you can identify certain of the Descent 2
+secret levels by their `-S.RL2' suffix.<p>
+Under `Mission name:' you specify the name of the mission. This you must
+provide because otherwise Descent will not display the mission. With `Anarchy
+Level' you can set the type of mission to `Anarchy', i.e., it only appears in
+Descent when a multi-player game is started.<p>
+With `Save hog file' you can save the mission. When playing the mission in
+Descent, the levels are played in sequence as they are displayed on the left
+hand side (An exception is with Secret levels - if the player enters in this
+level and then leaves it again, in Descent 1 the level following the one with
+the secret exit is played, in Descent 2 the player returns to the level in
+which the `secret exit' was placed).
+
+<h3>
+<A NAME="Heading102">7.4.1 SHARED SECRET LEVELS</A></h3>
+
+Translators Note: <p>
+The Mission Manager does not need to support shared secret levels directly. If
+you add the same secret level (by name) for different levels, it will be loaded
+into the HOG-file multiple times, which is not necessary unless you want the
+level to be reloaded so that you have to restart the secret level each time or
+if you want to have that level available after an intervening secret level is
+played, in which case it must be reloaded again.<p>
+Descent 2 allows a single copy of a secret level to be accessed by multiple
+normal levels, meaning that the status of the secret level is retained across
+multiple accesses. This is achieved by fact that if a level has a secret exit
+specified, and does not have it's own specific level listed, then the previous
+secret level is presented again.<p>
+In the following example, a number of levels were created, each with a "secret
+exit". The .MN2 file was built with the Mission Manager and only one copy of
+each secret level was added to the HOG-file. The secret level accessed from
+FIRST is SOLO. The next four levels all access the same copy of SHARED. Finally
+LASTONE accesses LONER.<p>
+<b>Shared secret-levels:  .MN2 file example:
+<TABLE BORDER></b>
+<TR align="left">
+<TD colspan=1 align="left"><p>
+name = Shared Secrets
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">type
+= normal
+<BR></TD>
+<TD colspan=1 align="left">I
+haven't a clue how this works in multi-player mode !!
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">num_levels
+= 6
+<BR></TD>
+<TD colspan=1 align="left">Each
+level has a "secret exit" defined.
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">FIRST.RL2
+<BR></TD>
+<TD colspan=1 align="left">Level
+goes to SOLO.RL2
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">BLUE.RL2
+<BR></TD>
+<TD colspan=1 align="left">Level
+goes to SHARED.RL2: First entry into level
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">RED.RL2
+<BR></TD>
+<TD colspan=1 align="left">Level
+goes to SHARED.RL2: Prior status is retained
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">YELLOW.RL2
+<BR></TD>
+<TD colspan=1 align="left">Level
+goes to SHARED.RL2: Prior status is retained
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">GREEN.RL2
+<BR></TD>
+<TD colspan=1 align="left">Level
+goes to SHARED.RL2: Prior status is retained
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">LASTONE.RL2
+<BR></TD>
+<TD colspan=1 align="left">Level
+goes to LONER.RL2: First entry.
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">num_secrets
+= 3
+<BR></TD>
+<TD colspan=1 align="left">The
+number of following lines that Descent should read.
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">SOLO.RL2,01
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">SHARED.RL2,02
+<BR></TD>
+<TD colspan=1 align="left">Level
+2 and any others until level 6.
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">LONER.RL2,06
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">SHARED.RL2,04
+<BR></TD>
+<TD colspan=1 align="left">Further
+entries are unused, even though they are present.
+<BR></TD></TR></TABLE><p>
+This skeleton mission example is available on request and from the Devil
+homepage.
+
+<h2>
+<A NAME="Heading103">7.5 DEVIL AND POG-FILES (CUSTOM TEXTURES IN DESCENT)</A></h2>
+
+POG-files are used to contain any user-defined textures for Descent. Devil
+cannot be used to compile POG-files, but other such programs do exist and are
+referenced in the WWW-site indicated on the title-page. Devil can, however,
+read POG-files; although the Mission Manager does not (yet) cater for
+POG-files, even if they are present in the Hog -file.<p>
+Use the "Change pogfile" button in the Buttons display to specify which
+POG-file to use.<p>
+You can have only one POG-file active at any time in Devil (I don't think you
+need more, do you?). If no POG-file is selected and a level is loaded, Devil
+checks the directory where you loaded the previous .POG-file from for a file
+with the same name as the level, but which has a .POG suffix.. If found, it is
+automatically loaded if no POG-file is currently loaded.<p>
+If you want to "unload" a POG-file, select the "Change pogfile" button and then
+select `cancel' in the file dialog.
+
+<h2>
+<A NAME="Heading104">7.6 THE INTERNAL-WINDOW</A></h2>
+
+The `Internal' window allows various parameters to be specified which are used
+during of the operation of Devil. The uppermost button in the window (Group)
+serves to switch between the various areas:
+
+<h3>
+<A NAME="Heading105">7.6.1 MOVE &amp; DISPLAY</A></h3>
+
+*	Visibility: All objects within this range of vision will be displayed.<p>
+*	Moving you:  "Step-size" to use when changing the current position.<p>
+*	Turning you:  Angle of turn in degrees when changing the current view
+direction.<p>
+*	Flip y-axis:  Reverse the up/down keys.<p>
+*	Mouse: Flip axis:  Select which mouse axis to flip (x, y or z)<p>
+*	Dclick: Amount of time for a double-click.<p>
+*	Perspective: Single/Double - Perspective of a level. In Double-perspective
+only the first two rendering modes work.<p>
+*	Rendering: Specifying the texture mode:<p>
+-	Off: No textures are displayed at all.<p>
+-	Only current cube: Only textures in the current cube will be displayed.<p>
+-	On: If you are inside a cube, you will see the normal Descent view. If you
+find yourself outside the mine, textures of the current cube and all cubes
+visible from it are displayed.<p>
+-	On with collision: The same as `On', only Devil attempts to prevent the
+player from flying out of the mine. `Attempts', as the routine still does not
+work completely faultlessly.<p>
+It can happen in both of the latter modes, that you are suddenly faced with a
+black screen after passing through a cube boundary because Devil did not detect
+the crossing of the boundary properly. To re-initialize the graphics, you
+simply press Ctrl+Shift+Space.<p>
+*	Flickering Lights: Displays blinking lights when adjusting a side. See
+Section 7.2.3.1<p>
+*	Stretch Time: Adjust blinking light for slower machines. See Section
+7.2.3.1<p>
+*	Gamma corr.: With this value you can change the screen brightness (for
+texture mapping).<br>This is useful to match the Devil displays to your Descent
+brightness setting.<p>
+*	Co-ord. axis: Display the co-ordinate axis in the various perspectives. In
+double perspective, the co-ordinate axis is exactly in the intersection of the
+two view directions.<p>
+The co-ordinate axis displayed is always the same size and is merely intended
+as a reference. The blue line indicates the direction you will face if you
+align yourself to the positive z-axis, the green line indicates the same for
+positive x-axis and the brown line for the positive y-axis.<p>
+*	Display what: Here you can specify which things should be displayed by
+Devil:<p>
+-	Wireframe: Determines whether all cubes (making up the mine) are drawn or
+not. The on/off settings apply when texture rendering is on and can be toggled
+using Shift+Tab.<p>
+-	All Lines: If you turn this option on, you get a map which is similar to the
+Automap shown in Descent. This display method only works temporarily (until the
+structure of the mine is changed) and is automatically turned off if it is not
+working properly anymore. You can toggle this mode with F5.<p>
+-	Things: Draw/don't draw Things.<p>
+-	Walls: Draw/don't draw Walls.<p>
+-	Extra Markers: Additional lines (cube side-tags) when a cube is tagged.
+Useful when you have a large room and cannot see whether an inner cube is
+tagged or not.<p>
+-	Group Preview: This option is provided to reduce the amount of confusion with
+adding groups. If the option is turned on and there is a group with a defined
+Connection side in the "Group:" field in the cube window, then the first cube
+of this group is displayed in brown in the position where it would be inserted
+if you press 'Insert'. Connected sides of the first cube of the group are
+marked with the usual side markers (if the first cube is symmetric but the
+attached macro is not). Use Edge-mode cycling ("e") to change the orientation.
+
+<h3>
+<A NAME="Heading106">7.6.2 TEXTURES &amp; ILLUM.</A></h3>
+
+*	Tag flat sides: The maximum angle permissible between two sides for them to
+be accepted as `flat' and then tagged when `Tag-&gt;Flat sides' is used (see
+Section 7.3.2)<p>
+*	Stretch bitmap: The factor by which textures are stretched.<p>
+*	Quarterway: After this distance, the light intensity (from a light-emitting
+texture) is reduced by a quarter during automatic level-illumination.<p>
+*	Brightness: The factor by which all light-sources are multiplied during
+automatic level-illumination.<p>
+*	Min. light: The minimum value which an Edge may be set to during automatic
+level-illumination.<p>
+*	Little bulbs: If turned on, this option displays a yellow light-bulb symbol
+in the lower left-hand corner of lightsource textures in the texture lists.
+Textures which can be shot out also have a white broken-bulb symbol in the
+lower right corner.
+
+<h3>
+<A NAME="Heading107">7.6.3  MODIFY</A></h3>
+
+*	Moving obj. : Step-size when moving an object.<p>
+*	Turning obj. : Angle of turn when changing an object.<p>
+*	Gridsize : When points are moved, they will be forced to a point on (an
+imaginary) grid of this size if it is switched on. This value applies to all
+three spacial directions.<p>
+*	Grid : Toggle grid on/off..<p>
+*	Conn. dist. : Maximum distance allowed between points for them to be joined
+during the normal cube-joining process.<p>
+*	Uconn. dist. : Maximum distance allowed between points when joining two cubes
+when one side is tagged and the other is the current side.<p>
+*	Enlarge * : Factor by which an object is enlarged/reduced.<p>
+*	Draw orig. lines : If this option is on, then the original positions of the
+lines are drawn in yellow when you move a point, side or cube. This option only
+affect wire-frame mode.
+
+<h3>
+<A NAME="Heading108">7.6.4 WARNINGS</A></h3>
+
+*	Ask del one: Warn when deleting a single object.<p>
+*	Ask del tagged: Warn when deleting tagged objects.<p>
+*	Convex/Weird: Warn when cubes are convex/twisted.<p>
+*	Grid &amp; Rotate: When turning cubes, warn if the grid is on (in order that
+the cube does not become unintentionally twisted).<p>
+*	Double keys: Warn during a save if a key appears twice.<p>
+*	2 reactors/flags: Warn during save if a reactor or (with Descent 2) a Flag is
+duplicated.<p>
+*	Thing o.o.B.: Warn during save if a Thing is not inside the level.<p>
+*	Illum. save warning: Warn if level lighting must be re-calculated.<p>
+*	Too fast fl. lights:. Warn if blinking light timer is too fast for Devil to
+display properly.
+
+<h2>
+<A NAME="Heading109">7.7 INFO</A></h2>
+
+*	Level info: Provides short statistics about the level: How many Things,
+Robots, Cubes, an overview of the Player-starts etc.<p>
+*	Devil Info: How to obtain the latest release of the editor, copyright
+blah-blah etc.<p>
+*	Keys: Displays a list of the `hotkeys'.
+<p>
+<P><hr size=4>
+<A HREF="doc07.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc09.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+</body></html>

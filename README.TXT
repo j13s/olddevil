@@ -14,7 +14,7 @@
             (thanks to Catalin-Andrei Stefanescu for the ASCII art)
 					
                 This is the README.TXT for version V2.20
-         For further info refer to whatsnew.txt and docs/userman.doc
+       For further info refer to whatsnew.txt and docs/htmldoc/doc.htm
 		
                 Mail address: ubdb@rz.uni-karlsruhe.de
        Home page: http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html 
@@ -27,17 +27,10 @@ by Csaba Biegel; see 'COPYING.CB'. The CWSDPMI is copyright by
 Charles W Sandmann, see 'CWSDPMI.DOC'. You get GNU-C with source-code on
 nearly every ftp-site (for example ftp.uni-stuttgart.de).
 
-Devil is sponsored by the german magazine "PC PLAYER". They are
-paying me some money to encourage further development of Devil :-)).
-In return they asked me to be allowed to show up in the new
-title screen. There is no other obligation. Devil IS STILL FREEWARE!
-
 If you want to distribute Devil commercially, please contact me via
 E-Mail, especially if you want to publish an article about Devil in a
 gamer's magazine and put the program on the CD delivered with the 
 magazine.
-
-PC PLAYER can be reached by E-Mail at Devil@pcplayer.mhs.compuserve.com
 
 ATTENTION:
 There is a Devil Mailing list. Have a look at
@@ -45,8 +38,9 @@ There is a Devil Mailing list. Have a look at
 for informations.
 I'm subscribed in this list, too, so please mail any questions about how to 
 use Devil to this list and not directly to me. I WON'T ANSWER ANY MAILS
-EXCEPT FOR (USEFUL) BUG REPORTS!!! This is not very friendly but I get a lot 
-of mails like "I don't know how it works, please help me."...:-(
+CONCERNING DEVIL THAT ARE SEND TO ME DIRECTLY!!! This is not very
+friendly but I get a lot of mails like "I don't know how it works,
+please help me."...:-(
 
   CONTENTS:
   
@@ -137,10 +131,10 @@ of mails like "I don't know how it works, please help me."...:-(
   see the previous sections. 
   
   If Devil has started, build an level. This is not an easy task, but 
-  I'm sure you will see how it works.
-  See the doc-files for documentation. You can find them in the Docs 
-  directory. The saved levels will be in the levels-directory (that's not very
-  surprising, I suppose).
+  I'm sure you will see how it works. You can find the manual in
+  HTML-format in the docs-folder. Start with the file
+  'docs/index.htm'. There is a manual in WinWord 97 format available
+  on my homepage (if you want to print the manual).
 
  [2b] Including the level in Descent (easy way).
   Just copy your levelfile in the Descent directory and name it
@@ -151,7 +145,8 @@ of mails like "I don't know how it works, please help me."...:-(
  [2c] Including the level in Descent/Compiling your own HOG-files.
   If you want to produce your own missions (compilations of levels) you can
   make your own HOG-files with the Mission Manager in Devil. You must store
-  the MSN/HOG-file produced from Devil in your Descent directory.
+  the MSN/HOG-file produced from Devil in your Descent directory (or
+  in Descent 2 in the missions subdirectory of your Descent directory).
   Descent will recognize these files and ask you which mission you want to
   play.
   
@@ -164,18 +159,15 @@ of mails like "I don't know how it works, please help me."...:-(
   Tip: Save early and save often (as you know it from several games)
   and sometimes with different filenames. 
   I hope there are not so many bugs that are destroying your savefile or
-  make Devil not to read saved files, but I guarantee for nothing. If
-  you've a really, really great level that you've build for hours and hours
-  and Devil won't load him anymore, send me an EMail with a short message
-  what you've done last and what's in the file Devil.err. It's always
-  a good idea to look in the file Devil.err, perhaps you can do
-  some repair for yourself.
+  make Devil not to read saved files, but I guarantee for
+  nothing.
   
  [3b] Report a bug.
-  Report a bug to the Mailing List. If it is new, I will mail you, so
-  you can mail me a description what you have done when Devil has
-  crashed and the level you are working on.
-  Remember: I must be able to reproduce the bug to fix it!
+  Report a bug to the Mailing List.
+  Remember: I must be able to reproduce the bug to fix it! So send
+  a short description what you have done before the bug occured and if
+  you need a special level to reproduce the bug, please store it
+  somewhere and make a remark in your bug report.
 
 [A] UPDATES
  The latest release is always available at
@@ -367,11 +359,10 @@ of mails like "I don't know how it works, please help me."...:-(
        - Configuration utility
  2.20a - Corridor generator
        - Double view/Moving/Clicking with mouse
- 2.20c - Texture mapping
- 2.20f - Edge mode
+ 2.20b ---- see whatsnew.txt
       
        
-Have a good time, build many levels, bomb all enemies and send me an email
+Have a good time and build many levels
 
 Achim (ubdb@rz.uni-karlsruhe.de)
 

@@ -1,0 +1,661 @@
+<HTML><HEAD>
+<!-- This document was created from RTF source by rtftohtml version $Revision: 3.4 $ -->
+<TITLE>Devil - 4 CHANGING THE BASIC MODES</TITLE></HEAD>
+<BODY BACKGROUND="" BGCOLOR="#FFFFFF" TEXT=#000000>
+<A HREF="doc04.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc06.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+<hr size=4>
+<H1>
+4 CHANGING THE BASIC MODES</H1>
+<UL>
+<LI><A HREF="#Heading45">4.1 MODE WINDOW BASICS </A>
+<LI><A HREF="#Heading46">4.2 THE CUBE WINDOW</A>
+<UL>
+<LI><A HREF="#Heading47">4.2.1 CUBE COLORS.</A>
+</UL>
+<LI><A HREF="#Heading48">4.3 THE SIDE WINDOW</A>
+<UL>
+<LI><A HREF="#Heading49">4.3.1 THE TEXTURE-LIST</A>
+</UL>
+<LI><A HREF="#Heading50">4.4 THE EDGE WINDOW</A>
+<LI><A HREF="#Heading51">4.5 THE POINT WINDOW</A>
+<LI><A HREF="#Heading52">4.6 THE WALL WINDOW</A>
+<UL>
+<LI><A HREF="#Heading53">4.6.1 WALL COLORS.</A>
+</UL>
+<LI><A HREF="#Heading54">4.7 THE THING WINDOW</A>
+</UL>
+<hr size=4>
+
+<h2>
+<A NAME="Heading45">4.1 MODE WINDOW BASICS </A></h2>
+
+Each
+of the six basic elements has its own window and changes, like changing the
+texture on a side or the inner cube light, are carried out directly from these
+windows. Use the left mouse-button to apply changes to the current object and
+the right mouse-button to change any tagged objects and the current object.<p>
+The corresponding current object can be selected with the `&lt;' and `&gt;'
+buttons. The left mouse-button cycles backward or forward through the objects
+by number, the right mouse-button selects the first or the last object
+respectively. An object can be selected directly by entering its particular
+number in the field to the right of `&lt;'. The current object can be tagged
+(and untagged again) using with the left mouse-button on the `Tag' push-button
+while the right mouse-button tags all objects of this type if none are tagged
+and untags them if at least one is tagged (the left mouse-button on `Tag'
+simulates the spacebar, the right mouse-button Shift+spacebar). The Tag-Filter
+can be used to select a particular group of objects to tag, see Section 7.3
+about this.<p>
+`Insert' and `Delete' keys can be used in (almost) all of the basic modes.
+Their precise functionality differs according to which window is active (see
+the next section for more, for an exact description see Section 5).<p>
+You can switch between the individual element windows via the keyboard by using
+Ctrl+Initial-letter of the window-title (e.g., Ctrl-'c' for cube and Ctrl-'s'
+for side mode). These key-combinations also change the `Modify what' toggle at
+the same time. simultaneously <p>
+The `Enter' key simulates the left mouse-button on `Insert' and `Shift+Enter'
+the right mouse-button on `Insert'. The `Del' key simulates the left
+mouse-button on `Delete' and `Shift+Del' the right mouse-button on `Delete'.
+
+<h2>
+<A NAME="Heading46">4.2 THE CUBE WINDOW</A></h2>
+
+The `Insert' push-button inserts the Group which is specified in the list
+labeled `Group:'. Clicking on this push-button brings up a pop-up list of all
+Groups currently in memory. To insert a single cube into your level, use
+`Insert' in the Side window (Section 4.3). Group insertion and deletion is
+discussed in more detail in Section 5.1<p>
+Clicking with the left mouse-button on `Delete' deletes the current Cube, the
+right mouse-button deletes all tagged Cubes. If a cube with a wall on a side is
+deleted, the wall is also deleted.<p>
+With `Type' you can select the cube-type. The following types are available:<p>
+*	`Normal': Simply a completely normal cube. 99% of all cubes in Descent levels
+are of this type.<p>
+*	`Fuel Center': Whenever you, as a player in Descent, find yourself within a
+cube of this type, your laser energy is recharged (to a maximum of 100 points).
+If you use such a type, you should insert Walls of type "Illusion"between the
+joined sides of the cubes and set the texture to the golden sparkles [misc17
+(353) in Descent 2]) to indicate the effect to the Descent player, making your
+energy center look like it does in the standard Descent levels.<p>
+*	`Reactor': There should only be one of this cube-type in a level and it
+should be the cube which contains the Reactor, otherwise the countdown at the
+end of the level will not work properly. When you declare an item to be a
+Reactor, Devil automatically changes the cube to reactor-type for you.<p>
+*	`Producer': A materialization center for robots. Robots originate in these
+cubes and which robots originate can be specified under `produces'. The
+producer-cube is activated in Descent by the player passing through a special
+Wall (see Section 4.6 about these Switches) and, in most cases, produces three
+robots whose type Descent chooses arbitrarily from the list you specify. In
+general, each cube can be activated a maximum of three times, so that in total
+each cube produces up to 9 robots.<p>
+Translator's Note:  Whilst the above may certainly be true for anarchy and
+multi-player games, the difficulty level chosen with solo games affects robot
+production as follows :-
+<TABLE BORDER>
+<TR align="center">
+<TD colspan=1 align="center"><p>
+<b>L</b><b>evel</b>
+<BR></TD>
+<TD colspan=1 align="center"><b>Activations</b>
+<BR></TD>
+<TD colspan=1 align="center"><b>Number
+of Robots</b>
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left"><BR></TD>
+<TD colspan=1 align="center"><BR></TD>
+<TD colspan=1 align="center"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">TRAINEE
+<BR></TD>
+<TD colspan=1 align="center">3
+<BR></TD>
+<TD colspan=1 align="center">3
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">ROOKIE
+<BR></TD>
+<TD colspan=1 align="center">3
+<BR></TD>
+<TD colspan=1 align="center">4
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">HOTSHOT
+<BR></TD>
+<TD colspan=1 align="center">3
+<BR></TD>
+<TD colspan=1 align="center">5
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">ACE
+<BR></TD>
+<TD colspan=1 align="center">3
+<BR></TD>
+<TD colspan=1 align="center">6
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">INSANE
+- D1
+<BR></TD>
+<TD colspan=1 align="center">3
+<BR></TD>
+<TD colspan=1 align="center">6
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">INSANE
+- D2
+<BR></TD>
+<TD colspan=1 align="center">Unlimited
+!
+<BR></TD>
+<TD colspan=1 align="center">6
+<BR></TD></TR></TABLE><p>
+*	`Blue/Red Goal': These cubes are for the `Capture the Flag' game in Descent
+2. It is the cube which the Flag, with which you accumulate points, must be
+carried back into.<p>
+With `Inner light' you can specify the brightness inside the cube. This is
+different to the brightness with which the sides of the cubes are illuminated.
+`Inner light' determines how brightly lit robots (or other things) will be when
+they are inside this cube.<p>
+`Edge Light' specifies the average of the brightness of all the cube's edges.
+If you change this value, the edge light of all Edges of the cube is set to the
+new value.
+
+<h3>
+<A NAME="Heading47">4.2.1 CUBE COLORS.</A></h3>
+
+In order to indicate their function and status, Cubes are given the following
+colors :-
+<TABLE BORDER>
+<TR align="left">
+<TD colspan=1 align="left"><p>
+<b>C</b><b>olor</b>
+<BR></TD>
+<TD colspan=1 align="left"><b>Indication</b>
+<BR></TD>
+<TD colspan=1 align="left"><b>Comments</b>
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">White
+<BR></TD>
+<TD colspan=1 align="left">Normal
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Yellow
+<BR></TD>
+<TD colspan=1 align="left">Fuel
+Center
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Light
+Red
+<BR></TD>
+<TD colspan=1 align="left">Red
+Goal
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Light
+Blue
+<BR></TD>
+<TD colspan=1 align="left">Blue
+Goal
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Brown
+<BR></TD>
+<TD colspan=1 align="left">Producer
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Purple
+<BR></TD>
+<TD colspan=1 align="left">Reactor
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Dark
+Blue
+<BR></TD>
+<TD colspan=1 align="left">Tagged
+cube
+<BR></TD>
+<TD colspan=1 align="left">Tagged
+status overrides all other color settings.
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Gray
+Green
+<BR></TD>
+<TD colspan=1 align="left">Current
+cube
+<BR></TD>
+<TD colspan=1 align="left">Cube
+is also tagged
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Green
+<BR></TD>
+<TD colspan=1 align="left">Current
+cube
+<BR></TD>
+<TD colspan=1 align="left">*
+Current side is indicated in purple, brown and yellow.<p>
+*	Overrides other color settings excepting blue.
+<BR></TD></TR></TABLE>
+
+<h2>
+<A NAME="Heading48">4.3 THE SIDE WINDOW</A></h2>
+
+When `Insert' is pressed, a partition is inserted into the current side (if the
+right mouse-button is used, into all tagged sides), which means removing the
+Connection between two connected cubes. This is, naturally, only possible if
+there actually is a connection and if no Wall is already present in this
+connection. If there is no connection on the current side, another cube is
+inserted which originates from the current cube - the shape of the cube
+inserted depends on whether the left or right mouse-button was pressed, see
+Section 5.2.1.<p>
+`Delete' removes a partition from a cube, i.e.  a second side is searched for
+in the proximity of the current (respectively the tagged) side(s) and,
+supposing one is found, the two sides are joined to each other.<p>
+`Default' determines how a side appears when Devil creates it via `Insert'. The
+side indicated in `Default' is duplicated during insertion. This side is also
+used as the default when Devil automatically inserts a side, as, for example,
+when creating a group from two joined Cubes but only one of the two is copied
+over.<p>
+`Locked' signals whether Devil is to automatically re-calculate the texture
+alignment when a point of the side is moved. If the button is pressed this does
+not happen. Sides which are locked are indicated with a brown tag-marker. Sides
+which are both tagged and locked are indicated with a purple tag marker.<p>
+Translators Note: You may want to lock a side that you have carefully adjusted.
+This allows you to change the shape of the accompanying cube without having to
+re-align the texture.  Locking four sides of a cube will cause the whole cube
+to move when you try to move one side. <p>
+The `Adjust Light' option allows you to manually adjust the lighting effect for
+one light at a time with rendering mode on. See Section 7.2.3.1 for details.<p>
+The following buttons apply to selecting the texture for a Side: The four
+buttons `Top', `Up', `Down' and `List' on the left-hand side are used to select
+Texture-1 (i.e. the background texture) and the corresponding buttons on the
+right-hand side are used to select Texture-2 (i.e. the fore-ground texture,
+e.g. signs or monitors). The textures displayed will be wrapped at the end of
+the list, so to get to the bottom quickly, click on `Top' and then on `Up'. The
+window which is displayed when selecting `List' is explained in Section
+4.3.1.<p>
+The texture displayed in the Side window is also a button; if you click on it
+another window appears, in which you can align the texture on the side. The
+usage of this window is explained in Section 6. Beneath this group of
+push-buttons you'll find both the name and number (in round brackets) of the
+textures; where a different name can be specified: Devil would then search for
+a corresponding texture in the alphabetically ordered list. If you enter a
+number in the round brackets (e.g. `(3)'), the texture with the number 3 is
+chosen overriding the text name specification. Note: Not all texture numbers
+are in use, e.g. there is no texture assigned to the number 2 in Descent 1. In
+such cases, Devil indicates `Unknown (nnn)' and no texture picture is
+displayed. Despite this, such levels are playable in Descent, but which texture
+will be displayed in Descent depends on the Descent version (normally a red
+cross on green background amongst others.).<p>
+Following this is the field `Turn Txt2'. Here you can specify how Texture-2 is
+to be aligned relative to Texture-1, in order, e.g., to correctly turn a
+sign.<p>
+The field `Edge light' indicates the average light of the edges of the current
+side; if a value is specified, the light of all edges of the current side are
+set to that value.<p>
+If Devil is configured for Descent 2 (V1.1 or higher), there are two additional
+fields ... `F.L. Timer' and `F.L. Mask'. These indicate whether and how the
+light that comes from this side should blink: In `F.L. Mask' you can specify up
+to 32 zeroes and ones, where a zero indicates light-off and a one indicates
+light-on. The on/off pattern indicated there is continuously repeated by
+Descent, every bit (each zero or one) stays that way for the duration indicated
+in the `F.L. Timer' (time in seconds) field. The whole thing naturally only
+makes sense if there is actually a light-source texture on the side, which
+generates light and if the level-lighting has been automatically calculated
+(see Section 7.2.3)<p>
+All the above controls (particularly those used to choose the textures) operate
+- as mentioned above - on all tagged sides and the current side if you select
+it using the right mouse-button, but only on the current if you select using
+the left.
+
+<h3>
+<A NAME="Heading49">4.3.1 THE TEXTURE-LIST</A></h3>
+
+The window for the texture-list is opened when the `List' button in the `Side',
+`Thing' or `Wall' window is pressed. Each type of texture has its own window,
+i.e. there is a separate window for Texture-1, Texture-2, Thing Texture and for
+Wall Animation Texture. All texture lists function in this way. There are two
+modes (`List' and `Txt.') for the texture-list; whichever one is to be active,
+can be specified top-left. The normal mode, which is activated when the window
+is opened, is `Txt.'.<p>
+In `Txt.' mode, by choosing a texture, the corresponding texture in the level
+can be changed. The `/\' and `\/' buttons scroll the list up and down (left
+mouse-button only a little, right mouse-button a lot). You can change the
+displayed size of the textures using the `/1 /2 /4' zoom setting in order that
+more textures at a time can fit into the window without re-sizing it.<p>
+In addition, the following options can also be selected:<p>
+*	`All': All textures that correspond to this type of texture are displayed.<p>
+*	`Level': All textures of this type used in the level are displayed.<p>
+*	`User': Load a user-defined texture list.<p>
+In `User' mode, a user-defined list can be displayed, in order that individual
+textures can be found quicker. The differences from `Txt.' mode are as
+follows:<p>
+*	When a texture is selected, it is "tagged"(with a green frame) instead of
+chosen.<p>
+*	There is a `New'-button, used to reset all tag-settings, a `Load' and `Save'
+button used to save a list and load it again (take note that the tag settings
+themselves are loaded in this mode whereas in `Txt.' mode, the list itself is
+loaded).<p>
+*	Additionally a `Level' button exists, which tags all textures in the Level.
+
+<h2>
+<A NAME="Heading50">4.4 THE EDGE WINDOW</A></h2>
+
+A peculiarity about Edges is that in order to achieve simple point selection,
+when the current Edge is changed, the current Point is automatically changed to
+one on the current Edge as well.<p>
+(You can still use `p' to get to an arbitrary point)<p>
+Using `Insert' in this window you can remove all connections which the current
+cube has with another cube which shares the same points. This makes it possible
+to move the points of the current cube without disturbing the other cube. See
+Section 5 for more about the reasons for this arrangement and why it is
+useful.<p>
+The `Light' field indicates how bright the texture on the edge of this side is
+to be (and together with the other three edges of this side - how bright the
+texture appears in total). The total Light value may exceed 100% as it carries
+the lighting from textures on both sides of the Edge. It is very laborious to
+set the overall light manually; normally you would use the automatic
+level-illumination function for this. (see Section 7.2.3). You should use the
+automatic level illumination any way, otherwise blinking lights will only
+function as shoot-out light-sources (only available in Descent 2)<p>
+The Fields `u-Co-ord.' and `v-Co-ord.' give the co-ordinates of these side in
+the texture-space. If you change them, you change the texture alignment on the
+side. (see Section 6).
+
+<h2>
+<A NAME="Heading51">4.5 THE POINT WINDOW</A></h2>
+
+The `x-Pos.', `y-Pos.' and `z-Pos.' buttons specify the position of the current
+point. If they are changed the corresponding point will be shifted to its new
+position.
+
+<h2>
+<A NAME="Heading52">4.6 THE WALL WINDOW</A></h2>
+
+Pressing `Insert' in this window will add a single or multiple Wall. The
+inserted wall is always a copy of the current Wall. A Wall can only be inserted
+between two existing, connected cubes which means that the current side must
+join two cubes with each other. An exception to this rule are Walls of the
+`Shootable Switch' type in Descent 2. These Wall types only appear on
+unconnected sides. Apart from this exception, a pair of Walls is always
+inserted ... one Wall for each of the two cubes. In the same way `Delete'
+always deletes the pair of corresponding Walls.<p>
+With `Wall-Type' you can specify the type of Wall. The type always changes both
+the adjoining walls. The following types are available:<p>
+*	`Blow door': A wall which can only be opened by shooting it, e.g., the door
+to the hostage room in Descent 1, Level 1.<p>
+*	`Normal Door': Simply a normal door which is opened by a laser-shot or a
+Switch. You can specify whether a key is required for the door, and if so,
+which one. You can also specify whether the door is to be opened at the end of
+the level (i.e., after blowing up the reactor). A maximum of 10 "open-at-end"
+doors are allowed.<p>
+*	`Wall': The use of this type is to enable one cube to be seen from another
+through a grate amongst other things, but not to be able to reach it (e.g.: The
+grate to the reactor-room in Descent 1 Level 1). It follows that the player
+cannot fly through this Wall, but with the appropriate Texture-2 can see
+through it and shoot through it.<p>
+Check the color between the grate textures; if this color is purple it
+indicates that you can see through this area if it is used as Texture-2,
+whereas if used as Texture-1, it will simply be purple when on a Wall. A
+gray-brown color (the same as Empty (302) in Descent 2) indicates a see-through
+area meant to allow Texture-1 to be seen. If used on an unconnected side as
+Texture-1, Devil displays this area as purple in the rendered modes ... in
+Descent this area produces the strange Hall-Of-Mirrors effect.<p>
+*	`Illusion': With this type you can make walls which have a texture but are
+otherwise permeable for everything else. A sensible application of this type is
+found in the energy-centers.<p>
+Translators Note: There are valid arguments against using 'Illusion' too often
+as the original intention of having it in Descent was to build the energy
+center sparkles and nothing else - but then it's all a matter of design style
+and the level being created.<p>
+It is preferable to avoiding any unnecessary "bumping along walls" to find
+hidden doors ... in a well-designed level you can hide things by focusing the
+attention of the player on something else, similar to what magicians do, and
+quite often you can find secret doors simply by their position in the level or
+by looking at the map where some grate has revealed the existence of a hidden
+section and the approximate way to find the entry to it. Consider changing the
+shading slightly on secret door textures to give the player a chance.<p>
+*	`Only Switch': This type causes the wall to be invisible and not block shots.
+Such walls only make sense when combined with switch functions.<p>
+*	`Shootable Switch': Only in Descent 2. You create a switch with a Wall of
+this type and a shootable Texture-2, which is activated by shooting it.<p>
+*	`Cloaked Wall': Only in Descent 2. Used to create an impermeable
+"smoked-glass" wall. The lower the transparency value specified, the "darker"
+the wall is.<p>
+With certain of the Wall-types various other fields are also present:<p>
+*	`Flags': Up to three independently selectable options:<p>
+-	`Locked': The door is locked.<p>
+Translators Note:  The "lock" flag takes precedence over the key requirement
+for a door when both are specified, in that a door which has been unlocked by a
+switch no longer requires the key specified, e.g.: You specify that a door
+needs a blue key and is also locked. If you try to open it you will get the
+message "blue access denied". If you get the blue key and try to open the door,
+you will get a message "you cannot open this door" until you also unlock the
+door.  If you unlock the door BEFORE you have the blue key, you can open the
+door without the blue key.<p>
+-	`Close again': The door closes again after opening.<p>
+-	`Robots won't pass': Robots should not pass this Wall.<p>
+*	`Hitpoints': This field specifies how many shots are required to blow the
+wall. This only works properly with the `Blow door' type, but can also be used
+with the `Door' and `Wall' type in Descent 1, where it is possible to specify
+the hitpoints required to shoot open a door. Specifying a hitpoint value of
+zero indicates that this wall cannot be blown by shooting it. The hitpoint unit
+is in `flares', i.e., the number of flares it would take to blow the door.<p>
+*	Buttons for the animation sequence: Using `Top', `Up', `Down' and `List' you
+can choose the animation which is displayed when the door opens or when the
+wall is blown. The texture is automatically correctly placed onto the
+corresponding side. The animation is always applied to both walls (since
+Descent also does this). With `Wall' and `Illusion' types, the texture must be
+changed using the Side window. Clicking on the animation texture displayed
+simply runs the animation sequence, you must use the Side window to align the
+door texture.<p>
+Each Wall can also have Switch functions. These you can choose in the `Switch'
+field. When flown through by the player in Descent, a Wall can open doors,
+activate robot-producers, complete the level etc. The following Switch-types
+exist (some of which are only available in Descent 2):<p>
+*	`None': Nothing happens when this Wall is passed.<p>
+*	`Open Door': When this Switch-type is activated by passing through it, all
+doors which are tagged at the time of declaring the Wall to be of this type,
+will be opened. The tagged doors must all be of the `normal door' type. The
+field `Switches' indicates how many doors will be opened by this Wall (max 10).
+This field cannot be changed.<p>
+*	`Close Door': as for `Open Door'.<p>
+*	`Unlock Door': as for `Open Door'.<p>
+*	`Lock Door': as for `Open Door'.<p>
+*	`Producer': When this Switch-type is activated, all robot-producer cubes
+which are tagged at the time of setting it to `Producer', are activated. The
+cubes must all be of the `Producer' type. In the `Switches' field you can see
+how many cubes will be activated by this Wall, a maximum of ten are possible.<p>
+*	`Normal exit': Once you pass through this Wall, the level is completed and
+the next level is the following normal level. In a secret level in Descent 2,
+you will be returned to the level from which you came.<p>
+*	`Secret exit': Once you pass through this Wall in Descent 1, the level is
+completed and the next level is the secret level specified. Once completing the
+secret level you begin the level following the current level (which level is
+next is determined by the MSN-File built by the Mission Manager, see Section
+7.3.4). In Descent 2, however, the level is "suspended" and you proceed to the
+specified secret level. After completing the secret level, you restart where
+the Thing `Secret Start' was placed in the current level.. You may have
+multiple "secret exits" in your level, but only one "secret start". When you
+flag this wall as being a secret exit, a `secret start' Thing is automatically
+inserted in the current cube for you.<p>
+*	`Illusion off': Removes the texture of an `Illusion' type Wall (i.e., the
+wall becomes transparent). It functions like `Open Door'.<p>
+*	`Illusion on': Displays the texture of an `Illusion' type Wall. It functions
+like `Open Door'.<p>
+*	`Open wall': Removes a wall of the `Wall' type, this means that the whole
+wall becomes transparent and you can fly through it. It functions like `Open
+Door'.<p>
+*	`Close wall': As for `Open wall'.<p>
+*	`Wall to illusion': As for `Open wall', only the wall texture does not
+disappear, but you can now fly through it.<p>
+*	`Turnoff light': Turns off all light-sources whose sides are tagged at the
+time that switch is set to `Turnoff light'.<p>
+*	`Turnon light': As for `Turnoff light'.<p>
+With certain of the Switches the following flags appear:<p>
+*	`No Message': No message is issued if the player flies through the wall.<p>
+*	`Trigger once': The Switch will only be activated once.
+
+<h3>
+<A NAME="Heading53">4.6.1 WALL COLORS.</A></h3>
+
+In order to indicate their function and status, Walls are given the following
+colors :-
+<TABLE BORDER>
+<TR align="left">
+<TD colspan=1 align="left"><p>
+<b>C</b><b>olor</b>
+<BR></TD>
+<TD colspan=1 align="left"><b>Indication</b>
+<BR></TD>
+<TD colspan=1 align="left"><b>Comments</b>
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">White
+<BR></TD>
+<TD colspan=1 align="left">Normal
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Bright
+White
+<BR></TD>
+<TD colspan=1 align="left">Cloaked
+wall or Switch
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Green
+<BR></TD>
+<TD colspan=1 align="left">Current
+<BR></TD>
+<TD colspan=1 align="left">*
+Overrides other colors<p>
+*	If this wall is a trigger for shootable lights then those sides will be
+outlined in green<p>
+*	If this wall is a trigger for a producer cube, then those cubes will be
+outlined in brown.
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Red
+<BR></TD>
+<TD colspan=1 align="left">Requires
+Red key
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Yellow
+<BR></TD>
+<TD colspan=1 align="left">Requires
+Yellow key
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Magenta
+<BR></TD>
+<TD colspan=1 align="left">Requires
+Blue key
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Dark
+Blue
+<BR></TD>
+<TD colspan=1 align="left">Tagged
+<BR></TD>
+<TD colspan=1 align="left">Overrides
+all other colors
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Gray
+Green
+<BR></TD>
+<TD colspan=1 align="left">Tagged
+and Current
+<BR></TD>
+<TD colspan=1 align="left"><BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Brown
+<BR></TD>
+<TD colspan=1 align="left">Triggered
+by Current wall
+<BR></TD>
+<TD colspan=1 align="left">Maximum
+of 10 possible
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Purple
+<BR></TD>
+<TD colspan=1 align="left">Trigger
+<BR></TD>
+<TD colspan=1 align="left">Trigger
+function affects the current Wall, Cube or Side.
+<BR></TD></TR><TR align="left">
+<TD colspan=1 align="left">Light
+Red
+<BR></TD>
+<TD colspan=1 align="left">Blow
+door
+<BR></TD>
+<TD colspan=1 align="left">Shoot
+to open
+<BR></TD></TR></TABLE>
+
+<h2>
+<A NAME="Heading54">4.7 THE THING WINDOW</A></h2>
+
+When `Insert' is pressed, whether using the left or right mouse-button, a
+duplicate of the current Thing is inserted in the current cube. If the Thing
+has orientation, the current side is taken to be `bottom' and the current edge
+`left bottom' (as seen from the object). Left mouse-button on `Delete' deletes
+the current Thing, right mouse-button on `Delete' deletes all tagged Things.<p>
+The position of the Thing can be specified manually at the bottom of the
+window.<p>
+The `Thing' window differs from the others in that changes which are entered in
+the fields do not affect all tagged Things if the right mouse-button is
+pressed, but rather only all those tagged Things which have the same type as
+the current Thing.<p>
+The `Type' field determines the category of the Thing and depending on the
+category may also have a sub-field (e.g., `type id') which determines more
+specifically what type of Thing it is:<p>
+*	`Robot': One of those unfriendly fellows who make life difficult in Descent.
+There are various robot types (sub-Field `Robot'), of which the `Big Boss'
+types have the peculiarity that they replace the reactor during the course of
+the game. A robot can drop Things when it is shot ... which type of Thing it
+drops, can be specified in `Drop type'. `Default' means that robots will drop
+something now and then, e.g., the `Class 1 Drone' drops an `Energy Boost'.
+`Number' determines how many of the specified Things will be dropped once the
+robot is shot. `Behavior' determines how the robot behaves itself (Not all
+behavior modes are possible in Descent 1)<p>
+*	`Sits still': The robot doesn't leave its place except to avoid shots.<p>
+*	`Normal': The robot follows you `a little'.<p>
+*	`Gets behind you': The robots tries to approach you from behind, e.g., the
+Thief robot which steals your weapons. (Descent 2 only).<p>
+*	`Runs from': The robot lays mines and doesn't bother itself with the player
+otherwise (Descent 2 only).<p>
+*	`Snipe': The robot behaves itself as a `Sniper' e.g., those lilac things in
+the first Level of Descent 2. (Descent 2 only)<p>
+*	`Station': The robot flies to and fro, but doesn't follow you far.<p>
+*	`Follow': The robot follows you.(Descent 2 only)<p>
+*	`Hostage': One of those lively figures which you can collect. You can adjust
+the size of the hostages.<p>
+*	`Start': The Normal and Deathmatch/Anarchy starting positions. Here, the
+number of the starting points is most important. The numbers run from 0-7.
+Whether all numbers are correctly placed or not, you can check in the level
+statistics (`Info' menu option `level info'). The normal Start has the Number
+0.<p>
+*	`Mine': Inserts a mine. You may affect the rotational speed and direction of
+the mine. The higher the number, the faster it will spin in that direction.<p>
+*	`Item': Something to collect. Specifying this will present two additional
+control buttons. Click on `item id' to specify what the item is. Keep the left
+mouse-button pressed when the list is brought up and then move the pointer to
+the item you want to select. By default the `item grfx' will be set to the
+graphic of the item id, but you can make life "interesting" for the player by
+specifying a graphic different to what the item actually is.<p>
+*	`Reactor': The reactor. It is normal to provide only one per level. The
+reactor has up and down orientation as with robots (front and back naturally
+doesn't make much sense). If Devil is configured for Descent 2 you can specify
+the time which remains once the reactor is shot. The duration is in seconds for
+games played at the `Insane' difficulty level, with the other difficulty levels
+you calculate the time as follows: 1.5* the indicated time for Ace, 2* for
+Hotshot, 2.5* for Rookie and 3* for Trainee. In addition you can also specify
+the strength of the reactor under `Hitpoints' which is the amount of damage it
+can take (the unit of measurement is `flares').<p>
+*	`Coop Start': Player-start for Co-operative Mode. The number of these
+Player-starts must be 1 9, 10 or 11 in Descent 1. This restriction was removed
+in Descent 2.<p>
+*	`Secret Start': The cube you return to after completing a secret level. You
+may have multiple "secret exits" in your level, but only one "secret start". 
+<p>
+<P><hr size=4>
+<A HREF="doc04.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc06.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+</body></html>

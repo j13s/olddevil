@@ -1,13 +1,14 @@
 Hi.
 
 This is a short remark to well experienced Devil users.
-For further documentation look at the file readme.txt and the file
-docs/userman.doc. There's a complete german documentation for V2.1
-in the file docs/german.doc. I've found someone who will translate
-the manual to English. If you want to help him (the complete manual
-are >50 pages), please send him a E-Mail (robinm@za.eds.com)
+For further documentation look at the file readme.txt and the new
+english documentation in HTML-format starting with the file
+docs/htmldoc/doc.htm. You can get the complete manual in Rich-Text-Format
+from my homepage (if you want to print it). Many thanks must go to
+Robin Martin for translating the manual and a lot of useful
+discussions about the editor. 
 
-This is the full version of Devil V2.2k.
+This is the full version of Devil V2.2l
 
 Please, please e-mail all bugs you encounter to the Mailing List. 
 And please use the word "bug" somewhere in your header because all
@@ -16,6 +17,274 @@ automatically.
 
 FOR DESCENT 2 MODE, DEVIL NEEDS THE MEDIUM (48MB) INSTALLATION. Sorry about
 this, but I can't access the data from the CD, it is packed.
+
+A BIG thanks to all guys at the mailing list and all others for bug reporting
+and making suggestions.
+
+This is still a prerelease, so be careful and make backups of your levels. 
+
+Have a good time,
+Achim
+
+PS: Next version (I hope the last one with major changes. After I have
+done it, I won't do any changes to Devil except bug fixes. So if you
+still miss features in Devil that are not listed below, mail them to
+the DDL. But remember: Devil is an editor for RDL/RL2-files. I won't
+add routines for editing robots or textures and such stuff):
+ - a lot of bug fixes.
+ - full Undo
+ - Sphere generator
+ - Spiral corridor generator
+ - run animations of textures in rendering mode & handle animations in
+   POG/HAM-files correctly
+ - some minor things to improve useability (like adding a more
+   reasonable way to activate the tag filter etc.)
+ - display robots?? (I won't do this, I think. At least not in the
+   next version)
+
+New features: (V2.2k->V2.2l)
+-Complete english manual is available (much, much thanks to Robin Martin who
+ translated the manual from german without profound knowledge of the
+ German language (!!), do him a favor if you can. Thanks to the proofreaders
+ of the english manual, too). The manual is in HTML-format in the docs
+ directory, you can get a versio in WinWord 97 format from my homepage.
+-A key ('0') for selecting side 0, edge 0 is available (Lars Christensen)
+-Ctrl-x/X,y/Y,z/Z align your sight to the pos./neg. x/y/z-Axis 
+ (Lars Christensen).
+-Group preview: There is an additional option in the Internal Menu 
+ (Move&Display->Display what->Group preview). If it is turned on and
+ in the cube window in the field 'Insert:' is a group with a defined
+ connection side, the first cube of this group is displayed as it would
+ be inserted when you press 'Insert'. Connected sides of the first cube of
+ the macro are marked with the usual side markes (if the first cube is
+ symmetric but the attached macros is it not). I hope this is a solution for 
+ the great confusion about insertion of macros.
+ The main reason for inserting this feature was the discussion on the DDL
+ about some sort of 'Default' cubes that can be inserted. I haven't done
+ this for two reasons: 
+  A) If you insert a cube in side mode, you have a nearly equivalent feature.
+  B) You can do this (and much more) via groups anyway.
+ So I thought why most of you don't regard 'group insertion' as a full
+ replacement for the desired feature and I suppose that the somewhat
+ complicated insertion rules may be the main reason. I hope you are
+ satisfied with this solution.
+-Special cubes have special colors (Robin Martin)
+-The original positions of the lines can be drawn in yellow if you
+ move a point/side/cube with the mouse (Internal menu,Modify,Draw orig. lines)
+ Works only if texture mapping is not on.
+-The texture window zoom/pos./size are saved when you leave the editor and
+ saved when you save your window positions.
+-The POG-file handling changed: You will find a new button in the window
+ with the move buttons to choose the POG-file. You can have only one POG-file
+ at once in Devil (I don't think you need more, do you?). If no POG-file
+ is loaded and a level is loaded for which exists a POG-file (that is a
+ file which has the same name as the level with the ending POG and is in the
+ path you have used the last time to load a pog-file) the POG-file is
+ automatically loaded. If you want to turn off the POG-files, press the
+ POG-file button and then in the file dialog 'cancel'.
+-In the texture list: textures with a lightsource have a special symbol
+ (a little bulb) in the lower left edge, textures with a lightsource that
+ can be broken have another symbol (a little broken bulb) in the lower right
+ edge. You can turn on/off this in the Internal menu (Modify&Illum.->
+ Little bulbs)
+-Cloaked walls implemented in menues as well as in rendering
+-A new feature for adjusting the light manually:
+ Press the button 'Adjust light' in the side window when the current
+ side is a lightsource.
+ Then all lightsources are turned off except the one of the current side and
+ the lightsources without lightsource information (this information is lost
+ if you save a level and load it again for the lightsources that can't be
+ turned off in Descent). Then you can manually adjust the light from the
+ only lightsource left by changing the light values in some corners. 
+ After you have done this, press again on 'Adjust light' (on the same side,
+ with the left button) and your changes will be saved and the other
+ lightsources will be turned on again. If you press the right button the 
+ second time, your changes will be cancelled. 
+ With these feature you can manually adjust the light from lightsources that 
+ are turned off in Descent (e.g. flickering lights).
+ Descent subtracts for each lightsource that is turned off the appropriate
+ values at the edges. Therefore here is a problem with 'overflow'-errors:
+ If two lightsources are near each other the light at an edge between
+ them might easily be more than 100% (say 150%, 75% from each lightsource)
+ and then cut down to 100%. This results in errors if one of the two 
+ lightsources is turned out because Descent will subtract the value for
+ this lightsource from the light at the edge (therefore 75%) and get 25% 
+ which is clearly much too dark. To avoid this, I have allowed light values
+ for edges up to 200% (Descent seems to handle them correctly. If anyone
+ has problems, please post them in the DDL). All edges with light values
+ between 100% and 200% will look the same in Descent and Devil (as bright
+ as possible), but the problem described above can be avoided (at least
+ more often than before).
+-You can see the flickering lights in the level. Just turn on the
+ corresponding switch in the internal menue (Move&Display->Flickering lights)
+ and press the right mouse button in the level window. If your system
+ is not powerful enough to display as much frames as needed for the
+ light (e.g. you need at least 10 frames per second to display a blinking
+ light with mask 10 and timer 0.1), you can stretch the timescale
+ in the Internal menue (e.g. if you specify a value 2.0 in 'Stretch time'
+ a light which will blink in Descent every 1/10 second, will blink every
+ 1/5 second in Devil). Devil will give a message if the frame rate drops
+ below the blinking rate of a displayed lightsource (you can turn this off in
+ the Internal menue) and you need to adjust the timescale (if you don't adjust
+ it you will get more or less random results for the blinking of the
+ lightsource). I would expect a framerate at about 8-10 frames on a normal
+ system in a not too complicated room (Pentium 133, a window with 480*480).
+ You can speed up the framerate if you use smaller windows to display
+ the level. 
+-Due to the two changes listed above I had to change the handling of the
+ lightsources. If you illuminate a part of the level, the following rules
+ apply:
+  A) All lightsources in the tagged cubes will be new calculated.
+  B) All light in the edges of the tagged cubes will be reset to the min. value
+     specified in the Internal menue before it gets new calculated.
+  C) The effects of the light sources in the other (not-tagged) cubes is
+     new calculated, too, but the light in these edges is not reset (but
+     the old effect of the lightsource is subtracted and then the new
+     calculated effect is added).
+ The reason for rule B is that I suppose that this is the behaviour most
+ of you will prefer. The reason for rule C is that this is the more consistent
+ method, preserving the light values you changed manually without attaching
+ them to a specified light source with 'Adjust light'. I can't apply
+ rule C in general because all new cubes have not light 'min value' but
+ something different.
+-Light sources are copied to and from groups.
+-Due to the fact that 'flickering lights' as well as 'adjust light' only
+ work if the information for the lightsource is available and that in
+ normal RL2-files only the information about the lightsources is saved that
+ are known to be changed (and the information about the rest of the
+ lightsources is lost), Devil saves now by default the information for all
+ lightsources. If you run in trouble with this (because Descent is limited
+ to 500 lightsources to be changed and 10000 edges to be changed), you can
+ save the level in the standard way with the menupoint 'save without full
+ light information'. No relevant data for Descent 2 will be lost if
+ you do this but you won't be able to adjust light sources that are
+ not turned out in Descent 2.
+-Turning yourself with the mouse: You can flip all axis' (see Internal menue)
+-You can make sides co-planar: 'Edit->make edge co-planar'. All tagged
+ edges will be moved in the plane defined by the other three edges of
+ the same side. If more than one edge on one side is tagged, nothing is
+ changed for this side. Every moved edge will be untagged. It may be
+ it bit clumsy to tag exactly one edge for each side, if this really
+ is a limitation of this feature for you, think of a better way to do
+ this and mail it to the DDL :-).
+-You can read the files generated by the Descent Block Builder. To be more
+ specific, Devil can read levels stored in an ASCII-format, so you can
+ do your own small programs to create complicated structures. The
+ format Devil uses is the same as the format used by the Descent Block
+ Builder (at least I hope so). I've used it because I don't want to
+ introduce even more file formats than there are already, although it
+ is not exactly what I would have done...
+ Anyway the format Devil reads, is specified as follows:
+ head: DMB_BLOCK_FILE
+ In the following lines the segments are specified:
+ head of segment: segment <segnr>
+    (the segnr must be start with 0 and always be increased by one.
+ Than the sides of this segment follow. Always six sides with the numbers 0..5
+    head of side: side <sidenr>
+            side: tmap_num <t1> tmap_num2 <t2>
+                  (t1 and t2 are the texture numbers (as in the normal level
+                   which are not the same numbers as the numbers in the 
+                   pig/pog-files) for texture 1 and texture 2.
+                   The 3 most significant bits of t2 specify the direction
+                   of texture 2 relatively to texture 1 (t2&0xc000==
+                   0x0000->same dir.,
+                   0x4000->t2 is rotated around 90 degrees counter-clockwise,
+                   0x8000->180 degrees, 0xc000 270 degrees)
+                   t2==0 --> no texture 2 at all
+                   If you don't know what texture to choose, use t1=0 and t2=0
+            side: uvls <u> <v> <l>
+            side: uvls <u> <v> <l>
+            side: uvls <u> <v> <l>
+            side: uvls <u> <v> <l>
+                  (four lines with the uvl-coords for this side. The uv-coords
+                   specify in which way the texture is layed in this side.
+                   If you don't know what to do with this, just use
+                    (0,0), (0,2047), (-2047,2047), (-2047,0)
+                   for each side and after you loaded the file in Devil
+                   tag all cubes and let Devil recalculate the textures
+                   (Lights and Textures->recalculate textures).
+                   The third value in each line is the light value.
+                   This should be a value between 0 (0%) and 32767 (100%)
+   end of side. Remember that there must be six sides for each segment even
+   if the segment has a children on this side.
+ cont. segment: children <c0> <c1> <c2> <c3> <c4> <c5>
+                (c0..c5 are the numbers of the cubes connected to this cube
+                 on side 0..5. -1 if no cube is connected.)
+       segment: vms_vector <no> <x> <y> <z>
+       segment: vms_vector <no> <x> <y> <z>
+       segment: vms_vector <no> <x> <y> <z>
+       segment: vms_vector <no> <x> <y> <z>
+       segment: vms_vector <no> <x> <y> <z>
+       segment: vms_vector <no> <x> <y> <z>
+       segment: vms_vector <no> <x> <y> <z>
+       segment: vms_vector <no> <x> <y> <z>
+                (the eight points for this segment. the number must run from
+                 0..7. x,y,z are 4-byte-integers specifying the coordinates of
+                 the points multiplied with 65536 (e.g. a normal cube which
+                 has in Devil the size 20*20*20 has in this coordinates 
+                 1310720*1310720*1310720 [20*65536=1310720]). Points with a 
+                 certain number belong to sides with a certain number:
+                  Side 0 Pnts 7 6 2 3  (left side)
+                  Side 1 Pnts 0 4 7 3  (ceiling)
+                  Side 2 Pnts 0 1 5 4  (right side)
+                  Side 3 Pnts 2 6 5 1  (floor)
+                  Side 4 Pnts 4 5 6 7  (front)
+                  Side 5 Pnts 3 2 1 0  (back)
+                 The comments in brackets are just to give you some sort
+                 of orientation. They refer to cube 0 in the first level of
+                 Descent 1 if your position is on the startplace of this
+                 level.)
+       segment: static_light <light>
+                (the light which will be used for the objects in this cube,
+                 e.g. robots)
+ end of segment.   
+
+Fixed bugs:
+-Deleting the cube with the current point works. (thanks to Tom De Grave for
+ the excellent bug report)
+-If you change a wall from 'normal door' which needs a key to 'wall' (or
+ any other type), the key selection is deleted (so you don't get walls
+ which display the message that they need a key) (John Ratcliff)
+-Supertransparent walls are now transparent for light but not illuminated
+ on the other side of the wall (Lars Christensen)
+-fixed problems with deleting tagged points. (Red Omen)
+-made some more restrictions to the corridor wizard (two yellow points
+ must have a distance of at least 3*cube depth). I hope this will avoid
+ some of the reported crashes.
+-If you insert a new door the switch-properties of the current door are
+ copied correctly (Robin Martin).
+-Corrected deleting tagged things or things in render mode. This
+ bug had some more bad consequences concerning deleting things.
+ (Robin Martin)
+-Saving a hogfile twice in the mission manager (Robin Martin)
+-The Descent-like map is now with greyshading (Robin Martin)
+-'Make std. side' is now recognized to change the level (Robin Martin)
+-Problems with switches which does not switch anything (Robin Martin)
+-The F11 and F12 keys work in the appropriate way.
+-The startside of a corridor will now longer be changed if you do not
+ insert the corridor.
+-Changed some names etc. to be consistent with the manual
+-Right/Left button with Fit Bitmap work as they should (i.e. the left
+ button changes only the current side, right button all tagged sides and
+ the current side)
+-Fixed problems with the secret start.
+
+Bugs I could not reproduce (so it would be very good to have another
+bug report) or bugs for which I was not able to find a good solution:
+-Crash when scrolling down the texture window and there are no more textures
+ than already displayed.
+-Crash when turning the end of a corridor immediately after starting the
+ corridor wizard.
+-Long filenames under Windows 95 which won't work if you start Devil in
+ plain DOS. I see the the problem but I don't want to turn off the long
+ filenames (because of the guys using only W95) and I don't want to write
+ all routines in a way that they can handle both. So best is, if you really 
+ need to run Devil in plain DOS AND W95, to use the workaround proposed
+ by John M. Aldrich: Just add a "set LFN=N" at the beginning of the "devil.bat"
+ file. If you do this, you won't have long filenames at all. BTW there
+ might be some problems with extraordinary characters in long filenames
+ in Devil, so ... don't go to the limit and remember that Devil is a DOS
+ program.
 
 New features: (V2.2j->V2.2k)
 -POG-files are supported. You need to copy the POG-file in the same directory
@@ -402,26 +671,3 @@ Fixed bugs:
 -Hopefully fixed the bug with non-convex cubes/connecting
 -Fixed the bug with deleting tagged cubes and not deleting the tag list
 
-A BIG thanks to all guys at the mailing list and all others for bug reporting
-and making suggestions.
-
-This is still a prerelease, so be careful and make backups of your levels. 
-
-If you have any questions, please mail them NOT to me directly but to the
-Devil Mailing List (see readme.txt).
-I am subscribed in the new mailing list, too, so I will receive everything
-you send to it (and a lot of other people will receive it, too, and can
-answer your questions).
-
-Have a good time,
-Achim
-
-PS: Next version:
- - a lot of bug fixes.
-   I won't do any new major features anymore because in November I've started 
-   to work on my diploma and this is quite time consuming.
-   Furthermore I want to play a little bit with the texture mapping routines
-   to see what I can do with them. Anyway, I will fix the bugs that are 
-   reported so maybe Devil will become a somewhat stable program in a few
-   months (sounds unbelievable to me ;-).
-   

@@ -1,0 +1,443 @@
+<HTML><HEAD>
+<!-- This document was created from RTF source by rtftohtml version $Revision: 3.4 $ -->
+<TITLE>Devil - 3 BASIC FUNCTIONS</TITLE></HEAD>
+<BODY BACKGROUND="" BGCOLOR="#FFFFFF" TEXT=#000000>
+<A HREF="doc03.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc05.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+<hr size=4>
+<H1>
+3 BASIC FUNCTIONS</H1>
+<UL>
+<LI><A HREF="#Heading19">3.1 THE FILE-MENU</A>
+<UL>
+<LI><A HREF="#Heading20">3.1.1 NEW LEVEL AND LOAD LEVEL </A>
+<LI><A HREF="#Heading21">3.1.2 SAVE LEVEL</A>
+<LI><A HREF="#Heading22">3.1.3 SAVE LEVEL WITHOUT FULL LIGHTING INFORMATION</A>
+<LI><A HREF="#Heading23">3.1.4 SAVE TO DESCENT DIRECTORY</A>
+<LI><A HREF="#Heading24">3.1.5 MISSION MANAGER</A>
+<LI><A HREF="#Heading25">3.1.6 PLAY LEVEL</A>
+<LI><A HREF="#Heading26">3.1.7 CHANGE FULL NAME</A>
+<LI><A HREF="#Heading27">3.1.8 SAVE/LOAD WINDOW POSITION</A>
+<LI><A HREF="#Heading28">3.1.9 EXIT</A>
+</UL>
+<LI><A HREF="#Heading29">3.2 NAVIGATION IN THE LEVEL</A>
+<UL>
+<LI><A HREF="#Heading30">3.2.1 THE CO-ORDINATE SYSTEM</A>
+<LI><A HREF="#Heading31">3.2.2 WITH THE MOUSE</A>
+<LI><A HREF="#Heading32">3.2.3 WITH THE BUTTONS</A>
+<LI><A HREF="#Heading33">3.2.4 WITH THE KEYBOARD</A>
+<LI><A HREF="#Heading34">3.2.5 SPECIAL ALIGNMENT FUNCTIONS</A>
+</UL>
+<LI><A HREF="#Heading35">3.3 SELECTING THE CURRENT OBJECT</A>
+<UL>
+<LI><A HREF="#Heading36">3.3.1 WITH THE MOUSE</A>
+<LI><A HREF="#Heading37">3.3.2 WITH THE OBJECT WINDOW, MENU OPTIONS, KEYS</A>
+</UL>
+<LI><A HREF="#Heading38">3.4 MOVING OBJECTS</A>
+<UL>
+<LI><A HREF="#Heading39">3.4.1 WITH THE MOUSE</A>
+<LI><A HREF="#Heading40">3.4.2 MOVING TEXTURES</A>
+<LI><A HREF="#Heading41">3.4.3 WITH THE PUSH-BUTTONS</A>
+<LI><A HREF="#Heading42">3.4.4 ERROR MESSAGES DURING MOVEMENT</A>
+</UL>
+<LI><A HREF="#Heading43">3.5 TAGGING OBJECTS</A>
+</UL>
+<hr size=4>
+
+<h2>
+<A NAME="Heading19">3.1 THE FILE-MENU</A></h2>
+
+
+<h3>
+<A NAME="Heading20">3.1.1 NEW LEVEL AND LOAD LEVEL </A></h3>
+
+It
+is possible to open more than one level simultaneously. Each level is assigned
+its own window, if this window is closed, the level is removed from memory (but
+not to worry ... Devil does prompt you if the level has been changed :-).
+Selecting either of these options will bring up a file-selection dialog panel.
+
+<h3>
+<A NAME="Heading21">3.1.2 SAVE LEVEL</A></h3>
+
+The option allows to save the level you are working on. The file-selection
+dialog allows you to specify a new name for the disk version of the level but
+this doesn't count as a `real save' ...changes to the original level will still
+cause a prompt on exit. The quick-save function available via the `F2' key will
+automatically overwrite the version you loaded the level from.<p>
+I advise regular use of this save function ... particularly before using any of
+the special functions.<p>
+Before saving the level, Devil will check many diverse things; for an
+explanation of these, along with potential error messages, see Section 0.
+
+<h3>
+<A NAME="Heading22">3.1.3 SAVE LEVEL WITHOUT FULL LIGHTING INFORMATION</A></h3>
+
+This option allows you to save the level without saving information for all
+lightsources. Only information for lightsources which could change during a
+game are saved.<p>
+See Section 7.2.3.1
+
+<h3>
+<A NAME="Heading23">3.1.4 SAVE TO DESCENT DIRECTORY</A></h3>
+
+Use this option to save the level directly into the Descent directory. The
+message issued on a successful save says "as Devil Play level" ... but the
+actual name appearing in the Descent level list varies according to Devil
+version ... normally it's "Devil Level".
+
+<h3>
+<A NAME="Heading24">3.1.5 MISSION MANAGER</A></h3>
+
+The Mission Manager is explained in Section 7.3.4
+
+<h3>
+<A NAME="Heading25">3.1.6 PLAY LEVEL</A></h3>
+
+This menu option allows you to suspend Devil, invoke Descent to test the level
+(choose the `Devil Level' mission), and return to Devil again, without thereby
+changing the status quo in Devil (i.e. all levels remain the same, all tagged
+objects stay tagged etc.)<p>
+<p>
+Translators Note: <p>
+If you find that you need to adjust the default parameters for this load of
+Descent, check the DESCENTSTART .BAT file specified in the CFG.BAT file in the
+Devil CONFIG directory. This file should be present in the DESCENTPATH
+directory.<p>
+<p>
+Windows users may find it easier to load both Devil and Descent in separate
+windows and use the Alt-Tab function to jump between the two tasks. This avoids
+the overhead of loading Descent every time. You may find that the displays are
+not restored correctly when you return, so ensure that you save your level
+before jumping. It is adviseable to leave the Descent display at one of the
+menus and not in a level.
+
+<h3>
+<A NAME="Heading26">3.1.7 CHANGE FULL NAME</A></h3>
+
+With this option you give the level the name which appears on the Descent
+Automap and level selection list. This is the name displayed on the level
+window frame in Devil.
+
+<h3>
+<A NAME="Heading27">3.1.8 SAVE/LOAD WINDOW POSITION</A></h3>
+
+With these options you can place your preferred window arrangement into an
+external file and load them again whenever you like. The current level, edit
+position in the level, texture window zoom/pos./size are all saved. Devil
+normally creates this .WIN file by itself when you exit the editor, but with
+new installations or crashes this information could be deleted, lost or corrupt.
+
+<h3>
+<A NAME="Heading28">3.1.9 EXIT</A></h3>
+
+You will be warned about any unsaved changes when this option is chosen. The
+current state and settings of the various buttons and windows are saved at this
+time. If you exit Devil with a level open, you current position in the level is
+also saved.<p>
+
+
+<h2>
+<A NAME="Heading29">3.2 NAVIGATION IN THE LEVEL</A></h2>
+
+
+<h3>
+<A NAME="Heading30">3.2.1 THE CO-ORDINATE SYSTEM</A></h3>
+
+Translators
+Note:<p>
+The x-axis is an imaginary line drawn horizontally from the left of the screen
+to the right.<p>
+The y-axis is an imaginary line drawn vertically from the top of the screen to
+the bottom.<p>
+The z-axis is an imaginary line drawn from yourself to the screen.<p>
+The points in a level are stored in a 3 dimensional co-ordinate system (x,y,z)
+called Vertices.<p>
+These co-ordinates represent distance from an origin (0,0,0) in either positive
+or negative directions. For example, (20,0,-20) is 20 units "right" parallel to
+the x-axis in the positive direction and 20 units parallel to the z-axis in the
+negative direction (i.e., "towards you").<p>
+See Section 3.2.5 for aligning to the co-ordinate system.<p>
+See Section 7.6.1 for a description of the co-ordinate axis display.
+
+<h3>
+<A NAME="Heading31">3.2.2 WITH THE MOUSE</A></h3>
+
+If you click in the level window with the right mouse-button and keep it
+pressed, you can move yourself around in the level (you don't move the level
+but rather move yourself, as in Descent). The following combinations apply:<p>
+*	Right mouse button only: Move yourself forward/backward and spin yourself
+around the z-axis (i.e. the direction of view).<p>
+*	Shift+right mouse-button: Slide left/right/up/down.<p>
+*	Left+right mouse-button: Turn around the x/y-axis.<p>
+*	Shift+left+right mouse-button: Only makes any sense in double view: Turn
+around the point which bisects both z-axes in the left and right views.<p>
+*	Ctrl+right mouse-button: Fly forward.<p>
+While it is evident here that every mouse-button is used multiple times and the
+concept may not be dreadfully simple, a similar layout applies to the movement
+of things and the movement of textures. This is, therefore, the standard Devil
+mouse paradigm.
+
+<h3>
+<A NAME="Heading32">3.2.3 WITH THE BUTTONS</A></h3>
+
+If the `Movemode' status is set to `Move you', the six large push-buttons apply
+to movement within a level in Devil. With the left mouse-button you turn
+yourself and with the right mouse-button you move yourself around your current
+position.
+
+<h3>
+<A NAME="Heading33">3.2.4 WITH THE KEYBOARD</A></h3>
+
+Movement in the level is also possible with the keyboard, for that you use the
+numeric keypad, you cannot use the up/down/left/right keys in Devil. Be sure
+that NumLock is activated. You move forward with 'a' and back with 'z' (the
+Descent default set-up), turn left with '4' and right with '6'. Depending on
+the state of the "Internal-&gt;Move&amp;Display-&gt;Flip y-axis" setting the
+'8' and '2' keys have different meanings. If "Flip y-axis" is set to 'yes',
+then you will pitch forward with '8' and pitch backward with '2'. If "Flip
+y-axis" is set to 'no', then it is reversed so that '2' pitches forward and '8'
+pitches backward.  Shift-'4' will slide you left, Shift-'6' slide right,
+Shift-'8' slide up and Shift-'2' will slide you down.  Finally '1' is bank left
+(rotate counter-clockwise) and '3' will bank right (clockwise rotation). In
+Section 8.1 you'll find a complete list of available keys in Devil.
+
+<h3>
+<A NAME="Heading34">3.2.5 SPECIAL ALIGNMENT FUNCTIONS</A></h3>
+
+With `Move-&gt;beam to current object' you can `zoom' yourself to the current
+object and with `Move-&gt;align to...', can align yourself (your direction of
+view) to a particular spatial axis. This function does not apply to aligning an
+object (side, cube) to an axis if the movemode is set to `move object'  ... for
+that you should rather use the grid option.<p>
+Translators Note:<p>
+It is easier to maintain symmetry and regular shapes when objects move parallel
+to the co-ordinate axes.  Regularity is often desired, but of course not
+absolutely necessary.  Alignment gives you rounder numbers for co-ordinates
+without requiring (snap to) grid to be turned on and aligning yourself to an
+axis means that when you move yourself in or out, you will stay on an axis.
+Points and sides moved from this position will also tend to stay aligned to the
+grid ... just try it. Another benefit of aligning to an axis is repeatability.
+If you are used to looking down on your level along the negative y-axis, you
+can quickly return to a previous position and orientation.<p>
+Example: Assume that you prefer to work in "plan" (like looking at a house
+plan, from "above"). To view a cube side, you might zoom to a point on the
+side, align yourself to the negative y-axis, and then back up to view the point
+and surrounding features from above. If you then move the point, it will slide
+along the x, y or z-axis nicely.  If you had not aligned to an axis, the point
+would probably move in a direction not parallel to any axis.<p>
+You can save view positions with Ctrl+F1 - F10  and restore these again with
+Shift+F1 - -F10. With Ctrl+F11 you may attain an overview of the level (hereby
+simply being moved backwards against the view direction as far as is required
+for you to see the whole level), and with Shift+F11 return again to the
+position you were before you pressed Ctrl+F11.  Ctrl/Shift+F12 applies when
+making corridors with the corridor-generator (see Section 7.1.7).
+
+<h2>
+<A NAME="Heading35">3.3 SELECTING THE CURRENT OBJECT</A></h2>
+
+
+<h3>
+<A NAME="Heading36">3.3.1 WITH THE MOUSE</A></h3>
+
+The
+easiest way to select the current object is to press the left mouse-button in
+the level window and keep it pressed. This enables "scan mode" ... where a
+white circle appears and inside the circle a max. of three smaller green and
+violet circles may be displayed (and possibly additional lines displayed
+outside the circle) which indicate a particular object to be tagged. If you
+release the left button again, the object selected is the one identified by the
+green color. You can only select objects which conform to the current mode,
+i.e. in cube mode only cubes, in side mode only sides etc. Objects to be tagged
+are indicated as follows:<p>
+*	Cubes are indicated by a circle through their mid-point and lines from the
+mid-point to their corners.<p>
+*	Sides are indicated by a circle in their mid-point and lines from the
+mid-point to their corners. If the side is joined, the circle is displaced a
+little toward the inside (i.e. in the direction of the cube mid-point) so that
+you can differentiate one side from the other.<p>
+*	Edges are indicated by a circle which is displaced in the direction of the
+mid-point of the side. Furthermore, three lines are drawn from the circle: a
+short one to the indicated edge and two longer ones to both neighboring edges
+on the same side of this edge.<p>
+*	Points are simply indicated by a circle.<p>
+*	Walls are indicated by a circle around the intersection of the two
+wall-marker lines.<p>
+Things are indicated by a circle around the intersection of their lines or by a
+circle around the midpoint of the imaginary line between the two bottom points
+of the Thing.
+
+<h3>
+<A NAME="Heading37">3.3.2 WITH THE OBJECT WINDOW, MENU OPTIONS, KEYS</A></h3>
+
+The current object can be selected directly by number in the appropriate window
+or by simply `flipping' through all the objects (see Section 4 for this.). With
+the Menu option `Move-&gt;go to wall', you can also set the current cube and
+the current side to the side of the cube which contains the current wall.<p>
+With `Move-&gt;change to sidecube' you can select the cube next to the current
+cube, which is joined to the current cube via the current side. This can be
+quite useful if you want to move through a corridor on one go.<p>
+If you set the `Movemode' switch to `Select Cube', then you can select the
+current Side using the left mouse-button and can change the current Cube using
+the right mouse-button by clicking on the large arrow-key pointing in the
+desired direction.
+
+<h2>
+<A NAME="Heading38">3.4 MOVING OBJECTS</A></h2>
+
+
+<h3>
+<A NAME="Heading39">3.4.1 WITH THE MOUSE</A></h3>
+
+You
+can move the objects of the current mode with the mouse, by initially pressing
+and holding the left mouse-button as when selecting an object. However instead
+of releasing the left mouse-button again when the marker is over the desired
+object, you press the right mouse-button as well and, keeping the left button
+held down, you can then move the object as follows (the motion is relative to
+the viewer unless the object is a thing with orientation, e.g. a robot, in
+which case the motion is relative to the co-ordinate system of the thing, but
+the movement is always still relative to the co-ordinate system of the user.
+This may sound somewhat confusing, but with use is hopefully not.)<p>
+*	Right mouse-button only: Move forward/backwards and turn around the z-axis
+(i.e. the direction of view).<p>
+*	Shift+right mouse-button: Slide left/right/up/down (i.e. in the x/y-plane).<p>
+*	left+right mouse-button: Turn around the x/y-axis.<p>
+The layout is the same layout you use when moving yourself. (if this makes
+sense)<p>
+If you press Ctrl before you the press the right mouse-button and keep it
+pressed, the white circle turns blue and you can move all tagged objects. (All
+objects affected by this move will turn brown.)<p>
+An example: To move the one side of a room made up of four cubes, select one of
+the Sides and then click on `Tag flat sides' to tag the other three sides.
+Press the left mouse-button for scan mode, hold it down and press Ctrl as well
+(the scan circle turns blue). Move the mouse until you have one of the tagged
+sides indicated in green then press the right mouse-button as well (all
+affected sides will turn brown).  At this point you may release the Ctrl key
+... as long as you hold either<b> </b>the left or the right mouse-button down
+movement affects all four sides as a unit.  You can alternate between the left
+and right mouse-buttons to turn , twist and move backwards and forwards. Press
+shift to move them up and down.
+
+<h3>
+<A NAME="Heading40">3.4.2 MOVING TEXTURES</A></h3>
+
+In Side mode you can move the texture on a side instead of the side itself. In
+order for this to make sense, texture rendering must naturally be turned on and
+the current side must be visible from your point of view. In this case similar
+movement rules as normal movement rules apply:<p>
+To activate this mode, select the side as normal using the left mouse-button
+and while holding it down, press Alt as well and then click the right
+mouse-button once.  As long as you continue to keep at least one of the mouse
+buttons pressed, you can release the Alt key.<p>
+The following combinations apply :-<p>
+*	Left mouse-button only:  Rotate texture.<p>
+*	Left+right mouse-button: Rotate texture.<p>
+*	Right mouse-button only: Enlarge/Reduce and rotate texture.<p>
+*	Shift+either mouse-button: Shift texture left/right/up/down.<p>
+It must be pointed out at this stage that the moving of points/cubes/sides
+causes the texture alignment on the affected sides to be re-calculated, so that
+a laboriously hand-fitted texture would need to be re-aligned. In order to
+prevent this you must lock the side (see Section 4.3).
+
+<h3>
+<A NAME="Heading41">3.4.3 WITH THE PUSH-BUTTONS</A></h3>
+
+If the `Movemode' status is set to `Move object' (this toggling is also
+possible using the `Tab' key), the six large push-buttons (as well as the
+corresponding keys on the keyboard) apply to the movement of all tagged objects
+in the current mode. `Current mode' refers to the object mode which is
+specified by the `Modify what' status toggle-switch and can also be switched by
+clicking on the object menu-bars. All tagged Things would be moved if the
+`Modify what' status is set to `Thing'.<p>
+How you move the object depends on the type of the object being moved:<p>
+Things/Sides/Cubes/Points are moved if you press the right mouse button and you
+have some of them tagged.<p>
+*	Cubes: Cubes can be moved in all three spatial directions with the right
+mouse button. The movement is relative to the viewer, i.e. if you click on the
+left upper key with the right mouse button then the cube is moved towards you.
+Cubes are rotated relative to the center of the current side. All tagged cubes
+and the current cube are rotated with the left and right upper keys, only all
+tagged cubes are rotated with the left and right lower keys. The first function
+can be undone by simply clicking the opposite key, the second only if the
+current cube has not been changed. The second function is more useful if you
+want to build curved or spiral corridors. With both the center keys cubes can
+be rotated in an arc about a point perpendicular to the current side.<p>
+Translators Note: With the left mouse-button, all tagged cubes and the current
+cube are rotated according to the keys, but the bottom-left and bottom-right
+keys only affect the tagged cubes. The right mouse-button only works on tagged
+cubes<p>
+Regarding rotation ... the green edge indicated by the yellow and purple lines
+becomes the axis, if that makes any sense at all. In fact the axis lies in the
+middle of the current side.<p>
+*	Sides: Sides move just as with cubes but cannot be rotated at all.<p>
+*	Point: Points also move just as cubes move and can naturally also not be
+rotated. With Points there is the possibility of specifying the co-ordinates
+directly in the provided window, see Section 4 about this.<p>
+*	Walls/Edges: Walls/Edges can neither be moved nor rotated (except naturally
+together with the side upon which they find themselves).<p>
+*	Things: Things without special orientation (such as those represented by
+3D-Crosses) move as Points do - relative to the viewer and they cannot be
+rotated. Things with orientation (Robots, Player-starts and also Hostages) can
+be moved and rotated as the user can, as if it were you turning and moving. So
+a tagged object can travel `forwards' (i.e. in the direction of the large
+arrow-point) if you use the right mouse-button on the key top-right and in the
+upward direction (i.e. in the direction the short arrow-point) with the key
+top-center.<p>
+Translator's Note:  The complete paradigm for mouse-mode editing is as follows
+:<p>
+*	Click on the menu bar for the object you want to edit (Cube, Side, Thing or
+Point)<p>
+*	Click in the level window with the left mouse-button and keep it pressed
+while you highlight the object you wish to edit (within the white scan
+circle)<p>
+*	Still keeping the left mouse-button pressed, click the right mouse-button
+once. (Any lines connected to the object in question will be turned brown.)<p>
+*	Now move the mouse to shift the object <p>
+*	Releasing the left mouse-button takes you out of point edit mode.<p>
+*	For Point mode editing, which is very useful when making major or minor
+adjustments to cubes or sides, you will need to press the Shift key to enable
+editing mode.<p>
+If you need to move a Thing a long way, i.e., into another cube, the easiest
+way to do it is to make it the current Thing, make the destination cube current
+and then select `Move-&gt;move thing to cube', which will center the Thing in
+the current cube.
+
+<h3>
+<A NAME="Heading42">3.4.4 ERROR MESSAGES DURING MOVEMENT</A></h3>
+
+When rotating or turning cubes and also when moving points and sides it can
+happen that Devil detects and reports that the cube is no longer convex or that
+a side of the cube is twisted. By checking these things, Devil avoids creating
+cubes that Descent can't handle. This check can be disabled in the `Internal'
+Window. Interested readers can find out more about this in Section 8.3, normal
+level-builders can simply be content with these messages and try to reach their
+goal by different means.
+
+<h2>
+<A NAME="Heading43">3.5 TAGGING OBJECTS</A></h2>
+
+Objects can be tagged in many different ways:<p>
+*	Pressing the spacebar tags the current object of the current mode.
+Shift-spacebar tags (or untags) all the objects of the current mode.<p>
+*	Using the `special tags' as discussed in Section 7.3<p>
+*	As when selecting, you press the left mouse-button and keep it pressed. If
+you then also press `Ctrl', the object identified at the time by the green
+marker will be tagged.<p>
+*	By using the button in the appropriate element windows, see Section 4.1.<p>
+Multiple objects can be tagged simultaneously by drawing a rectangle with the
+mouse in the level window. For this you firstly press `Ctrl' and keep it
+pressed, then click the left mouse-button in the level window, hold the button
+pressed and enclose in the rectangle all objects that should be tagged. Only
+objects of the current mode within the current visibility-depth will be tagged
+and then only if they lie completely within the box. Using the right button you
+can add more objects to those already tagged.
+<p>
+<P><hr size=4>
+<A HREF="doc03.htm"><IMG SRC="images/leftg.gif" ALT="previous" border=0></A>
+ <A HREF="doc05.htm"><IMG SRC="images/rightg.gif" ALT="next" border=0></A>
+ <A HREF="doc_t.htm"><IMG SRC="images/topg.gif" ALT="Title " border=0></A>
+ <A HREF="doc_c.htm"><IMG SRC="images/contg.gif" ALT="Contents " border=0></A>
+</body></html>
