@@ -1,16 +1,38 @@
 Hi.
 
-This is a short remark to well experienced Devil V2.0? + V1.02 users.
+This is a short remark to well experienced Devil users.
 For further documentation look at the file readme.txt and the file
 docs/userman.doc.
 
-This is the full version of Devil V2.1a. There will be no final
-V2.00 release...
+This is the full version of Devil V2.1b.
  
-Fixed problems/changes (V2.0i->V2.1a):
--Descent 2 support
--Texture Lists
--fixed the bug with "delete cubes" (I hope)
+Fixed problems/changes (V2.1a->V2.1b):
+-Configuration problem with Descent 1/2 only.
+-completed texture list feature.
+-fixed the problem with locked textures&replacing texture
+-changed the "delete fast" back to delete tagged objects only
+-reorganized the 'align axis'. 
+  align to    x    y    z
+   pos. z   right up
+   pos. y   right      down
+   pos. x         up   left
+   neg. z   left  up
+   neg. y   right      up
+   neg. x         up   right
+ or in a short rules: y is always up except if you align to y-axis, then
+ is x right.
+-fixed the thing coordinates
+-when you click in a cube/side/point/wall/thing-window the mode is changed.
+-fields in the wall window depending on one type are now only changed for
+ the tagged walls with the same type
+-fixed the loading/saving/handling of the Descent 1 switches.
+-fixed some of the smoothing bugs in mine illuminating.
+-fixed (well, avoided) problems with deleting sides and 
+ Descent-like map mode.
+-fixed problems with reactor & flags. You don't need to set the reactor cube
+ anymore.
+-play level works now with Descent installed on another drive than Devil and
+ fixed problems with 'Out of Environment Space'-error.
  
 A BIG thanks to all guys at the mailing list and all others for bug reporting
 and making suggestions.
@@ -90,7 +112,6 @@ Achim
 
 PS: Next version:
  - bug fixes
- - completing the Texture List feature.
  - don't know. Still a lot of things to do, like a corridor generator,
   a tag filter, undo, texture mapping etc.
 

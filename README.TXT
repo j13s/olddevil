@@ -1,4 +1,4 @@
-Welcome to Devil, the Descent Editor for Vertices, Items and Levels at all.
+    Welcome to Devil, the Descent Editor for Vertices, Items and Levels.
 
   ____________________________________          _________________________
  /                /            /     /\        /\     \            \     \
@@ -11,9 +11,9 @@ Welcome to Devil, the Descent Editor for Vertices, Items and Levels at all.
      /___\    \/_\    \    \/______\     \__/     /__\/    /__\/     /_______\
      \                 \            \            /            /              /
       \_________________\____________\__________/____________/______________/
-          (thanks to Catalin-Andrei Stefanescu for the new ASCII art)
+            (thanks to Catalin-Andrei Stefanescu for the ASCII art)
 					
-                This is the README.TXT for version V2.10a
+                This is the README.TXT for version V2.10b
          For further info refer to readme20.txt and docs/userman.doc
 		
                 Mail address: ubdb@rz.uni-karlsruhe.de
@@ -27,12 +27,8 @@ by Csaba Biegel; see 'COPYING.CB'. The CWSDPMI is copyright by
 Charles W Sandmann, see 'CWSDPMI.DOC'. You get GNU-C with source-code on
 nearly every ftp-site (for example ftp.uni-stuttgart.de).
 
-If you want to sell Devil on a Shareware-CD or something like that, remember
-that this program is Freeware, therefore I won't get a cent from the people
-using this program. So if you make money with Devil think about spending
-some bucks to the author. And please e-mail or mail me when you sell it.
-You should have a look at the 'CWSDPMI.DOC' file for the terms for 
-distributing the CWSDPMI.EXE file commercially which is needed to run Devil.
+!! Distribution with commercial or shareware programs is allowed but requires
+!! notification of the author by mail or acknowledged email.
 
 Devil is sponsored by the german magazine "PC PLAYER". They are
 paying me some money to encourage further development of Devil :-)).
@@ -43,7 +39,7 @@ PC PLAYER can be reached by E-Mail at Devil@pcplayer.mhs.compuserve.com
 
 ATTENTION:
 There is a Devil Mailing list. Have a look at 
- http://www.sky.net/~sclouse/Descent.html
+ http://www.sky.net/~sclouse
 to subscribe.
 I'm subscribed in this list, too, so please mail any questions about how to 
 use Devil to this list and not directly to me. I WON'T ANSWER ANY MAILS
