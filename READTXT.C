@@ -74,6 +74,8 @@ void readpogfile(FILE *f)
  FREE(texture_index);
  }
 
+int readcustomtxts(FILE *f);
+
 struct D1_texture
  {
  char rname[8] NONANSI_FLAG;
@@ -122,7 +124,7 @@ int readtxts(FILE *f)
  for(i=0;i<pig.num_pigtxts;i++)
   {
   if(init.d_ver>=d2_10_sw)
-   { if(fread(&pig.pig_txts[i],18,1,f)!=1) return 0; }
+  { if(fread(&pig.pig_txts[i],18,1,f)!=1) return 0; }
   else
    {
    if(fread(&D1_txt,17,1,f)!=1) return 0;
@@ -156,7 +158,83 @@ int readtxts(FILE *f)
  for(i=0;i<pig.num_pigtxts;i++)
   pig.pig_txts[i].offset+=ftell(f)+20*numlong;
  return 1;
- } 
+ }
+
+/*
+  Read and apply changes found in a DTX PIG patch file
+*/
+int readcustomtxts(FILE *f)
+{
+  struct D1_texture D1_txt;
+  int i,j,k;
+  union { char c[8]; unsigned long ul[2]; } head;
+  unsigned long int numshort,numlong;
+  if(fread(&head,sizeof(char),8,f)!=8)
+    return 0;
+  switch(init.d_ver)
+  {
+    case d2_10_sw: case d2_10_reg: case d2_11_reg: case d2_12_reg:
+      return 0;
+      break;
+
+    case d1_10_sw:
+    case d1_10_reg:
+    case d1_14_reg:
+      if(head.ul[0]>0x10000)
+      { /* D1 1.4 */
+        fseek(f,head.ul[0],SEEK_SET);
+        if(fread(&numshort,sizeof(unsigned long),(size_t)1,f)!=1)
+          return 0;
+        if(fread(&numlong,sizeof(unsigned long),(size_t)1,f)!=1)
+          return 0;
+      }
+      else
+      { /* D1 1.0 */
+        numshort=head.ul[0];
+        numlong=head.ul[1];
+      }
+      break;
+
+    default:
+      return 0;
+  }
+
+  if((numshort<=pig.num_pigtxts) && (pig.pig_txts!=NULL))
+  {
+    if(init_test&1)
+      fprintf(errf,"Found %ld custom textures.\n",numshort);
+    for(i=0;i<numshort;i++)
+    {
+      char s[9];
+      if(fread(&D1_txt,17,1,f)!=1)
+        return 0;
+      memcpy(s, D1_txt.rname,8);
+      s[8] = 0;
+
+      /* Weird construction, I know, but it seems it works with animations txts */
+      for(j=0,k=0;((k < (D1_txt.ruxsize &0x0F)) || (stricmp(s, pig.pig_txts[j].rname)!=0)) && (j<pig.num_pigtxts); j++)
+        if(stricmp(s, pig.pig_txts[j].rname)==0)
+          k++;
+      if(j < pig.num_pigtxts)
+      {
+        pig.pig_txts[j].rlxsize=D1_txt.ruxsize==0x80 ? 0x40 : D1_txt.rxsize;
+        pig.pig_txts[j].ruxsize=D1_txt.ruxsize==0x80 ? 0x01 : 0;
+        pig.pig_txts[j].rysize=D1_txt.rysize;
+        pig.pig_txts[j].type1=D1_txt.type1;
+        pig.pig_txts[j].type2=D1_txt.type2;
+        pig.pig_txts[j].offset=D1_txt.offset+8+17*numshort+20*numlong;
+        pig.pig_txts[j].xsize=pig.pig_txts[j].rlxsize+(pig.pig_txts[j].ruxsize<<8);
+        pig.pig_txts[j].ysize=(unsigned short)pig.pig_txts[j].rysize;
+        if(pig.pig_txts[j].data)
+          FREE(pig.pig_txts[j].data);
+        pig.pig_txts[j].f=f;
+        /*readbitmap((char*)pig.pig_txts[j].data,&pig.pig_txts[j], NULL,1);*/
+        /*pig.pig_txts[j].f=NULL;*/
+      }
+    }
+  }
+  return 1;
+} 
 
 void copytxtnums(enum txttypes dest,enum txttypes source)
  {
@@ -231,7 +309,7 @@ void inittxts(void)
      ((pig.rdl_txts[rdlnum-1].pig->type1&2)!=0); }
  /* now set the pointer for the typlists */
  for(txttyp=0;txttyp<txt_door;txttyp++)
-  {
+  {                 
   if(init_test&1)
    fprintf(errf,"textures: typ=%d num=%d\n",txttyp,pig.num_txtlist[txttyp]);
   checkmem(pig.txtlist[txttyp]=MALLOC(sizeof(struct ham_txt *)*

@@ -203,9 +203,9 @@ void l_size_entered(struct w_button *b)
 void r_size_entered(struct w_button *b)
  { float_entered(b,MWT(b,1),65536.0,"%10.4f",1,0.0,100.0); }
 void l_uvcoord_entered(struct w_button *b)
- { float_entered(b,MWT(b,0),32.0,"%10.4f",1,-16.0*64,16.0*64); }
+ { float_entered(b,MWT(b,0),1.0,"%10.0f",1,-16.0*32*64,16.0*32*64); }
 void r_uvcoord_entered(struct w_button *b)
- { float_entered(b,MWT(b,1),32.0,"%10.4f",1,-16.0*64,16.0*64); }
+ { float_entered(b,MWT(b,1),1.0,"%10.0f",1,-16.0*32*64,16.0*32*64); }
 void int_entered(struct w_button *b,int withtagged)
  {
  struct infoitem *i=(struct infoitem *)b->data;
@@ -313,6 +313,7 @@ int makeoptbuttons(struct w_window *w,int num,struct infoitem *is,int y)
  struct w_b_press *b_press;
  int k,n,activate,maxy,cy;
  unsigned long no;
+ short sho;
  long sno;
  float dno;
  char helptxt[100];
@@ -378,7 +379,7 @@ int makeoptbuttons(struct w_window *w,int num,struct infoitem *is,int y)
    case it_coord: case it_size: case it_thingcoord: case it_fl_delay:
    case it_uvcoord:
     activate=getno(i,i->type==it_size||i->type==it_fl_delay||
-     i->type==it_uvcoord ? (void *)&sno : (void *)&dno,NULL); 
+     i->type==it_uvcoord ? (void *)&sno : (void *)&dno,NULL);
     checkmem(b_string=MALLOC(sizeof(struct w_b_string)));
     b_string->max_length=10;
     checkmem(b_string->str=MALLOC(sizeof(char)*11));
@@ -392,7 +393,9 @@ int makeoptbuttons(struct w_window *w,int num,struct infoitem *is,int y)
       b_string->r_string_entered=r_size_entered;
       break;
      case it_uvcoord:
-      sprintf(b_string->str,"%10.4f",sno/32.0);
+      memcpy(&sho,&sno,2);
+      sno=sho;
+      sprintf(b_string->str,"%10.0f",sno/1.0);
       b_string->l_string_entered=l_uvcoord_entered;
       b_string->r_string_entered=r_uvcoord_entered;
       break;
@@ -561,6 +564,7 @@ void drawoptbuttons(struct infoitem *i)
  {
  int activate=0,k,n,drawbmlines=0;
  unsigned long no=0;
+ short sho=0;
  long sno=0;
  float dno=0.0;
  struct wall *w=NULL;
@@ -604,8 +608,11 @@ void drawoptbuttons(struct infoitem *i)
     sprintf(i->b->d.str->str,"%10.4f",dno/65536.0);
    break;
   case it_uvcoord: 
-   if((activate=getno(i,&sno,NULL))!=0)
-    sprintf(i->b->d.str->str,"%10.4f",sno/32.0);
+   if((activate=getno(i,&sho,NULL))!=0)
+   {
+    sno=sho;
+    sprintf(i->b->d.str->str,"%10.0f",sno/1.0);
+   }
    break;
   case it_size: 
    if((activate=getno(i,&sno,NULL))!=0)

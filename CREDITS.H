@@ -24,7 +24,7 @@
 
 const char *cred_txt[] = {
  "------------------------- !! MODIFIED VERSION !! -------------------------",
- "DEVIL - Version "VERSION"c1 - Date: "__DATE__" Time: "__TIME__,
+ "DEVIL - Version "VERSION""LC_VERSION" - Date: "__DATE__" Time: "__TIME__,
  "DESCENT Editor for Vertices,Items and Levels at all",
  "For the latest release (with source code) try:",
  " http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html",

@@ -110,7 +110,7 @@ int main(int argn,char *argc[])
  char* load_file_name = NULL;
  signal(SIGFPE,my_abort); signal(SIGILL,my_abort);
  signal(SIGSEGV,my_abort); signal(SIGTERM,my_abort);
- printf("Devil %sc1\nCompiler: %s\nCompiled: %s %s\n",VERSION,
+ printf("Devil %s%s\nCompiler: %s\nCompiled: %s %s\n",VERSION,LC_VERSION,
   SYS_COMPILER_NAME,__DATE__,__TIME__);
  if(sizeof(float)!=4 || sizeof(long int)!=4 || sizeof(short int)!=2 ||
   sizeof(int)!=4 || sizeof(char)!=1)
