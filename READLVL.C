@@ -15,7 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program (file COPYING); if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-    
+
+#include <dir.h>
+
 #include "structs.h"
 #include "userio.h"
 #include "tools.h"
@@ -33,6 +35,8 @@
 #include "do_light.h"
 #include "readtxt.h"
 #include "readlvl.h"
+
+#include "lac_cfg.h"
 
 enum descent loading_level_version;
 
@@ -750,12 +754,14 @@ struct leveldata *readdbbfile(char *filename)
 struct leveldata *readlevel(char *filename)
  {
  struct leveldata *ld;
- char *pogfilename,*realfilename;
+ char *pogfilename;
+ /* char *realfilename*/
  checkmem(ld=emptylevel());
  if(!readlvldata(filename,ld) || !initlevel(ld)) 
   { closelevel(ld,0); return NULL; }
  if(init.d_ver>=d2_12_reg && !pig.pogfile)
   {
+  /*
   realfilename=strrchr(filename,'/');
   if(!realfilename) realfilename=filename;
   checkmem(pogfilename=MALLOC(strlen(init.pogpath)+strlen(realfilename)+2));
@@ -763,8 +769,42 @@ struct leveldata *readlevel(char *filename)
   strcat(pogfilename,"/");
   strcat(pogfilename,realfilename);
   strcpy(&pogfilename[strlen(pogfilename)-3],"POG");
+  */
+  {
+    char d[MAXDRIVE], p[MAXDIR], f[MAXFILE], e[MAXEXT];
+    fnsplit(filename, d, p, f, e);
+    checkmem(pogfilename=MALLOC(strlen(filename)+1));
+    fnmerge(pogfilename, d, p, f, ".pog");
+  }
   printmsg(TXT_LOOKINGFORPOGFILE,pogfilename);
   changepogfile(pogfilename); FREE(pogfilename);
+  }
+  if((init.d_ver==d1_10_sw) || (d1_10_reg) || (d1_14_reg))
+  {
+    char d[MAXDRIVE], p[MAXDIR], f[MAXFILE], e[MAXEXT];
+    char pg1filename[MAXPATH];
+    FILE* pg1file;
+
+    fnsplit(filename, d, p, f, e);
+    fnmerge(pg1filename, d, p, f, ".pg1");
+    pg1file = fopen(pg1filename,"rb");
+    if(!pg1file)
+    {
+      fnmerge(pg1filename, d, p, f, ".dtx");
+      pg1file = fopen(pg1filename,"rb");
+    }
+    if(!pg1file)
+    {
+      fnmerge(pg1filename, d, p, "devil", ".pg1");
+      pg1file = fopen(pg1filename,"rb");
+    }
+    if(!pg1file)
+    {
+      fnmerge(pg1filename, d, p, "devil", ".dtx");
+      pg1file = fopen(pg1filename,"rb");
+    }
+    if(pg1file)
+      readcustomtxts(pg1file);
   }
  return ld;
  }
@@ -1202,12 +1242,8 @@ void createturnoff(struct leveldata *ld,struct lightsource *ls,
  for(n=ls->effects.head;n->next!=NULL;n=n->next)
   {
   for(i=0;i<6;i++)
-  /* LAC 980402 
    if((n->d.lse->add_light[i*4]>>10)+(n->d.lse->add_light[i*4+1]>>10)+
-    (n->d.lse->add_light[i*4+2]>>10)+(n->d.lse->add_light[i*4+3]>>10)>0)
-  */
-   if((n->d.lse->add_light[i*4]>>10)+(n->d.lse->add_light[i*4+1]>>10)+
-    (n->d.lse->add_light[i*4+2]>>10)+(n->d.lse->add_light[i*4+3]>>10)>5)
+    (n->d.lse->add_light[i*4+2]>>10)+(n->d.lse->add_light[i*4+3]>>10)>theMinDeltaLight)
     {
     checkmem(lc=MALLOC(sizeof(struct changedlight)));
     lc->cube=n->d.lse->cube->no; lc->side=i;

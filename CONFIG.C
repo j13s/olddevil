@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program (file COPYING); if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+#include <dir.h>
 
 #include "structs.h"
 #include "readlvl.h"
@@ -156,6 +157,50 @@ int savestatus(int playlevel)
    if(!savelevel(fname,n->d.lev,playlevel>0 ? n->d.lev==l : -1,0,init.d_ver,0))
     ERRORSAVECFG(f);
    n->d.lev->levelsaved=i;
+  if(((init.d_ver==d1_10_sw) || (d1_10_reg) || (d1_14_reg)) && l!=NULL)
+  {
+    char dr[MAXDRIVE], pa[MAXDIR], fi[MAXFILE], ex[MAXEXT];
+    char pg1filename[MAXPATH], pg1tmpname[MAXPATH];
+    FILE* pg1file, *tmpfile;
+    char* data;
+    int size;
+
+    fnsplit(l->filename, dr, pa, fi, ex);
+    fnmerge(pg1filename, dr, pa, fi, ".pg1");
+    pg1file = fopen(pg1filename,"rb");
+    if(!pg1file)
+    {
+      fnmerge(pg1filename, dr, pa, fi, ".dtx");
+      pg1file = fopen(pg1filename,"rb");
+    }
+    if(!pg1file)
+    {
+      fnmerge(pg1filename, dr, pa, "devil", ".pg1");
+      pg1file = fopen(pg1filename,"rb");
+    }
+    if(!pg1file)
+    {
+      fnmerge(pg1filename, dr, pa, "devil", ".dtx");
+      pg1file = fopen(pg1filename,"rb");
+    }
+    if(pg1file)
+    {
+      fnsplit(fname, dr, pa, fi, ex);
+      fnmerge(pg1tmpname, dr, pa, fi, ".dtx");
+      tmpfile=fopen(pg1tmpname, "wb");
+      fseek(pg1file,0,SEEK_END);
+      size=ftell(pg1file);
+      rewind(pg1file);  
+      checkmem(data=MALLOC(size));
+      if(fread(data,1,size,pg1file)==size)
+      {
+        fwrite(data,1,size,tmpfile);
+      }
+      FREE(data);
+      fclose(pg1file);
+      fclose(tmpfile);
+    }
+   }
    fprintf(f,"%s\n",fname);
    }
   else
@@ -785,6 +830,102 @@ int saveplaymsn(int savetoddir)
    { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
   FREE(data);
   }
+  if(init.d_ver>=d2_12_reg && l!=NULL)
+  {
+    char dr[MAXDRIVE], pa[MAXDIR], fi[MAXFILE], ex[MAXEXT];
+    char hxmfilename[MAXPATH];
+    FILE* hxmfile;
+
+    fnsplit(l->filename, dr, pa, fi, ex);
+    fnmerge(hxmfilename, dr, pa, fi, ".hxm");
+    hxmfile = fopen(hxmfilename,"rb");
+    if(!hxmfile)
+    {
+      fnmerge(hxmfilename, dr, pa, "devil", ".hxm");
+      hxmfile = fopen(hxmfilename,"rb");
+    }
+    if(hxmfile)
+    {
+      if(fwrite("TMPDEVIL.HXM",1,13,f)!=13)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); return 0; }
+      fseek(hxmfile,0,SEEK_END); size=ftell(hxmfile);
+      rewind(hxmfile);  
+      if(fwrite(&size,4,1,f)!=1)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); return 0; }
+      checkmem(data=MALLOC(size));
+      if(fread(data,1,size,hxmfile)!=size)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
+      if(fwrite(data,1,size,f)!=size)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
+      FREE(data);
+      fclose(hxmfile);
+    }
+  }
+  if(((init.d_ver==d1_10_sw) || (d1_10_reg) || (d1_14_reg)) && l!=NULL)
+  {
+    char dr[MAXDRIVE], pa[MAXDIR], fi[MAXFILE], ex[MAXEXT];
+    char pg1filename[MAXPATH], hx1filename[MAXPATH];
+    FILE* pg1file, *hx1file;
+
+    fnsplit(l->filename, dr, pa, fi, ex);
+    fnmerge(pg1filename, dr, pa, fi, ".pg1");
+    pg1file = fopen(pg1filename,"rb");
+    if(!pg1file)
+    {
+      fnmerge(pg1filename, dr, pa, fi, ".dtx");
+      pg1file = fopen(pg1filename,"rb");
+    }
+    if(!pg1file)
+    {
+      fnmerge(pg1filename, dr, pa, "devil", ".pg1");
+      pg1file = fopen(pg1filename,"rb");
+    }
+    if(!pg1file)
+    {
+      fnmerge(pg1filename, dr, pa, "devil", ".dtx");
+      pg1file = fopen(pg1filename,"rb");
+    }
+    if(pg1file)
+    {
+      if(fwrite("TMPDEVIL.PG1",1,13,f)!=13)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); return 0; }
+      fseek(pg1file,0,SEEK_END); size=ftell(pg1file);
+      rewind(pg1file);  
+      if(fwrite(&size,4,1,f)!=1)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); return 0; }
+      checkmem(data=MALLOC(size));
+      if(fread(data,1,size,pg1file)!=size)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
+      if(fwrite(data,1,size,f)!=size)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
+      FREE(data);
+      fclose(pg1file);
+    }
+    fnmerge(hx1filename, dr, pa, fi, ".hx1");
+    hx1file = fopen(hx1filename,"rb");
+    if(!hx1file)
+    {
+      fnmerge(hx1filename, dr, pa, "devil", ".hx1");
+      hx1file = fopen(hx1filename,"rb");
+    }
+    if(hx1file)
+    {
+      if(fwrite("TMPDEVIL.HX1",1,13,f)!=13)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); return 0; }
+      fseek(hx1file,0,SEEK_END); size=ftell(hx1file);
+      rewind(hx1file);  
+      if(fwrite(&size,4,1,f)!=1)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); return 0; }
+      checkmem(data=MALLOC(size));
+      if(fread(data,1,size,hx1file)!=size)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
+      if(fwrite(data,1,size,f)!=size)
+        { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
+      FREE(data);
+      fclose(hx1file);
+    }
+  }
+
  fclose(f);
  return 1;
  }
