@@ -140,11 +140,11 @@ int illum_checkwall(struct cube *c,int w)
    return (c->walls[w]->texture1<pig.num_rdltxts && 
    pig.rdl_txts[c->walls[w]->texture1].pig!=NULL &&
    pig.rdl_txts[c->walls[w]->texture1].txtlistno[txt1_wall]>=0 &&
-   pig.rdl_txts[c->walls[w]->texture1].txtlistno[txt1_normal]<0) ||
+   pig.rdl_txts[c->walls[w]->texture1].txtlistno[txt1_normal]<0)/* ||
    (c->walls[w]->texture2<pig.num_rdltxts && c->walls[w]->texture2!=0 &&
    pig.rdl_txts[c->walls[w]->texture2].pig!=NULL &&
    pig.rdl_txts[c->walls[w]->texture2].txtlistno[txt2_wall]>=0 &&
-   pig.rdl_txts[c->walls[w]->texture2].txtlistno[txt2_normal]<0);
+   pig.rdl_txts[c->walls[w]->texture2].txtlistno[txt2_normal]<0) */;
    break;
   case door1_onlyswitch: return 1; break;
   }
@@ -496,7 +496,8 @@ void createturnoff(struct lightsource *ls)
  i=ls->cube->d.c->walls[(int)ls->w]->texture1;
  j=ls->cube->d.c->walls[(int)ls->w]->texture2;
  if(i<0 || i>=pig.num_rdltxts || j<0 || j>=pig.num_rdltxts || 
-  (pig.rdl_txts[i].shoot_out_txt<0 && pig.rdl_txts[j].shoot_out_txt<0))
+  (pig.rdl_txts[i].shoot_out_txt<0 && pig.rdl_txts[j].shoot_out_txt<0
+   && pig.rdl_txts[i].anim_seq<0 && pig.rdl_txts[j].anim_seq<0))
   {
   /* now check if the light is turned out by a switch */
   for(n=l->sdoors.head,j=0;n->next!=NULL && !j;n=n->next)
@@ -824,7 +825,7 @@ void dec_setlsfile(int ec)
  printmsg(TXT_LSFILENAME,init.lightname);
  }
 
-/* this is not completed.... */
+/* this is not completed.... 
 void dec_modifylseffect(int ec)
  {
  if(!l || !view.pcurrcube) { printmsg(TXT_NOLEVEL); return; }
@@ -832,3 +833,4 @@ void dec_modifylseffect(int ec)
  if(!view.pcurrwall || !view.pcurrwall->ls)
   { printmsg(TXT_NOLIGHTSOURCE); return; } 
  }
+ */

@@ -2,7 +2,8 @@
     THIS IS NOT THE CODE USED IN V2.2i. I HAVE NOT TESTED THIS CODE.
     I think it should be working but I'm not sure. Maybe the uvl-coords
     are not shifted the right way. If you want to have a source code
-    which is working, use the source for V2.2h
+    which is working, use the source for V2.2h. You may use the psysfast.o
+    file which you find in this directory to link.
     Sorry for all that, but I don't know if I want to use parts of the code
     for V2.2i commercially. The changes made in V2.2i are only performance
     (some routines were coded in assembler and such things...), so you may
@@ -301,8 +302,8 @@ void psys_256_plottxt(struct polygon *p,struct render_point *start,
    
    
 /* The plottxt functions use the y-coord with negative sign.!!!! */
-void psys_256_transparent_plottxt(struct polygon *p,struct render_point *start,
- unsigned long offset,unsigned char *txt_data)
+void psys_256_transparent_plottxt(struct polygon *p,
+ struct render_point *start,unsigned long offset,unsigned char *txt_data)
  {
  struct render_point *ppl,*ppr;
   /* current point on the left/right edge */

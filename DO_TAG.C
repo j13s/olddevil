@@ -75,15 +75,16 @@ void dec_usepnttag(int ec)
 void dec_tagspecial(int ec)
  {
  struct node *n;
- int i,p;
+ int i;
  if(!view.pcurrcube) { printmsg(TXT_NOCURRCUBE); return; }
  switch(view.currmode)
   {
   case tt_edge: 
-   p=wallpts[view.currwall][view.curredge];
-   for(i=0;i<3;i++)
-    if(view.pcurrcube->d.c->walls[wallno[p][0][i]])
-     switch_tag(tt_edge,view.pcurrcube,wallno[p][0][i],wallno[p][1][i]);
+   for(n=view.pcurrcube->d.c->p[wallpts[view.currwall][view.curredge]]->
+    d.lp->c.head;n->next!=NULL;n=n->next)
+    for(i=0;i<3;i++)
+     if(n->d.n->d.c->walls[wallno[n->no][0][i]])
+      switch_tag(tt_edge,n->d.n,wallno[n->no][0][i],wallno[n->no][1][i]);
    break;
   case tt_pnt:
    for(n=view.pcurrpnt->d.lp->c.head;n->next!=NULL;n=n->next)

@@ -552,7 +552,8 @@ int readconfig(void)
       view.ec_keycodes[i].key,view.ec_keycodes[i].event); return 0; }
   }
  my_assert(findmarker(f,"DESCENTVERSION",&i));
- if(i!=d1_14_reg && i!=d1_10_reg && i!=d2_10_reg && i!=d2_11_reg) i=d2_11_reg;
+ if(i!=d1_14_reg && i!=d1_10_reg && i!=d2_10_reg && i!=d2_11_reg &&
+    i!=d2_12_reg) i=d2_12_reg;
  init.d_ver=i;
  my_assert(findmarker(f,"RESOLUTION",&i));
  if(i<0 && i>=NUM_RESOLUTIONS) i=0;
@@ -675,14 +676,20 @@ int readconfig(void)
   for(i=0;i<pig.num_rdltxts;i++)
    if(fread(&pig.rdl_txts[i],20,1,hamf)!=1)
     { printf(TXT_CANTREADHAMFILE,hamfname); return 0; }
+   else if(init_test&1)
+    fprintf(errf,
+     "Read HAM: i=%d f=%lx l=%lx hp=%lx an=%hd sot=%hd vx=%hd vy=%hd\n",i,
+     pig.rdl_txts[i].flags&0xff,pig.rdl_txts[i].light,
+     pig.rdl_txts[i].hitpoints,pig.rdl_txts[i].anim_seq,
+     pig.rdl_txts[i].shoot_out_txt,pig.rdl_txts[i].xspeed,
+     pig.rdl_txts[i].yspeed); 
   FREE(hamfname);
   }
  else { printf("No texturelist (No Descent 2 directory).\n"); return 0; }
  FREE(hamname);
- if(!newpigfile(pig.default_pigname))
+ if(!newpigfile(pig.default_pigname,NULL))
   { strcpy(buffer,pig.default_pigname); buffer[strlen(buffer)-4]=0; 
     printf("Can't open pigfile '%s'??\n",buffer); return 0; }
- inittxts();
  fclose(f);
  return 1;
  }
@@ -724,6 +731,26 @@ int saveplaymsn(int savetoddir)
  fclose(sf);
  if(fwrite(data,1,size,f)!=size)
   { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
- fclose(f); FREE(data);
+ FREE(data);
+ if(init.d_ver>=d2_12_reg && l!=NULL && l->pogfile!=NULL)
+  {
+  if(fwrite("TMPDEVIL.POG",1,13,f)!=13)
+   { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); return 0; }
+  fseek(l->pogfile,0,SEEK_END); size=ftell(l->pogfile);
+  rewind(l->pogfile);  
+  if(fwrite(&size,4,1,f)!=1)
+   { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); return 0; }
+  checkmem(data=MALLOC(size));
+  if(fread(data,1,size,l->pogfile)!=size)
+   { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
+  if(fwrite(data,1,size,f)!=size)
+   { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
+  strcpy(sfname,init.cfgpath); strcat(sfname,"/"); strcat(sfname,CFG_CURNAME);
+  strcat(sfname,".POG");
+  if((sf=fopen(sfname,"wb"))!=NULL)
+   { fwrite(data,1,size,sf); fclose(sf); }
+  FREE(data);
+  }
+ fclose(f);
  return 1;
  }

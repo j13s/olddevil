@@ -192,7 +192,7 @@ void b_r_lockwall(struct w_button *b)
  else printmsg(TXT_UNLOCKEDTAGGEDSIDES,i);
  plotlevel();
  }
-  
+
 void b_selectmacro(struct w_button *b)
  {
  struct node *n;
@@ -215,7 +215,7 @@ void b_refreshtagno(enum infos what)
   else
    sprintf(b_optwins[what][7]->d.str->str,"%.5d",l->tagged[what].size);
  }
-  
+
 struct w_b_press b_prev = { 25,5,b_prevobj,NULL,b_prevobj,b_firstobj };
 struct w_b_press b_next = { 25,5,b_nextobj,NULL,b_nextobj,b_lastobj };
 int init_prev_no_next(enum infos what)
@@ -296,7 +296,8 @@ int init_prev_no_next(enum infos what)
    checkmem(b_optwins[what][6]=w_addstdbutton(optionwins[what],w_b_choose,
     0,b_optwins[what][5]->ypos+b_optwins[what][5]->ysize,
     w_xwininsize(optionwins[what]),-1,TXT_MACRO,view.b_macros,0));
-   y=b_optwins[what][6]->ypos+b_optwins[what][6]->ysize;  
+   y=b_optwins[what][6]->ypos+b_optwins[what][6]->ysize;
+   b_optwins[what][8]=NULL; 
    break;   
   case in_wall:
    checkmem(b_default=MALLOC(sizeof(struct w_b_switch)));

@@ -339,7 +339,7 @@ void click_in_level(struct w_window *w,struct w_event *we)
   circle until the button is released again */
  my_assert(view.currmode<tt_number);
  start_scansequence(w,we->x); nearest[0]=NULL; ctrl_pressed=NULL;
- scan_setclipping(w,1); t=0;
+ scan_setclipping(w,1); t=0; ws=*we->ws;
  do
   {
   first=newpos_scansequence(w,wx,wy,run_loop[view.currmode],nearest);
@@ -347,7 +347,7 @@ void click_in_level(struct w_window *w,struct w_event *we)
    ctrl_pressed=nearest[0] ? nearest[0]->data : NULL;
   if((ws.kbstat&ws_ks_ctrl)==0 && t==1 && nearest[0] && 
    nearest[0]->data==ctrl_pressed && nearest[0]->wall!=7 /* no corr */)
-   { 
+   {
    ctrl_pressed=NULL;
    switch(view.currmode)
     {

@@ -219,13 +219,16 @@ void setthingcube(struct thing *t)
   {
   for(n=t->nc->d.c->things.head;n->next!=NULL;n=n->next)
    if(n->d.t==t) break;
-  my_assert(n->next!=NULL);
-  unlistnode(&t->nc->d.c->things,n);
-  /* check the neighbours */
-  for(w=0;w<6;w++)
-   if(t->nc->d.c->nc[w] && checkpntcube(t->nc->d.c->nc[w],&t->p[0])) 
-    break;
-  t->nc=(w<6 ? t->nc->d.c->nc[w] : NULL);
+  if(n->next!=NULL)
+   {
+   unlistnode(&t->nc->d.c->things,n);
+   /* check the neighbours */
+   for(w=0;w<6;w++)
+    if(t->nc->d.c->nc[w] && checkpntcube(t->nc->d.c->nc[w],&t->p[0])) 
+     break;
+   t->nc=(w<6 ? t->nc->d.c->nc[w] : NULL);
+   }
+  else t->nc=NULL;
   }
  else n=NULL;
  /* still no cube found? then brute force: Check all cubes */

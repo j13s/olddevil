@@ -608,7 +608,7 @@ struct leveldata *emptylevel(void)
   { checkmem(ld->pigname=MALLOC(strlen(l->pigname)+1));
     strcpy(ld->pigname,l->pigname); }
  else ld->pigname=NULL;
- ld->w=NULL; ld->exitcube=NULL; ld->exitwall=0;
+ ld->pogfile=NULL; ld->w=NULL; ld->exitcube=NULL; ld->exitwall=0;
  ld->reactor_time=0x1e; ld->reactor_strength=0xffffffff;
  ld->levelsaved=1; ld->levelillum=0; ld->secretcube=ld->secretstart=NULL; 
  for(i=0;i<9;i++) ld->secret_orient[i]=stdorientation[i];
@@ -637,9 +637,19 @@ struct w_window plot_win={ 0,0,0,0,0,0,0,0,NULL,0,NULL,
 struct leveldata *readlevel(char *filename)
  {
  struct leveldata *ld;
+ char *pogfilename;
  checkmem(ld=emptylevel());
  if(!readlvldata(filename,ld) || !initlevel(ld)) 
   { closelevel(ld,0); return NULL; }
+ if(init.d_ver>=d2_12_reg)
+  {
+  checkmem(pogfilename=MALLOC(strlen(filename)+1));
+  strcpy(pogfilename,filename);
+  strcpy(&pogfilename[strlen(pogfilename)-3],"POG");
+  printmsg(TXT_LOOKINGFORPOGFILE,pogfilename);
+  ld->pogfile=fopen(pogfilename,"rb"); FREE(pogfilename);
+  }
+ else ld->pogfile=NULL;
  return ld;
  }
 void newlevelwin(struct leveldata *ld,int shrunk)
@@ -712,7 +722,8 @@ void changecurrentlevel(struct leveldata *ld)
  w_refreshstart(view.movewindow);
  w_drawbutton(view.levelbutton);
  w_refreshend(view.movewindow);
- newpigfile(ld!=NULL ? ld->pigname : pig.default_pigname);
+ newpigfile(ld!=NULL ? ld->pigname : pig.default_pigname,
+  ld!=NULL ? ld->pogfile : NULL);
  drawopts(); 
  }
  
@@ -743,6 +754,7 @@ int closelevel(struct leveldata *ld,int warn)
   if(ld==l) changecurrentlevel(NULL);
   if(ld->n) killnode(&view.levels,ld->n);
   }
+ if(ld->pogfile) fclose(ld->pogfile);
  for(i=0;i<tt_number;i++) freelist(&ld->tagged[i],free);
  freelist(&ld->lines,free);
  freelist(&ld->pts,free);
@@ -1163,7 +1175,8 @@ int savelevel(char *fname,struct leveldata *ld,int testlevel,int changename,
  if((f=fopen(fname,"wb"))==NULL) return 0;
  switch(descent_version)
   {
-  case d2_10_reg: case d2_11_reg: ret=D2_REG_savelevel(f,ld); break;
+  case d2_10_reg: case d2_11_reg: case d2_12_reg:
+   ret=D2_REG_savelevel(f,ld); break;
   case d1_10_reg: case d1_14_reg: ret=D1_REG_savelevel(f,ld); break;
   default: return 0;
   }

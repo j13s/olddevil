@@ -1,6 +1,8 @@
 makeall: d.exe 
 include depend
 # include wins/makefile
+# plotsys.o is not linked. Instead psysfast.o is used (see file "link" and
+# plotsys.c).
 OBJ=devil.o userio.o tools.o tag.o insert.o calctxt.o initio.o config.o \
  askcfg.o plot.o plottxt.o plotsys.o click.o savetool.o readlvl.o \
  readtxt.o do_event.o do_stat.o do_ins.o do_mod.o do_light.o do_move.o \

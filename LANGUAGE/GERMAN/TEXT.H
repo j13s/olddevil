@@ -24,6 +24,7 @@
  "Es existiert in dem Level kein geheimer Ausgang,\n"\
  "fÅr den dieser Startpunkt gebraucht wÅrde."
 /* readlvl.c */
+#define TXT_NOCUBEFORFL "Kann WÅrfel %d fÅr flackerndes Licht %d nicht finden."
 #define TXT_CORRINWORK "Der Hexer ist in diesem Level aktiv.\n"\
  "Der Level kann erst geschlossen werden,\n"\
  "wenn der Hexer deaktiviert worden ist."
@@ -103,11 +104,12 @@
 #define TXT_LEVELREAD "Level %s\nvon Datei %s gelesen."
 /* grfx.h */
 #define TXT_INFO "Info"
-#define TXT_MOVEYOU "Dich"
-#define TXT_MOVEOBJ "Objekt"
+#define TXT_MOVEYOU "Bewege Dich"
+#define TXT_MOVECURRENT "WÅrfel auswÑhlen"
+#define TXT_MOVEOBJ "Bewege Objekt"
 #define TXT_MOVETXT "Texture"
 #define TXT_MODIFYWHAT "Bearbeite:"
-#define TXT_MOVEMODE "Bewege:"
+#define TXT_MOVEMODE "Modus:"
 #define TXT_LEVELPIGFILE "Texture-Set:"
 #define TXT_BUTTONS "Kontrollpult"
 #define TXT_CANTINITWINS "Kann Fenstersystem nicht initialisieren.\n"\
@@ -287,6 +289,7 @@
 #define TXT_REALLYDELTAGGED "Wirklich die %d markierten Objekte lîschen?"
 #define TXT_CANTINSERTTHING "Kann Ding nicht einfÅgen!???"
 /* do_opts.c */
+#define TXT_LIGHTEFFECTS "ausgesendetes Licht"
 #define TXT_EMPTYWALLNOTLOCK "Kann eine Seite ohne Mauer nicht sperren."
 #define TXT_LOCKEDTAGGEDSIDES "%d Seiten gesperrt."
 #define TXT_UNLOCKEDTAGGEDSIDES "%d Seiten entsperrt ;-)."
@@ -473,3 +476,13 @@
 #define TXT_FB_RESETUV "UV-Koordinaten von aktueller Seite Åbernehmen?"
 #define TXT_FB_TITLE "Texture anpassen"
 #define TXT_FB_SAVE "énderungen schreiben?"
+/* readtxt.c */
+#define TXT_POGINVALIDINDEX \
+ "UngÅltiger Index in Pog-Datei: %d fÅr %d. Texture"
+#define TXT_POGINVALIDSIZE "Texture %d in Pog-Datei hat Grî·e %d*%d != 64*64."
+#define TXT_POGFILENOTCOMPLETE \
+ "Pog-Datei nicht vollstÑndig: Abgebrochen bei Textureeintrag %d."
+#define TXT_READINGPOGFILE "Lese zusÑtzliche Textures..."
+#define TXT_LOOKINGFORPOGFILE "Suche Pog-Datei %s..."
+#define TXT_POGERRORINHEADER "Kann Kopf von Pog-Datei nicht lesen."
+

@@ -87,7 +87,8 @@ void dec_playlevel(int ec)
  if(l==NULL) { printmsg(TXT_NOLEVEL); return; }
  if(ec==ec_savetodescdir)
   { if(savestatus(1) && saveplaymsn(1)) 
-     printmsg(TXT_LEVELSAVED,l->fullname,"Devil Play Level"); }
+     printmsg(TXT_LEVELSAVED,l->fullname,"Devil Play Level");
+    l->levelsaved=0; }
  else if(savestatus(1) && saveplaymsn(0)) { closegrph(); exit(0); }
  }
 
@@ -241,6 +242,7 @@ void dec_movefactor(int ec)
   {
   case mt_you: view.movefactor*=f; break;
   case mt_obj: view.pmovefactor*=f; break;
+  case mt_current: case mt_texture: break;
   default: my_assert(0);
   }
  drawopt(in_internal);
@@ -253,6 +255,7 @@ void dec_rotangle(int ec)
   {
   case mt_you: view.rotangle*=f; break;
   case mt_obj: view.protangle*=f; break;
+  case mt_current: case mt_texture: break;
   default: my_assert(0);
   }
  drawopt(in_internal);
@@ -437,5 +440,6 @@ void (*do_event[ec_num_of_codes])(int ec)=
    dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,
    dec_savewinpos,dec_loadwinpos,dec_reinitgrfx,dec_changeview,
    dec_render,dec_render,dec_render,dec_render,dec_tagflatsides,
-   dec_usepnttag,dec_nextedge,dec_prevedge,dec_edgemode,dec_makestdside };
+   dec_usepnttag,dec_nextedge,dec_prevedge,dec_edgemode,dec_makestdside,
+   dec_setcornerlight };
 

@@ -1,6 +1,6 @@
 /* Differences between Descent versions */
 enum descent { d1_10_sw,d1_10_reg,d1_14_reg,d2_10_sw,d2_10_reg,
- d2_11_reg,desc_number };
+ d2_11_reg,d2_12_reg,desc_number };
 extern const char *extnames[desc_number];
 extern const char *ininames[desc_number];
 extern const char *vernames[desc_number];
@@ -10,7 +10,7 @@ enum sdoortypes { sdtype_none,sdtype_door,sdtype_cube,sdtype_side };
 /* maximum number for Descent objects: */
 #define MAX_DESCENT_VERTICES (init.d_ver>=d2_10_reg ? 3600 : 2800)
 #define MAX_DESCENT_CUBES (init.d_ver>=d2_10_reg ? 900 : 800)
-#define MAX_DESCENT_WALLS (init.d_ver>=d2_10_reg ? 175 : 254)
+#define MAX_DESCENT_WALLS (init.d_ver>=d2_10_reg ? 254 : 175)
 #define MAX_DESCENT_OBJECTS 350
 #define MAX_DESCENT_RCENTERS 20
 #define MAX_DESCENT_SWITCHES 100

@@ -138,7 +138,15 @@ int checkd2version(char *path)
    { 
    buffer[15]=0;
    if(strncmp(buffer,"DESCENT 2  v1.",14)==0)
-    { fclose(f);return buffer[14]=='0' ? d2_10_reg : d2_11_reg; }
+    {
+    fclose(f);
+    switch(buffer[14])
+     {
+     case '0': return d2_10_reg;
+     case '1': return d2_11_reg;
+     default: return d2_12_reg;
+     }
+    }
    }
   printf("Can't automatically determine the Descent 2 version.\n");
   fclose(f);
@@ -203,7 +211,7 @@ int askconfigdata(int *d_ver,char *devilpath,char *d1path,char *d2path,
      { strcpy(missionpath,d2path); strcat(missionpath,"/missions");
        *d_ver=checkd2version(d2path);
        printf("Confirmed Descent 2 version %s in %s\n",
-       *d_ver==d2_10_reg ? "1.0" : "1.1/1.2",d2path); }
+       *d_ver==d2_10_reg ? "1.0" : (*d_ver==d2_11_reg ? "1.1":"1.2"),d2path); }
     else /* determine Descent version */
      { strcpy(missionpath,d1path); *d_ver=checkd1version(d1path); 
        printf("Confirmed Descent 1 version %s in %s\n",

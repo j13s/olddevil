@@ -78,7 +78,7 @@
 #define MAX_OBJSTR_LENGTH 15
 
 enum tagtypes { tt_cube,tt_wall,tt_edge,tt_pnt,tt_thing,tt_door,tt_number };
-enum movetypes { mt_you,mt_obj,mt_texture,mt_number };
+enum movetypes { mt_you,mt_obj,mt_current,mt_texture,mt_number };
 enum infos { in_cube,in_wall,in_edge,in_pnt,in_thing,in_door,in_internal,
  in_number };
 enum datastructs { ds_cube,ds_wall,ds_corner,ds_thing,ds_door,ds_internal,
@@ -465,6 +465,7 @@ struct leveldata
  struct corridor *cur_corr;
  struct saved_position saved_pos[NUM_SAVED_POS];
  int x_size[2],y_size[2];  /* window size for single&double mode */
+ FILE *pogfile; /* !=NULL if there is a pogfile for the level */
  };
 struct objtype
  {
@@ -553,9 +554,11 @@ struct viewdata
  int whichdisplay NONANSI_FLAG; /* ==0 one display, ==1 two for each level.*/
  int doubleclick NONANSI_FLAG;
  int render NONANSI_FLAG;
- unsigned short int gamma_corr NONANSI_FLAG; 
+/* 162 */
+ unsigned short int gamma_corr NONANSI_FLAG;
+/* 164 */
  int coord_axis NONANSI_FLAG;
-/* 168 */ 
+ int flip_y_axis NONANSI_FLAG;
  float minclicksodist NONANSI_FLAG;
   /* minimum distance screen<->object for clicking */
  struct point e[3]; /* orientation of screen (left-handed system) */
@@ -592,13 +595,15 @@ enum txttypes { txt1_normal,txt2_normal,txt1_wall,txt2_wall,txt_door,
  txt_all,txt_thing,txt_number };
 struct pig_txt
  {
- char rname[9] NONANSI_FLAG;
+ char rname[8] NONANSI_FLAG;
+ unsigned char frame_num NONANSI_FLAG;
  unsigned char rlxsize NONANSI_FLAG;
  unsigned char rysize NONANSI_FLAG;
  unsigned char ruxsize NONANSI_FLAG;
  unsigned char type1 NONANSI_FLAG,type2 NONANSI_FLAG;
  unsigned long int offset NONANSI_FLAG;
  /* my stuff */
+ FILE *f; /* from which file comes this texture (PIG/POG) */
  char name[9];
  unsigned short xsize,ysize;
  int pigno,num_anims,anim_t2;
@@ -609,7 +614,7 @@ struct pig_txt
 #define NUM_SECURITY 3
 struct palette
  { char name[9]; unsigned char palette[3*256]; 
-   unsigned char lighttables[(NUM_SECURITY*2+NUM_LIGHTCOLORS)*256]; };
+  unsigned char *lighttables,*mem_lighttables; };
 struct ham_txt
  {
  unsigned long flags NONANSI_FLAG,light NONANSI_FLAG,hitpoints NONANSI_FLAG;
@@ -644,7 +649,6 @@ struct pigdata
   value is rdl_num */
  struct ham_txt **anims; /* Array of pointer to txts for doors,
   index is number of animation in rdl-file */
- int pig_bmoffset; /* start of texture data in pig-file */
  };
 struct initdata
  {

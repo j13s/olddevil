@@ -28,18 +28,22 @@
 #include "do_event.h"
 #include "askcfg.h"
 
-const char *extnames[desc_number]={ "SDL","RDL","RDL","SL2","RL2","RL2" };
+const char *extnames[desc_number]=
+ { "SDL","RDL","RDL","SL2","RL2","RL2","RL2" };
 #ifdef GER
 const char *ininames[desc_number]=
- { NULL,"d1r_g.ini","d1r_g.ini",NULL,"d2r_g_10.ini","d2r_g_11.ini" };
+ { NULL,"d1r_g.ini","d1r_g.ini",NULL,"d2r_g_10.ini","d2r_g_11.ini",
+   "d2r_g_11.ini" };
 #else 
 const char *ininames[desc_number]=
- { NULL,"d1reg.ini","d1reg.ini",NULL,"d2reg_10.ini","d2reg_11.ini" };
+ { NULL,"d1reg.ini","d1reg.ini",NULL,"d2reg_10.ini","d2reg_11.ini",
+   "d2reg_11.ini" };
 #endif 
 const char *vernames[desc_number]=
  { "Descent 1 V1.0 shareware","Descent 1 V1.0 registered",
    "Descent 1 V1.4 (or higher) registered","Descent 2 V1.0 shareware",
-   "Descent 2 V1.0 registered","Descent 2 V1.1 (or higher) registered" };
+   "Descent 2 V1.0 registered","Descent 2 V1.1 registered",
+   "Descent 2 V1.2 (or higher) registered" };
    
 struct viewdata view;
 struct initdata init;

@@ -20,6 +20,7 @@
  "Descent will use the start with the lower number."
 #define TXT_NOSECRETDOORFORSTART "No secret exit for secret start."
 /* readlvl.c */
+#define TXT_NOCUBEFORFL "Can't find cube %d for flickering light %d."
 #define TXT_CORRINWORK "The wizard is active in this level.\n"\
  "Can't close the level, you must first deactivate the wizard."
 #define TXT_CONVTEXTURES \
@@ -91,6 +92,7 @@
 #define TXT_INFO "Info"
 #define TXT_MOVEYOU "Move you"
 #define TXT_MOVEOBJ "Move object"
+#define TXT_MOVECURRENT "Select cube"
 #define TXT_MOVETXT "Move texture"
 #define TXT_MODIFYWHAT "Modify what:"
 #define TXT_MOVEMODE "Movemode:"
@@ -252,6 +254,7 @@
  "%d tagged objects?"
 #define TXT_CANTINSERTTHING "Can't insert thing???"
 /* do_opts.c */
+#define TXT_LIGHTEFFECTS "Light from side"
 #define TXT_DOORNOTDEFWALL "Can't use a wall as a default side."
 #define TXT_EMPTYNOTDEFWALL "Can't use a empty side as a default side."
 #define TXT_EMPTYWALLNOTLOCK "Can't lock a side without a texture."
@@ -428,3 +431,11 @@
 #define TXT_FB_RESETUV "Reset uv-coords with current side?"
 #define TXT_FB_TITLE "Fit texture"
 #define TXT_FB_SAVE "Save changes?"
+/* readtxt.c */
+#define TXT_POGINVALIDINDEX "Invalid index in pogfile: %d for %d. texture."
+#define TXT_POGINVALIDSIZE "Texture %d in pogfile has size %d*%d != 64*64."
+#define TXT_POGFILENOTCOMPLETE \
+ "Pogfile not complete: Aborted at directory entry %d."
+#define TXT_READINGPOGFILE "Reading additional textures..."
+#define TXT_LOOKINGFORPOGFILE "Searching for pogfile %s..."
+#define TXT_POGERRORINHEADER "Can't read header from pogfile."

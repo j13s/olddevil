@@ -2,9 +2,9 @@
     Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de) 
     Further info see .c-files. */
 
-void psys_plottxt(struct polygon *p,struct render_point *start,
+void psys_256_plottxt(struct polygon *p,struct render_point *start,
  unsigned long offset,unsigned char *txt_data);
-void psys_plottransparent(struct polygon *p,struct render_point *start,
+void psys_256_transparent_plottxt(struct polygon *p,struct render_point *start,
  unsigned long offset,unsigned char *txt_data);
 void psys_plotline(int o_x1,int o_y1,int o_x2,
  int o_y2,int color,int xor);

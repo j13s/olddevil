@@ -94,7 +94,7 @@ void b_changepigfile(struct w_button *b)
  checkmem(l->pigname=MALLOC(strlen(b->d.ls->options[b->d.ls->selected])+5));
  strcpy(l->pigname,b->d.ls->options[b->d.ls->selected]);
  strcat(l->pigname,".256");
- newpigfile(l->pigname);
+ newpigfile(l->pigname,l->pogfile);
  }
  
 int mbls[6][110]=
@@ -112,7 +112,8 @@ int mbls[6][110]=
    { 0,2,1,10,1, 0,2,-1,10,-1, 0,-10,0,2,5, 0,-10,0,2,-5, 0,2,5,2,-5 },
    { 0,-1,-2,-1,-10, 0,1,-2,1,-10, 0,0,10,5,-2, 0,0,10,-5,-2, 0,5,-2,-5,-2 },
    { 0,-2,1,-10,1, 0,-2,-1,-10,-1, 0,10,0,-2,5, 0,10,0,-2,-5, 0,-2,5,-2,-5 }};
-const char *movemodes[mt_number]={ TXT_MOVEYOU,TXT_MOVEOBJ,TXT_MOVETXT };
+const char *movemodes[mt_number]={ TXT_MOVEYOU,TXT_MOVEOBJ,TXT_MOVECURRENT,
+				   TXT_MOVETXT };
 struct w_button *b_movemode,*b_currmode,*b_movebts[6],*b_pigfile;
 unsigned char *movebuttondata[6];
 int movebuttondsize[6];
@@ -329,7 +330,7 @@ void initgrph(int showtitle)
   { fprintf(errf,TXT_NOMENUFILE,init.menuname); my_exit(); }
  my_assert(w_initmenu(f,do_event,ec_num_of_codes));
  fclose(f); pigname=pig.current_pigname; pig.current_pigname=NULL;
- newpigfile(pigname); FREE(pigname);
+ newpigfile(pigname,NULL); FREE(pigname);
  /* draw the cursors (init the cursor data) */
  cntrlcursor_ysize=altcursor_ysize=w_titlebarheight();
  cntrlcursor_xsize=(ws_pixstrlen(TXT_TAG)+2+3)/4*4;

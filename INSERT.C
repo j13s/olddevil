@@ -281,6 +281,7 @@ void deletesdoor(struct node *n)
  
 void deletesingledoor(struct node *n)
  {
+ int i;
  my_assert(n!=NULL && n->d.d->c!=NULL);
  n->d.d->c->d.c->d[n->d.d->wallnum]=NULL;
  if(n->d.d->c->d.c->nc[n->d.d->wallnum])
@@ -291,6 +292,7 @@ void deletesingledoor(struct node *n)
   if(n->d.d->c->d.c->walls[n->d.d->wallnum]->fl)
    freenode(&l->flickeringlights,n->d.d->c->d.c->walls[n->d.d->wallnum]->fl,
     free);
+  for(i=0;i<4;i++) untag(tt_edge,n->d.d->c,n->d.d->wallnum,i);
   FREE(n->d.d->c->d.c->walls[n->d.d->wallnum]);
   n->d.d->c->d.c->walls[n->d.d->wallnum]=NULL;
   if(view.pcurrwall==n->d.d->w) view.pcurrwall=NULL;
@@ -404,11 +406,15 @@ int changepnt(struct node *oldp,struct node *newp,struct node *sn)
   n->d.c->p[pn]=newp;
   if(addnode(&newp->d.lp->c,cn->no,n)==NULL) return 0;
   for(i=0;i<3;i++)
+   {
    if(n->d.c->walls[wallno[pn][0][i]])
-    n->d.c->walls[wallno[pn][0][i]]->p[wallno[pn][1][i]]=newp; 
+    n->d.c->walls[wallno[pn][0][i]]->p[wallno[pn][1][i]]=newp;
+   n->d.c->recalc_polygons[wallno[pn][0][i]]=1;
+   }
   }
- for(cn=(sn==NULL) ? oldp->d.lp->c.head : sn->next;cn->next!=NULL;cn=cn->next)
-  freenode(&oldp->d.lp->c,cn,NULL);
+ for(cn=((sn==NULL) ? oldp->d.lp->c.head : sn->next)->next;cn!=NULL;
+     cn=cn->next)
+  freenode(&oldp->d.lp->c,cn->prev,NULL);
  return 1;
  }
  
@@ -451,6 +457,7 @@ int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
    free the new four */
  for(j=0;j<4;j++)
   {
+  my_assert(cp[j]>=0 && cp[j]<4);
   pnts[j][0]=c2->p[wallpts[w2][cp[j]]];/*old pointer for freenode*/
   pnts[j][1]=c1->p[wallpts[w1][j]]; /* new pointer */
   }
@@ -459,15 +466,15 @@ int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
   on[k]=pnts[k][1]->d.lp->c.tail;
   if(changepnt(pnts[k][0],pnts[k][1],NULL)==0) i=k;
   }
-  /* test if connection is correct */
+ /* test if connection is correct */
  for(k=0;k<4 && i==-1;k++)
-  if(testpnt(pnts[k][1])==0) i=3;
+  if(testpnt(pnts[k][1])==0) i=3; 
  if(i!=-1)
   {
   for(k=0;k<=i;k++)
    changepnt(pnts[k][1],pnts[k][0],on[k]);
   return 0;
-  } 
+  }
  /* connection is correct: let's kill all old things */
  if(c2->walls[w2]->ls) 
   freenode(&l->lightsources,c2->walls[w2]->ls,freelightsource);
@@ -477,19 +484,19 @@ int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
   freenode(&l->lightsources,c1->walls[w1]->ls,freelightsource);
  if(c1->walls[w1]->fl)
   freenode(&l->flickeringlights,c1->walls[w1]->fl,free);
+ for(j=0;j<4;j++)
+  { untag(tt_edge,nc1,w1,j); untag(tt_edge,nc2,w2,j); } 
  c2->nc[w2]=nc1; FREE(c2->walls[w2]); c2->walls[w2]=NULL;
  c1->nc[w1]=nc2; FREE(c1->walls[w1]); c1->walls[w1]=NULL;
  /* free old points and calculate new textures  */
  for(j=0;j<4;j++)
-  {
   if(pnts[j][0]->no!=pnts[j][1]->no)
    {
-   my_assert(pnts[j][0]->d.lp->c.size==0)
    if(view.pcurrpnt==pnts[j][0]) view.pcurrpnt=pnts[j][1];
-   freenode(pts==NULL ? &l->pts : pts,pnts[j][0],free);   
+   my_assert(pnts[j][0]->d.lp->c.size==0)
+   freenode(pts==NULL ? &l->pts : pts,pnts[j][0],free);
    newcorners(pnts[j][1]);  
    }
-  } 
  if((view.pdefcube==nc1 && view.defwall==w1) ||
   (view.pdefcube==nc2 && view.defwall==w2))
   { view.pdeflevel=NULL; view.pdefcube=NULL; view.defwall=0; }
@@ -497,7 +504,6 @@ int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
   if(l->exitcube!=NULL && ((l->exitcube->no==nc1->no && l->exitwall==w1) || 
    (l->exitcube->no==nc2->no && l->exitwall==w2))) l->exitcube=NULL;
  view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
- nc1->d.c->recalc_polygons[w1]=1; nc2->d.c->recalc_polygons[w2]=1;
  printmsg(TXT_CUBESCONNECTED,nc1->no,w1,nc2->no,w2);
  return 1;
  }

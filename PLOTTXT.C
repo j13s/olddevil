@@ -408,12 +408,24 @@ void initfilledside(struct cube *cube,int wall)
 
 unsigned char *gettexture(int rdlno,char txt1or2)
  {
- my_assert(rdlno<pig.num_rdltxts && pig.rdl_txts[rdlno].pig);
+ static unsigned char unknown_t1[64*64],unknown_t2[64*64];
+ int i;
+ if(rdlno<0 || rdlno>=pig.num_rdltxts || pig.rdl_txts[rdlno].pig==NULL)
+  {
+  if(txt1or2==1)
+   { memset(unknown_t1,view.color[HILIGHTCOLORS+1],64*64); return unknown_t1; }
+  else
+   { memset(unknown_t2,0xff,64*64);
+     for(i=0;i<64;i++)
+      unknown_t2[i*64+31]=unknown_t2[i*64+31]=
+       unknown_t2[31*64+i]=unknown_t2[32*64+i]=view.color[HILIGHTCOLORS];
+      return unknown_t2; }
+  }
  if(pig.rdl_txts[rdlno].pig->data==NULL)
   {
   checkmem(pig.rdl_txts[rdlno].pig->data=MALLOC(64*64));
   memset(pig.rdl_txts[rdlno].pig->data,txt1or2 == 1 ? 0xfe : 0xff,64*64);
-  readbitmap(pig.pigfile,(char *)pig.rdl_txts[rdlno].pig->data,NULL,
+  readbitmap((char *)pig.rdl_txts[rdlno].pig->data,NULL,
    &pig.rdl_txts[rdlno],0);
   }
  return pig.rdl_txts[rdlno].pig->data;
@@ -428,7 +440,8 @@ void render_cube(int depth,struct node *from,struct node *cube,
  struct render_point *bounds)
  {
  unsigned int w,j,x,y;
- static struct render_point *render_start,*rp;
+ static struct render_point *render_start;
+ static struct render_point *rp;
  static struct point_2d m1,m2;
  static unsigned char *txt1,*txt2,*txt; /* static because I need to 
   save mem on the stack */
@@ -458,7 +471,7 @@ void render_cube(int depth,struct node *from,struct node *cube,
        SCALAR_2D(&m1,&m2)*SCALAR_2D(&m1,&m2),
        SCALAR_2D(&m1,&m1)*SCALAR_2D(&m2,&m2));
       if(SCALAR_2D(&m1,&m2)*SCALAR_2D(&m1,&m2)>=
-       SCALAR_2D(&m1,&m1)*SCALAR_2D(&m2,&m2)*0.9999)
+       SCALAR_2D(&m1,&m1)*SCALAR_2D(&m2,&m2)*0.999999)
        { /* pnt is useless, it lies on the line from prev to next */
        if(DEBUG) fprintf(errf," killed");
        rp->prev->next=rp->next;
@@ -485,37 +498,36 @@ void render_cube(int depth,struct node *from,struct node *cube,
      {
      case 0:
       for(y=0;y<64;y++) for(x=0;x<64;x++)
-       txt[y*64+x]=(txt2[y*64+x]>=0xfe ? txt1[y*64+x] : txt2[y*64+x]);
+       txt[y*64+x]=(txt2[y*64+x]>=0xff ? txt1[y*64+x] : txt2[y*64+x]);
       break; 
      case 1:
       for(y=0;y<64;y++) for(x=0;x<64;x++)
-       txt[y*64+x]=(txt2[x*64+63-y]>=0xfe ? txt1[y*64+x] : txt2[x*64+63-y]);
+       txt[y*64+x]=(txt2[x*64+63-y]>=0xff ? txt1[y*64+x] : txt2[x*64+63-y]);
       break;
      case 2:
       for(y=0;y<64;y++) for(x=0;x<64;x++)
-       txt[y*64+x]=(txt2[(63-y)*64+63-x]>=0xfe ? txt1[y*64+x] :
+       txt[y*64+x]=(txt2[(63-y)*64+63-x]>=0xff ? txt1[y*64+x] :
         txt2[(63-y)*64+63-x]);
       break;
      case 3:
       for(y=0;y<64;y++) for(x=0;x<64;x++)
-       txt[y*64+x]=(txt2[(63-x)*64+y]>=0xfe ? txt1[y*64+x] : 
+       txt[y*64+x]=(txt2[(63-x)*64+y]>=0xff ? txt1[y*64+x] : 
         txt2[(63-x)*64+y]);
       break; 
      default: my_assert(0);
      }
     }
    else txt=gettexture(cube->d.c->walls[w]->texture1,1);
-   if(cube->d.c->nc[w])
-    { for(x=0;x<64*64;x++) if(txt[x]==0xff) txt[x]=0xfe; }
    for(j=0;j<2;j++)
     {
-    if(DEBUG) { fprintf(errf,"** %d Clipping&Plotting %d %d %d (%p)\n",depth,
+    if(DEBUG)
+     { fprintf(errf,"** %d Clipping&Plotting %d %d %d (%p)\n",depth,
      cube->no,w,j,cube->d.c->polygons[w*2+j]); fflush(errf); }
-    if(cube->d.c->polygons[w*2+j] && 
+    if(cube->d.c->polygons[w*2+j] &&
      (render_start=pol_clip_pnts(cube->d.c->polygons[w*2+j],
-      render_pnts[depth],bounds,scr_xsize,scr_ysize))!=NULL)
-     render_filled_polygon(render_lr,cube->d.c->polygons[w*2+j],render_start,
-      txt,cube->d.c->nc[w]!=NULL); 
+     render_pnts[depth],bounds,scr_xsize,scr_ysize))!=NULL)
+     render_filled_polygon(render_lr,cube->d.c->polygons[w*2+j],
+       render_start,txt,cube->d.c->nc[w]!=NULL); 
     }
    }
   }

@@ -76,7 +76,7 @@ int writeconfig(int olddata)
  fprintf(cfgfile,"{%s}\n",missionpath);
  fprintf(cfgfile,"{descent2.ham}\n{}\n");
  fprintf(cfgfile,"{%s}\n{%s}\n",d1path,d1path);
- fprintf(cfgfile,"{}\n{%s}\n{%s}\n\n",d2path,d2path);
+ fprintf(cfgfile,"{}\n{%s}\n{%s}\n{%s}\n\n",d2path,d2path,d2path);
  fprintf(cfgfile,":KEYS %d\n",NUM_HOTKEYS);
  for(i=0;i<NUM_HOTKEYS;i++) 
   fprintf(cfgfile,"%d %d %d {%s}\n",hotkeys[i].kbstat,hotkeys[i].key,

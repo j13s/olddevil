@@ -247,11 +247,14 @@ int w_okcancel(const char *txt,const char *ok,const char *cancel,
  win.maxysize=win.ysize=10+(ok!=NULL ? numlines+2 : numlines)*
   shapes.titlebar_height;
  win.ypos=(notes.yres-win.ysize)/1.9; /* this looks better then /2 */
- ws_getevent(&ws,0); 
- ws.x=w_xwinspacecoord(ws.x); ws.y=w_ywinspacecoord(ws.y);
- if(ws.x>=win.xpos-10 && ws.x<=win.xpos+win.xsize+10 &&
-  ws.y>=win.ypos-10 && ws.y<=win.ypos+win.ysize+10)
-  { win.xpos=ws.x+2; win.ypos=ws.y+2; }
+ if(ok==NULL && cancel==NULL)
+  {
+  ws_getevent(&ws,0);
+  ws.x=w_xwinspacecoord(ws.x); ws.y=w_ywinspacecoord(ws.y);
+  if(ws.x>=win.xpos-10 && ws.x<=win.xpos+win.xsize+10 &&
+   ws.y>=win.ypos-10 && ws.y<=win.ypos+win.ysize+10)
+   { win.xpos=ws.x+2; win.ypos=ws.y+2; }
+  }
  win.shrunk=0; win.title=NULL; win.help=help;
  win.buttons=0; win.refresh=wr_normal; win.data=NULL;
  win.refresh_routine=NULL; win.click_routine=NULL; win.close_routine=NULL;

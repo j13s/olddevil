@@ -54,8 +54,6 @@ int next_txtno(struct txt_list_win *tlw,int offset,int add)
  {
  int incdec=add>0 ? 1 : -1,rdlno;
  enum txttypes tt;
- fprintf(errf,"type %d offset %d add %d incdec %d maxnum %d\n",tlw->type,
-  offset,add,incdec,tlw->maxnum);
  switch(tlw->type)
   {
   case tlw_t1: tt=view.pcurrcube && view.pcurrcube->d.c->nc[view.currwall] ? 
@@ -67,18 +65,13 @@ int next_txtno(struct txt_list_win *tlw,int offset,int add)
   default: my_assert(0); exit(2);
   }
  rdlno=offset>=0 && offset<tlw->maxnum ? tlw->t[offset]->rdlno : -1;
- fprintf(errf,"tt %d rdlno %d\n",tt,rdlno);
  while(add!=0)
   { 
   offset+=incdec;
-  fprintf(errf,"offset+=incdec=%d\n",offset);
   if(offset<0) return -1;
   else if(offset>=tlw->maxnum) return tlw->maxnum;
-  fprintf(errf,"txtlistno=%d new rdlno %d rdlno %d\n",
-   tlw->t[offset]->txtlistno[tt],tlw->t[offset]->rdlno,rdlno);
   if(tlw->t[offset]->txtlistno[tt]>=0 && tlw->t[offset]->rdlno!=rdlno)
    { add-=incdec; rdlno=tlw->t[offset]->rdlno; }
-  fprintf(errf,"new add=%d\n",add);
   }
  return offset;
  }
@@ -164,13 +157,12 @@ void tl_refreshtxts(struct txt_list_win *tlw)
     case 0:
      memset(tlw->txt_buffer[y*tl_xnumtxt(tlw)+x],view.color[BLACK],64*64);
      if(i<tlw->maxnum)
-      readbitmap(pig.pigfile,tlw->txt_buffer[y*tl_xnumtxt(tlw)+x],NULL,
-       tlw->t[i],0); 
+      readbitmap(tlw->txt_buffer[y*tl_xnumtxt(tlw)+x],NULL,tlw->t[i],0); 
      break;
     case 1:
      if(i<tlw->maxnum)
       { memset(texture,view.color[BLACK],64*64);
-        if(i<tlw->maxnum) readbitmap(pig.pigfile,texture,NULL,tlw->t[i],0);
+        if(i<tlw->maxnum) readbitmap(texture,NULL,tlw->t[i],0);
         for(x2=0;x2<32;x2++)
          for(y2=0;y2<32;y2++)
           tlw->txt_buffer[y*tl_xnumtxt(tlw)+x][y2*32+x2]=
@@ -181,7 +173,7 @@ void tl_refreshtxts(struct txt_list_win *tlw)
     case 2:
      if(i<tlw->maxnum)
       { memset(texture,view.color[BLACK],64*64);
-        readbitmap(pig.pigfile,texture,NULL,tlw->t[i],0);
+        readbitmap(texture,NULL,tlw->t[i],0);
         for(x2=0;x2<16;x2++)
          for(y2=0;y2<16;y2++)
           tlw->txt_buffer[y*tl_xnumtxt(tlw)+x][y2*16+x2]=
@@ -893,17 +885,16 @@ void drawdooranim(struct w_button *b,struct ham_txt *t,int anim,int t1,int t2,
  if(t->pig && t->pig->anim_t2)
   {
   if(t1<pig.num_rdltxts && pig.rdl_txts[t1].pig!=NULL)
-   readbitmap(pig.pigfile,pig.door_buffer,NULL,&pig.rdl_txts[t1],0);
+   readbitmap(pig.door_buffer,NULL,&pig.rdl_txts[t1],0);
   if(t!=NULL) 
-   readbitmap(pig.pigfile,pig.door_buffer,&pig.pig_txts[t->pigno+anim],
+   readbitmap(pig.door_buffer,&pig.pig_txts[t->pigno+anim],
     NULL,t2_d);
   }
  else
   {
   memset(pig.door_buffer,0xff,64*64); 
   if(t!=NULL) 
-   readbitmap(pig.pigfile,pig.door_buffer,&pig.pig_txts[t->pigno+anim],
-    NULL,0);
+   readbitmap(pig.door_buffer,&pig.pig_txts[t->pigno+anim],NULL,0);
   }
  if(b!=NULL) w_drawbutton(b);
  }

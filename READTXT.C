@@ -29,6 +29,49 @@ extern int txtoffsets[desc_number];
 const char *txt_names[txt_all] = { "NormalTxt","ExtraTxt","WNormalTxt",
  "WExtraTxt","WDoors" };
 
+struct POG_header
+{
+ char signature[4] NONANSI_FLAG;
+ long int version NONANSI_FLAG;
+ long int num_textures NONANSI_FLAG;
+};
+void readpogfile(FILE *f)
+ {
+ struct POG_header head;
+ struct pig_txt pt;
+ unsigned short int *texture_index,i;
+ if(f==NULL) return;
+ printmsg(TXT_READINGPOGFILE);
+ rewind(f);
+ if(fread(&head,sizeof(struct POG_header),1,f)!=1)
+  { printmsg(TXT_POGERRORINHEADER); return; }
+ if(strncmp(head.signature,"DPOG",4)) 
+  { printmsg(TXT_POGERRORINHEADER); return; }
+ checkmem(texture_index=MALLOC(sizeof(short int)*head.num_textures));
+ if(fread(texture_index,sizeof(short int),head.num_textures,f)!=
+  head.num_textures)
+  { FREE(texture_index); printmsg(TXT_POGERRORINHEADER); return; }
+ for(i=0;i<head.num_textures;i++)
+  {
+  /* the following -- is very strange */
+  if(--texture_index[i]>=pig.num_pigtxts)
+   { waitmsg(TXT_POGINVALIDINDEX,i,texture_index[i]); continue; }
+  if(fread(&pt,18,1,f)!=1)
+   { waitmsg(TXT_POGFILENOTCOMPLETE,i); FREE(texture_index); return; }
+  pt.f=f;
+  memset(pt.name,' ',8); strncpy(pt.name,pt.rname,8); pt.name[8]=0;
+  pt.xsize=pt.rlxsize+((pt.ruxsize&0x0f)<<8);
+  pt.ysize=pt.rysize+((pt.ruxsize&0xf0)<<4);
+  if(pt.xsize!=64 || pt.ysize!=64)
+   { waitmsg(TXT_POGINVALIDSIZE,i,pt.xsize,pt.ysize); continue; }
+  pt.pigno=texture_index[i];
+  pt.num_anims=pt.anim_t2=0;
+  pt.data=NULL; pt.offset+=head.num_textures*(18+2)+sizeof(struct POG_header);
+  pig.pig_txts[texture_index[i]]=pt;
+  }
+ FREE(texture_index);
+ }
+
 struct D1_texture
  {
  char rname[8] NONANSI_FLAG;
@@ -46,7 +89,7 @@ int readtxts(FILE *f)
  if(fread(&head,sizeof(char),8,f)!=8) return 0;
  switch(init.d_ver)
   {
-  case d2_10_sw: case d2_10_reg: case d2_11_reg:
+  case d2_10_sw: case d2_10_reg: case d2_11_reg: case d2_12_reg:
    if(strncmp(head.c,"PPIG",4)) return 0;
    if(fread(&numshort,sizeof(unsigned long),(size_t)1,f)!=1) return 0;
    numlong=0; 
@@ -90,6 +133,7 @@ int readtxts(FILE *f)
    pig.pig_txts[i].type2=D1_txt.type2;
    pig.pig_txts[i].offset=D1_txt.offset;   
    }
+  pig.pig_txts[i].f=f;
   memset(pig.pig_txts[i].name,' ',8);
   strncpy(pig.pig_txts[i].name,pig.pig_txts[i].rname,8);
   pig.pig_txts[i].name[8]=0;
@@ -107,7 +151,8 @@ int readtxts(FILE *f)
     (unsigned)pig.pig_txts[i].type1,(unsigned)pig.pig_txts[i].type2,
     pig.pig_txts[i].offset);
   }
- pig.pig_bmoffset=ftell(f)+20*numlong;
+ for(i=0;i<pig.num_pigtxts;i++)
+  pig.pig_txts[i].offset+=ftell(f)+20*numlong;
  return 1;
  } 
 
@@ -161,13 +206,12 @@ void inittxts(void)
   if((pos=strpbrk(text," 0123456789"))!=NULL) *pos=0;
   if(strstr(pig.anim_txt_names,text)==NULL) 
    {
-   if((pig.rdl_txts[rdlnum].pig->type1&0x07)==0) 
-    pig.num_txtlist[txt1_normal]++;
-   else if((pig.rdl_txts[rdlnum].pig->type1&0x07)==1) 
-    pig.num_txtlist[txt2_normal]++;
-   else if((pig.rdl_txts[rdlnum].pig->type1&0x02)==0) 
-    pig.num_txtlist[txt1_wall]++;
-   else pig.num_txtlist[txt2_wall]++;
+   switch(pig.rdl_txts[rdlnum].pig->type1&0x03)
+    {
+    case 0: pig.num_txtlist[txt1_normal]++; break;
+    case 1: pig.num_txtlist[txt2_normal]++; break;
+    case 2: case 3: pig.num_txtlist[txt2_wall]++; break;
+    }
    }
   else
    if(firstanimtxt<0) firstanimtxt=rdlnum;
@@ -197,19 +241,23 @@ void inittxts(void)
   if(pig.rdl_txts[rdlnum].pig==NULL) continue;
   strcpy(text,pig.rdl_txts[rdlnum].pig->name);
   if((pos=strpbrk(text," 0123456789"))!=NULL) *pos=0;
-  if(strstr(pig.anim_txt_names,text)==NULL) 
-   if((pig.rdl_txts[rdlnum].pig->type1&0x07)==0) 
-    { pig.txtlist[txt1_normal][typnum[txt1_normal]]=&pig.rdl_txts[rdlnum];
-      pig.rdl_txts[rdlnum].txtlistno[txt1_normal]=typnum[txt1_normal]++; }
-   else if((pig.rdl_txts[rdlnum].pig->type1&0x07)==1) 
-    { pig.txtlist[txt2_normal][typnum[txt2_normal]]=&pig.rdl_txts[rdlnum];
-      pig.rdl_txts[rdlnum].txtlistno[txt2_normal]=typnum[txt2_normal]++; }
-   else if((pig.rdl_txts[rdlnum].pig->type1&0x02)==0) 
-    { pig.txtlist[txt1_wall][typnum[txt1_wall]]=&pig.rdl_txts[rdlnum];
-      pig.rdl_txts[rdlnum].txtlistno[txt1_wall]=typnum[txt1_wall]++; }
-   else 
-    { pig.txtlist[txt2_wall][typnum[txt2_wall]]=&pig.rdl_txts[rdlnum];
-      pig.rdl_txts[rdlnum].txtlistno[txt2_wall]=typnum[txt2_wall]++; }
+  if(strstr(pig.anim_txt_names,text)==NULL ||
+   (init.d_ver>=d2_12_reg && pig.rdl_txts[rdlnum].pig->frame_num==0))
+   switch(pig.rdl_txts[rdlnum].pig->type1&0x03)
+    {
+    case 0:
+     pig.txtlist[txt1_normal][typnum[txt1_normal]]=&pig.rdl_txts[rdlnum];
+     pig.rdl_txts[rdlnum].txtlistno[txt1_normal]=typnum[txt1_normal]++;
+     break;
+    case 1: /* transparent */
+     pig.txtlist[txt2_normal][typnum[txt2_normal]]=&pig.rdl_txts[rdlnum];
+     pig.rdl_txts[rdlnum].txtlistno[txt2_normal]=typnum[txt2_normal]++;
+     break;
+    case 2: case 3: /* super-transparent */
+     pig.txtlist[txt2_wall][typnum[txt2_wall]]=&pig.rdl_txts[rdlnum];
+     pig.rdl_txts[rdlnum].txtlistno[txt2_wall]=typnum[txt2_wall]++;
+     break;
+    }
   }
  for(i=0;i<txt_door;i++)
   {
@@ -251,8 +299,14 @@ void inittxts(void)
  copytxtnums(txt2_wall,txt2_normal);
  strcpy(ptxt_nothing.name," Nothing");
  ptxt_nothing.num_anims=0; ptxt_nothing.anim_t2=1; ptxt_nothing.pigno=-1;
+ ptxt_nothing.f=NULL; ptxt_nothing.frame_num=0;
+ ptxt_nothing.xsize=ptxt_nothing.ysize=64; ptxt_nothing.offset=0;
+ ptxt_nothing.type1=ptxt_nothing.type2=0;
  strcpy(ptxt_default.name," Default"); 
  ptxt_default.num_anims=0; ptxt_default.anim_t2=1; ptxt_default.pigno=-1;
+ ptxt_default.f=NULL; ptxt_default.frame_num=0;
+ ptxt_default.xsize=ptxt_default.ysize=64; ptxt_default.offset=0;
+ ptxt_default.type1=ptxt_default.type2=0;
  txt_nothing.flags=txt_nothing.light=txt_nothing.hitpoints=
   txt_nothing.xspeed=txt_nothing.yspeed=0;
  txt_nothing.anim_seq=txt_nothing.shoot_out_txt=-1;
@@ -281,7 +335,7 @@ void inittxts(void)
   } 
  }
 
-int newpigfile(char *pigname)
+int newpigfile(char *pigname,FILE *pogfile)
  { 
  char *pigfname=NULL,*palfname=NULL;
  int i;
@@ -296,6 +350,7 @@ int newpigfile(char *pigname)
    { printf("Can't open pigfile in newpigfile: '%s'\n",pigfname);
      FREE(pigfname); return 0; }
   if(!readtxts(pf)) { fclose(pf); FREE(pigfname); return 0; }
+  readpogfile(pogfile);
   checkmem(palfname=MALLOC(strlen(pigname)+1));
   strcpy(palfname,pigname); palfname[strlen(palfname)-4]=0;
   for(i=0;i<strlen(palfname);i++) palfname[i]=toupper(palfname[i]);
@@ -311,18 +366,19 @@ int newpigfile(char *pigname)
   changepigfile(palettes[i].name);
   view.lightcolors=&palettes[i].lighttables[256*NUM_SECURITY];
   newpalette(palettes[i].palette); 
+  inittxts();
   }
  return 1;
  }
 
 #define ANIM_ARROW_ANGLE M_PI/4 
-/* reads texture ham_sd from file f in direction dir.
+/* reads texture ham_sd from file specified in texture in direction dir.
    if ham_sd==NULL, read pig_sd.
    dir=0 -> normal (origin left upper corner x+ y+).
    dir=1 -> 90ø   (origin right upper corner x- y+). 
    dir=2 -> 180ø   (origin right lower corner x- y-).
    dir=3 -> 270ø    (origin left lower corner x+ y-). */
-void readbitmap(FILE *f,char *dest,struct pig_txt *pig_sd,
+void readbitmap(char *dest,struct pig_txt *pig_sd,
  struct ham_txt *ham_sd,int dir)
  {
  struct pig_txt *sd=ham_sd ? ham_sd->pig : pig_sd;
@@ -332,9 +388,11 @@ void readbitmap(FILE *f,char *dest,struct pig_txt *pig_sd,
  int startx,starty,endx,endy,addx,addy,mx,my,x,y;
  float l,angle;
  struct ws_bitmap *bm;
- my_assert(f!=NULL && sd!=NULL);
+ FILE *f;
+ my_assert(sd!=NULL);
+ f=sd->f; if(f==NULL) return;
  if(sd->pigno<0) return; /* Nothing or Default */
- fseek(f,(long)sd->offset+pig.pig_bmoffset,SEEK_SET); 
+ fseek(f,(long)sd->offset,SEEK_SET); 
  if(sd->xsize!=64 || sd->ysize!=64)
   { printmsg("Texture (rdl: %d pig: %d name: %s) of wrong size: %d %d",
      ham_sd ? ham_sd->rdlno : -1,sd->pigno,sd->name,sd->xsize,sd->ysize);

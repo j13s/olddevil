@@ -245,11 +245,30 @@ void pr_cube(struct list *nl,int x,int y,int z,int dir)
   freenode(nl,cn,NULL);
  }
 
+int findsideindirection(int axis,int dir,int with_neighbour)
+ {
+ float max_v=0.0;
+ int i,w,best_w=-1;
+ struct point d1,d2,n;
+ for(w=0;w<6;w++)
+  {
+  for(i=0;i<3;i++) d1.x[i]=view.pcurrcube->d.c->p[wallpts[w][2]]->d.p->x[i]-
+		    view.pcurrcube->d.c->p[wallpts[w][0]]->d.p->x[i];
+  for(i=0;i<3;i++) d2.x[i]=view.pcurrcube->d.c->p[wallpts[w][3]]->d.p->x[i]-
+		    view.pcurrcube->d.c->p[wallpts[w][1]]->d.p->x[i];
+  VECTOR(&n,&d1,&d2); normalize(&n);
+  if(SCALAR(&n,&view.e[axis])*dir>max_v && (!with_neighbour ||
+   view.pcurrcube->d.c->nc[w]!=NULL))
+   { max_v=SCALAR(&n,&view.e[axis])*dir; best_w=w; }
+  }
+ return best_w;
+ }
+
 void b_move(int axis,int dir)
  {
  int i;
  struct point newpos;
- if(l==NULL) { printmsg(TXT_NOLEVEL); return; }
+ if(l==NULL || view.pcurrcube==NULL) { printmsg(TXT_NOLEVEL); return; }
  switch(view.movemode)
   {
   case mt_you:
@@ -266,17 +285,34 @@ void b_move(int axis,int dir)
    if(!view.pcurrcube) return;
    pmove[view.currmode](&l->tagged[view.currmode],axis,dir);
    break;
+  case mt_current:
+   i=findsideindirection(axis,-dir,1);
+   if(i<0) return;
+   if(view.pcurrcube->d.c->nc[i]!=NULL)
+    {
+    view.currwall=i;
+    for(i=0;i<6;i++)
+     if(view.pcurrcube->d.c->nc[view.currwall]->d.c->nc[i]==view.pcurrcube)
+      break;
+    my_assert(i<6); 
+    view.pcurrcube=view.pcurrcube->d.c->nc[view.currwall];
+    view.currwall=i;
+    view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
+    plotcurrent(); drawopt(in_cube); drawopt(in_wall); drawopt(in_edge);
+    }
+   break;
   case mt_texture: fb_move_texture(axis,dir); return;
   default: printmsg("Movemode %d not implemented",view.movemode);
   }
- plotlevel(); if(view.movemode==mt_obj) drawopt(in_pnt);
+ if(view.movemode!=mt_current) plotlevel();
+ if(view.movemode==mt_obj) drawopt(in_pnt);
  }
 
 void b_turn(int x,int y,int z,int dir)
  {
  struct point e0,x0,er[3];
  int i;
- if(l==NULL) { printmsg(TXT_NOLEVEL); return; }
+ if(l==NULL || view.pcurrcube==NULL) { printmsg(TXT_NOLEVEL); return; }
  switch(view.movemode)
   {
   case mt_you:
@@ -296,10 +332,18 @@ void b_turn(int x,int y,int z,int dir)
     default: printmsg(TXT_NOTURNOBJECT); 
     }
    break;
+  case mt_current:
+   i=findsideindirection(x==0 ? 2 : (x==1 ? 1 : 0),
+     x==2 ? -dir : dir,0);
+   if(i<0) return;
+   view.currwall=i; view.pcurrwall=view.pcurrcube->d.c->walls[i];
+   plotcurrent(); drawopt(in_wall); drawopt(in_edge);
+   break;
   case mt_texture: fb_turn_texture(x,y,z,dir); return;
   default: printmsg("Turnmode %d not implemented",view.movemode);
   }
- plotlevel(); if(view.movemode==mt_obj) drawopt(in_pnt);
+ if(view.movemode!=mt_current) plotlevel();
+ if(view.movemode==mt_obj) drawopt(in_pnt);
  }
 
 void dec_move0(int ec) { b_move(2,-1); }
@@ -859,9 +903,8 @@ void move_texture_with_mouse(int sx,int sy,struct corner *cs,
   if((ws.kbstat&ws_ks_shift)==0 && ((ws.buttons&ws_bt_left)!=0
    || ABS(ws.x-ox)>ABS(ws.y-oy))) /* rotate */
    {
-/*   if(ABS(ws.x-ox)>ABS(ws.y-oy)) ws.y=oy;
-   else ws.x=ox;
-   if((ws.buttons&ws_bt_left)==0) bank */
+   if(ws.x!=ox) ws.y=oy;
+   if((ws.buttons&ws_bt_left)==0) 
     {
     rotate_texture(cs,(float)(ws.x-ox)/xs*M_PI);
     for(n=l->tagged[tt_wall].head;withtagged && n->next!=NULL;n=n->next)
@@ -869,13 +912,13 @@ void move_texture_with_mouse(int sx,int sy,struct corner *cs,
       rotate_texture(n->d.n->d.c->walls[n->no%6]->corners,
        (float)(ws.x-ox)/xs*M_PI);
     }
-/*   else
+   else
     {
     stretch_texture(cs,ws.x-ox,ws.y-oy);
     for(n=l->tagged[tt_wall].head;withtagged && n->next!=NULL;n=n->next)
      if((n->d.n!=cube || n->no%6!=wall) && n->d.n->d.c->walls[n->no%6])
       stretch_texture(n->d.n->d.c->walls[n->no%6]->corners,ws.x-ox,ws.y-oy);
-    } */
+    } 
    }
   else /* move */
    if((ws.kbstat&ws_ks_shift)!=0) /* left, right, up, down */

@@ -33,7 +33,7 @@ void drawoptbuttons(struct infoitem *i);
 void undrawoptbuttons(struct infoitem *i);
 
 struct w_window *optionwins[in_number];
-struct w_button *b_optwins[in_internal][9];
+struct w_button *b_optwins[in_internal][NUM_OPTBUTTONS];
 
 int getthingcoord(float *dno,int axis)
  {
@@ -627,7 +627,7 @@ void drawoptbuttons(struct infoitem *i)
    activate=((w=(struct wall *)getdata(i->infonr,NULL))!=NULL);
    if(activate) no=i->multifuncnr<=5 ? w->texture1 : w->texture2;
    if((i->multifuncnr==5||i->multifuncnr==10) && activate)
-    if(no<pig.num_rdltxts && pig.rdl_txts[no].pig!=NULL)
+    if(no>=0 && no<pig.num_rdltxts && pig.rdl_txts[no].pig!=NULL)
      sprintf(i->b->d.str->str,"%s (%lu)",(no==0 && i->multifuncnr==10) ?
       " Nothing" : pig.rdl_txts[no].pig->name,no);
      else sprintf(i->b->d.str->str,TXT_UNKNOWN,no); 
@@ -636,12 +636,12 @@ void drawoptbuttons(struct infoitem *i)
     memset(pig.txt_buffer,0xff,64*64);
     if(activate)
      {
-     if(w->texture1<pig.num_rdltxts && pig.rdl_txts[w->texture1].pig)
-      readbitmap(pig.pigfile,pig.txt_buffer,NULL,
-       &pig.rdl_txts[w->texture1],0);
-     if(w->texture2<pig.num_rdltxts && w->texture2!=0 && 
+     if(w->texture1>=0 && w->texture1<pig.num_rdltxts &&
+      pig.rdl_txts[w->texture1].pig)
+      readbitmap(pig.txt_buffer,NULL,&pig.rdl_txts[w->texture1],0);
+     if(w->texture2>0 && w->texture2<pig.num_rdltxts &&
       pig.rdl_txts[w->texture2].pig)
-      readbitmap(pig.pigfile,pig.txt_buffer,NULL,&pig.rdl_txts[w->texture2],
+      readbitmap(pig.txt_buffer,NULL,&pig.rdl_txts[w->texture2],
        w->txt2_direction);
      drawbmlines=1;
      }
@@ -654,7 +654,7 @@ void drawoptbuttons(struct infoitem *i)
     { 
     memset(pig.door_buffer,0xff,64*64);
     w=view.pcurrdoor==NULL ? NULL : view.pcurrdoor->d.d->w;
-    if(activate && w!=NULL && no<pig.num_anims && pig.anims[no]!=NULL)
+    if(activate && w!=NULL && no>=0 && no<pig.num_anims && pig.anims[no]!=NULL)
      drawdooranim(NULL,pig.anims[no],0,w->texture1,w->texture2,
       w->txt2_direction);
     }
@@ -671,7 +671,7 @@ void drawoptbuttons(struct infoitem *i)
     {
     memset(pig.thing_buffer,0xff,64*64);
     if(activate && sno>=0 && sno<pig.num_rdltxts && pig.rdl_txts[sno].pig)
-     readbitmap(pig.pigfile,pig.thing_buffer,NULL,&pig.rdl_txts[sno],0);
+     readbitmap(pig.thing_buffer,NULL,&pig.rdl_txts[sno],0);
     }
    break;
   default: break;
@@ -779,7 +779,7 @@ void drawopt(enum infos what)
    if(i>9999) sprintf(b_optwins[what][1]->d.str->str,"****");
    else if(i<0) sprintf(b_optwins[what][1]->d.str->str,"----");
    else sprintf(b_optwins[what][1]->d.str->str,"%.4d",i);
-   for(i=0;i<9;i++)  
+   for(i=0;i<NUM_OPTBUTTONS;i++)  
     if(b_optwins[what][i])
      {
      if(act) w_activatebutton(b_optwins[what][i]);
@@ -790,8 +790,8 @@ void drawopt(enum infos what)
    if(what==in_wall && act)
     if(view.pcurrcube->d.c->walls[view.currwall]==NULL)
      { if(b_optwins[what][6]) w_deactivatebutton(b_optwins[what][6]);
-       if(b_optwins[what][8]) w_deactivatebutton(b_optwins[what][8]); }
-   for(i=0;i<9;i++)
+     if(b_optwins[what][8]) w_deactivatebutton(b_optwins[what][8]); }
+   for(i=0;i<NUM_OPTBUTTONS;i++)
     if(b_optwins[what][i]) w_drawbutton(b_optwins[what][i]);
    }
   for(i=0;i<init.infonum[what];i++) drawoptbuttons(&init.info[what][i]);
