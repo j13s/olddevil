@@ -1,18 +1,14 @@
-	    __          __  ___    __        __   ____    __
-	   |  ||\      |  ||___\   \ \      / /    ||    |  |
-	   |  ||  \    |  | ____    \ \    / /     ||    |  |
-	   |  | \   \  |  ||____\    \ \  / /      ||    |  |
-	   |  |___\  | |  |______     \ \/ /       ||    |  |____
-	   |_________| |_________\     \__/       _||_   |_______\
-					
-	      A Tutorial for editing DESCENT levels with DEVIL
-	 
-    Compiled by Boris Postler (ub0u@rz.uni-karlsruhe.de). 
-     mail this address if you've got questions about building levels or
-     some comments to this documentation.
-    DEVIL was made by Achim Stremplat (ubdb@rz.uni-karlsruhe.de).
-     mail this address if you've got suggestions for improving DEVIL or
-     technical problems.
+            __          __  ___    __        __   ____    __
+           |  ||\      |  ||___\   \ \      / /    ||    |  |
+           |  ||  \    |  | ____    \ \    / /     ||    |  |
+           |  | \   \  |  ||____\    \ \  / /      ||    |  |
+           |  |___\  | |  |______     \ \/ /       ||    |  |____
+           |_________| |_________\     \__/       _||_   |_______\
+                                        
+              A Tutorial for editing DESCENT levels with DEVIL
+         
+    Compiled by Boris Postler (ub0u@rzstud1.uni-karlsruhe.de). 
+    DEVIL was made by Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de).
 
     This article is (C) Copyright 1995 by Boris Postler.  All rights
     reserved.  You are welcome to make copies and redistribute this article,
@@ -88,13 +84,11 @@
   [5]. YOUR MOUSE AND DEVIL
 
   [6]. HOTKEYS
-      [6a] All time favorites
-      [6b] Cube-mode
-      [6c] Side-mode
-      [6d] Wall-mode
-      [6e] Thing-mode
-      [6f] Point-mode
-      [6g] Fit bitmap-mode
+     [6a] All time favorites
+     [6b] Cube-mode
+     [6c] Side-mode
+     [6d] Wall-mode
+     [6e] Thing-mode
 
   [7]. EDITING
       [7a] Cubes
@@ -109,13 +103,9 @@
       [7j] Side effects
       [7k] Specials
 
-   [8.] DEVIL
-      [8a] The file DEVIL.INI
-      [8b] Macros
+   [8]. DESCENT CRASHES - WHY ?
 
-   [9]. DESCENT ACTS FUNNY - WHY ?
-
-   [A]. CHANGES/LAST NOTES
+   [A]. LAST NOTES
 
 ----------------------------------------------------------------------------
 
@@ -131,7 +121,7 @@ Part [1]. ABOUT DEVIL
       OK, I've calmed down a bit by now, so let's continue.
 
 --[1b]------  What is this file?
-		     
+                     
       I've build some levels for DOOM (using DEU) which are considered 'not 
       too bad' by my friends and since I was one of the beta-testers I think 
       I should give some tips and hints concerning level-building. This is, 
@@ -157,10 +147,9 @@ Part [2]. THE MENU STRUCTURES
       controlling. Below the arrows is shown wether you are in modify- or 
       move-mode. Above that are the different editing modes: cubes, sides 
       (a side is a cube-side with no adjacent cube), walls (a wall is a cube-
-      side with an adjacent cube), points, things and internal. Between that, 
-      your current position and your angle of view is shown.
-      In the upper right corner the actual editing-mode is displayed and 
-      below that the substructures of cubes/sides/walls/... (and so on).
+      side with an adjacent cube), points, things and internal. In the upper 
+      right corner the actual editing-mode is displayed and below that the
+      substructures of cubes/sides/walls/... (and so on).
 
 --[2b]------ The different modes
 
@@ -191,50 +180,26 @@ Part [2]. THE MENU STRUCTURES
       (for mouse-users now and for ever: just click and be quit, OK?). The
       menus are:
       -FILE for loading/saving/quit (hope this is self-explaining:)
-      -MOVE for moving yourself:
-	BEAM: beams you to the current object (may come handy in big levels)
-	GRID: switches the 'snap on grid' feature on/off
-	ALIGN: aligns your view to a rectangular coordinate system
       -EDIT for insert/fast insert/delete/delete all/fit bitmap/tag/tag all
-	INSERT: to insert a macro/thing/door/...
-	DELETE: to delete the tagged objects of the current mode; you can't 
-	    delete the active object (shown in green)
-	DELETE ALL: to delete all tagged objects, regardless of the current
-	    mode
-	ENLARGE: enlarges current cube or wall
-	SHRINK: guess
-	FIT BITMAP: this is for texture-mapping 
-	ALIGN BITMAPS: Tag all sides you want to align to the current side 
-	    (they must be connected of course, only one side per cube is 
-	    handled) and make "Align bitmaps". This will align the bitmaps.
-	MAKE ROOM: Checks the sides of all tagged cubes: if two sides are 
-	    'near' to each other, DEVIL will made a wall of them
-	SET EXIT: sets an exit
-	RECALCULATE: recalculates all textures 
-	TAG: tags an object of the current mode (shown in blue)
-	TAG ALL: tags all objects of the current mode
-      -MACROS for make macro/save macro/choose macro/set exit
-	MAKE MACRO: makes a macro consisting of all tagged objects (regard-
-	 less of current mode); reference point and side of the macro are the
-	 current point and macro
-	SAVE MACRO: saves a macro for later use
-	CHOOSE MACRO: loads a macro
-	FAST INSERT: as INSERT but in cube-mode DEVIL will join the sides as
-	    well (making a wall)
-	INSERT SCALED: will insert and scale a macro
-	INSERT FAST, SCALED: like FAST INSERT and INSERT SCALED
-      -SELECT is for tagging/selecting the current object
-	TAG/TAG ALL: tags the current/tags all object(s)
-	TAG SPECIAL: tags all corners of a point (great for light-editing)
-	    only available in point-mode
-	CHOOSE: enter a number to make this object the current object
-	GO TO WALL: makes the side of the current wall to the current side
-	NEXT/PREVIOUS: goes through the list of the objects
-	CHANGE TO SIDECUBE: takes current side (must be a wall) and changes
-	    the current cube to the other side of the wall (only in cube-mode)
+        INSERT: to insert a macro/thing/door/...
+        FAST INSERT: as INSERT but in cube-mode DEVIL will join the sides as
+            well (making a wall)
+        DELETE: to delete the tagged objects of the current mode; you can't 
+            delete the active object (shown in green)
+        DELETE ALL: to delete all tagged objects, regardless of the current
+            mode
+        FIT BITMAP: this is for texture-mapping 
+        TAG: tags an object of the current mode (shown in blue)
+        TAG ALL: tags all objects of the current mode
+      -EXTRA for make macro/save macro/choose macro/set exit
+        MAKE MACRO: makes a macro consisting of all tagged objects (regard-
+         less of current mode); reference point and side of the macro are the
+         current point and macro
+        SAVE MACRO: saves a macro for later use
+        CHOOSE MACRO: loads a macro
+        SET EXIT: set a side to exit, DESCENT needs an exit (see later) 
+      -SELECT is for selecting the current object   
       -DRAWING tells DEVIL what is to be shown and what not (DATA is special)
-      -INFO is just for infos:
-	HELP PAGE: displays all hotkeys
       The menus are case-sensitive to prevent the deleting of the whole level
       with just one key (now you need two). Several other events can be 
       activated via hotkeys, they're listed below (see 'HOTKEYS'). 
@@ -248,9 +213,9 @@ Part [2]. THE MENU STRUCTURES
       dicates how far you can see. When you turn it to low you'll get lost
       but when you turn it to high, DEVIL will slow down a lot.
       The other numbers show the angle when you turn, the zooming-factor,..
-      The numbers here are all divided by 65536 to be more user-friendly but 
-      DEVIL will work with the 'right' numbers (of course :)
-
+      Since the 'standard cube' has a sidelength of aprox. 1.3e06 some of
+      the numbers are pretty high but don't worry, keep smiling :)
+      
 ----------------------------------------------------------------------------
 
 Part [3]. LEVELS IN DESCENT
@@ -263,25 +228,25 @@ Part [3]. LEVELS IN DESCENT
       corners but you may arange these points (almost) as you want. You have
       to keep in mind:
       1.) Cubes need to be convex. Well, what does that mean? Take the inte- 
-	  riour of a ball: it is convex. That means, you can draw a line from
-	  every point inside the cube to every other point and this line DOES
-	  NOT LEAVE THE CUBE. This is important for DESCENT. Let me show you
-	  some examples:
-	       ________                 __________        ___    ___
-	      |        |                \        /        \  \  /  /
-	      |        |                 \      /          \  \/  /
-	  YES:|        |    CLOSE THING:  \    /      NO:   \    /
-	      |        |                   \  /              \  /
-	      |________|                    \/                \/
+          riour of a ball: it is convex. That means, you can draw a line from
+          every point inside the cube to every other point and this line DOES
+          NOT LEAVE THE CUBE. This is important for DESCENT. Let me show you
+          some examples:
+               ________                 __________        ___    ___
+              |        |                \        /        \  \  /  /
+              |        |                 \      /          \  \/  /
+          YES:|        |    CLOSE THING:  \    /      NO:   \    /
+              |        |                   \  /              \  /
+              |________|                    \/                \/
 
-	  Luckily, DEVIL handles this thing automatically, so you won't have
-	  to be bothered.
+          Luckily, DEVIL handles this thing automatically, so you won't have
+          to be bothered.
       2.) Take a normal cube and push one corner inwards. This will not only
-	  make the cube 'lesser convex' but it will also bent the adjacent
-	  sides of the cube (try it for yourself). DESCENT has problems with
-	  highly bent walls (e.g. the laserbolts won't collide with the wall) 
-	  but DEVIL won't allow such walls and will refuse to move a point
-	  further.
+          make the cube 'lesser convex' but it will also bent the adjacent
+          sides of the cube (try it for yourself). DESCENT has problems with
+          highly bent walls (e.g. the laserbolts won't collide with the wall) 
+          but DEVIL won't allow such walls and will refuse to move a point
+          further.
       You don't have to think about wether or not this cube is allowed be-
       cause DEVIL does it for you (thanks, Achim!). I just mentioned these
       problems so that you can understand why DEVIL refuses to execute a 
@@ -291,8 +256,6 @@ Part [3]. LEVELS IN DESCENT
       standard cube. Since this number is pretty high and since the cube is 
       just about the average corridor size in DESCENT, you'll have problems
       estimating the actual size of a level (in contrary to DOOM).
-      Newer versions of DEVIL prevent this by dividing all numbers by 65536.
-
 
 --[3b]------ Points and corners
 
@@ -321,21 +284,9 @@ Part [3]. LEVELS IN DESCENT
 
 --[3d]------ Walls
 
-      An example for the side/wall-problem (thanks go to Pat Johnson for 
-      pointing it out and having a good idea ;)
-
-	 side        wall      side
-	    __________ __________
-	   |          |          |
-	   |          |          |
-      void |  cube1   |  cube2   | void  
-	   |          |          |
-	   |__________|__________|
-
-      Two adjacent cubes in the void: a wall is a cube-side between two cubes 
-      a side is a cube-side without another adjacent cube. 
-      Walls can act in many ways: as doors, switches for producers, energy 
-      rechargers (the yellow dots in the air), .... 
+      A wall is a cube-side with an adjacent cube. Walls can act in many 
+      ways: as doors, switches for producers, energy rechargers (the yellow
+      dots in the air), .... 
       More to the different functions in 'EDITING'
 
 --[3e]------ Textures
@@ -350,9 +301,9 @@ Part [3]. LEVELS IN DESCENT
 
 --[3f]------ Things
 
-      Things have different types: startpoints (each level needs at least one 
-      of them :), items (keys, weapons and suchlike), robots (blow 'em up) 
-      and hostages (pity you can't blow up these).
+      Things have different types: startpoints (each level has to have at 
+      least one of them :), items (keys, weapons and suchlike), robots (blow 
+      'em up) and hostages (pity you can't blow up these).
 
 ----------------------------------------------------------------------------
 
@@ -363,30 +314,15 @@ Part [4]. MOVING AROUND
       To control your movements with your mouse just click on the arrows to 
       the right: left click is turn and right click is move. On the keyboard 
       the commands are (you have to switch the NUMLOCK ON):
-	A/Y or A/Z              forwards/backwards 
-	1/3                     banking
-	2/4/6/8                 turn around
-	[SHIFT]+2/4/6/8         gliding
+        A/Y (perhaps Z ?)       forwards/backwards (sorry, german keyboard)
+        1/3                     banking
+        2/4/6/8                 turn around
+        [SHIFT]+2/4/6/8         gliding
       IMPORTANT: when I refer to NUMLOCK ON or OFF, I assume that you change
       the Move/Modify-mode ONLY with your NUM-key. If you keep clicking with 
       that mouse of yours this will switch the mode but not the numlock-light 
       (of course) so that the default is inverted (this will be fixed in a
       later version (perhaps, I keep pestering him all the same :)). 
-      You may also beam yourself to the current object of the current mode
-      by pressing '5' on the numblock. This is good when you're building big
-      levels.
-      To move among the objects press the first letter of the mode to go to
-      next object (e.g. 'c' for next cube), press [SHIFT] + first letter to
-      go to the previous object (e.g. '[SHIFT] + t' for previous thing) and 
-      press [CONTROL] + [SHIFT] + first letter to enter the number of an ob-
-      ject. 
-      There is a special key '<' which will make the current will also to the 
-      current side (this is not necessarily the case). 
-      Another key is '0' which selects the neighbour cube of the current side
-      to be the new current cube (only available in cube-mode).
-      Remember: moving among objects doesn't affect the current mode (took me
-      some time to get accustomed to that one). The current mode is changed 
-      by pressing '[CONTROL] + first letter'.
 
 --[4b]------ Moving objects
       
@@ -429,19 +365,15 @@ Part [6]. HOTKEYS
 
       These hotkeys are available in every mode:
 
-      [F1]                              activate help, cursor scrolls, any
-					other key exits
       [CONTROL] + [SHIFT] + s/l         save/load level
       [SHIFT] + [ESCAPE]                end DEVIL (you're crazy! :)
       [SHIFT] + a/y                     increases/decreases sight
       NUMLOCK * /                       increase/decrease moving factor of 
-					yourself or of objects depending of
-					the current mode (move/modify)
-      NUMLOCK +/- (NUM ON)              increase/decrease zooming 
-      NUMLOCK 9/7                       increase/decrease rotation angle
-      [CONTROL] + g (sorry :)           switch grid ON/OFF
-      [SHIFT] + g                       increase grid size
-      g                                 decrease grid size
+                                        yourself or of objects depending of
+                                        the current mode (move/modify)
+      NUMLOCK +/-                       increase/decrease zooming
+      NUMLOCK 9/7                       increase/decrease gridsize
+      [ALT] + g                         switch grid ON/OFF
       [SHIFT] + m                       make macro                       
       [CONTROL] + m                     save macro
       m                                 choose macro
@@ -450,49 +382,35 @@ Part [6]. HOTKEYS
       c/s/w/t/p                         next cube/side/wall/thing/point
       [CONTROL] + [SHIFT] + c/s/w/p/t   enter number of current cube ...
       [SPACE]                           tag untagged object or 
-					untag tagged object
+                                        untag tagged object
       [SHIFT] + [SPACE]                 tag all objects if none are tagged or 
-					untag all objects if one is tagged
+                                        untag all objects if one is tagged
       [CONTROL] + key                   command only for current object,
-					ignore tagged objects
+                                        ignore tagged objects
       [SHIFT] + key                     no side-effects 
       [SHIFT] + [DELETE]                delete all tagged objects (be careful                           
-					with this one!)
+                                        with this one!)
       [END]                             insert exit wall in current side
       cursor up/down                    move in substructure-menu
       [RETURN]                          edit substructure
       f                                 fit bitmap of current side (f also
-					exits the bitmap-fitting)
-      [SHIFT] + f                       align bitmaps
-      [CONTROL] + x/y/z                 aligns on axis (positive direction)
-      [SHIFT] + [CONTROL] + x/y/z       aligns on axis (negative direction)
+                                        exits the bitmap-fitting)
 
 
 --[6b]------ Cube-mode
 
-      NUMLOCK 1/3                       rotate all tagged cubes including 
-					current cube (around current side)
-      NUMLOCK 4/6                       rotate only tagged cubes 
       [INSERT]                          insert a macro without joining the 
-					sides
+                                        sides
       [SHIFT] + [INSERT]                insert a macro and make a wall between
-					the cubes (deleting the sides)
-      F2                                insert a macro and scale it as well             
-					(scaling it from 0.01 to 100)
-      [SHIFT] + F2                      insert a macro (scaling and joining
-					it)
-      F3                                makes a room
-      [DELETE]                          deletes all tagged cubes 
-      NUMLOCK +/- (NUM OFF)             increase/decrease size of cube                                  
-      0                                 swaps the current cube to the other
-					side of the current wall
+                                        the cubes (deleting the sides)
+      [DELETE]                          deletes all tagged cubes but not the 
+                                        current cube
 
 --[6c]------ Side-mode
 
       [INSERT]                          separates to cubes        
-      [DELETE]                          joines tagged and current side to wall
-					matches tagged to current side
-      NUMLOCK +/- (NUM OFF)             increase/decrease size of side                                  
+      [DELETE]                          joines tagged and current side to wall, 
+                                        matches tagged to current side
 
 --[6d]------ Wall-mode
 
@@ -503,20 +421,7 @@ Part [6]. HOTKEYS
 
       [INSERT]                          inserts a thing (default: energy)
       [DELETE]                          deletes all tagged things but not the
-					current thing
-
---[6f]------ Point-mode
-
-      [CONTROL] + [SPACE]               tag all corners of current point
-
---[6g]------ Fit bitmap-mode
-
-      g                                 takes as much bitmaps as needed for
-					this side
-      [SHIFT] + g                       suit size of bitmap to size of side
-					(only one bitmap for this side)
-      7/9                               rotate bitmap
-      A/Y                               decrease/increase size of bitmap
+                                        current thing
 
 ----------------------------------------------------------------------------
 
@@ -541,10 +446,6 @@ Part [7]. EDITING
       one of the give robot-types when a robot appears. Since the fat ones
       end a level they tend to behave funny when they appear in masses out
       of a producer (could be done but shouldn't).
-      If you got several cubes which aren't connected but which you want to
-      be connected try the 'Make room' feature (F3). This will cause DEVIL
-      to check all the sides of the tagged cubes and make walls of those who
-      are 'near'. 'Near' is defined by ConnD in the Internal menu.
 
 --[7b]------ Points
       
@@ -554,11 +455,17 @@ Part [7]. EDITING
       If the grid is switched ON, all points will lay on the grid. If you
       try to move a point but can't, the moving factor is below the gridsize.
 
+
 --[7c]------ Sides
 
-      The substructure of sides is texture 1/texture 2/point light. The light
-      is explained below (what a surprise :), the textures may be chosen out
-      of the menus.
+      Each side has two textures: texture 1 is the 'main' texture, texture 2
+      overlays the first texture. Texture 2 is used for lights, monitors,
+      doors, signs,... The complete texture (1+2) is shown in the lower right
+      corner. The orientation of the texture is shown by the two blue lines
+      on the current side and on the image of the textures. You can change
+      the orientation of the second texture (e.g. to level monitors). You can 
+      also change the orientation of the whole side using 'fit bitmap' (in  
+      the pulldown-menu or hotkey 'f').
       The joining or seperating of cubes is also done in side-mode. This is 
       because it changes sides to walls and vice versa and does not affect 
       the cubes as such. To join two cubes tag one wall of one cube and make
@@ -569,14 +476,13 @@ Part [7]. EDITING
       will remain where it is. To separate two cubes, just choose the side
       and press [INSERT].
 
+
 --[7d]------ Walls
  
-      A wall may have max. two functions (or none): door and/or switch. 
-      You insert a wall by pressing [INSERT] in wall-mode. This will insert
-      a special wall in the current side which has to be a wall (:-))). 
+      A wall may have max. two functions (or none): door and switch. 
       The different wall-types are:
       - blow door: standard jail door (hostages) enter hitpoints in hex 
-	(the door in level 1 has 64 hex = 100)
+        (the door in level 1 has 64 hex = 100)
       - normal door: clear
       - only texture: like in energy stations
       - only switch: no texture, just switch
@@ -584,14 +490,14 @@ Part [7]. EDITING
       If it is a door, there are four door-types:
       - stay open, laser: once opened, this door stays open 
       - stay open, switch: can only be opened with switches or at the end of
-	the level
+        the level
       - open/close w. laser: standard door, closes after a few seconds
       - open/close w. switch: same as with laser, only with switch
       The open at end- and the key-structure won't need explanation, but 
       there are several switch-types:
       - no switch (default)
       - alternate/normal exit: when this switch is activated, the computer
-	will attempt to steer the ship to the exit-wall (ends level)
+        will attempt to steer the ship through the exit-wall (ends level)
       - producer/doors: starts producer/opens doors
       The doortype defines the animation sequence. This is only needed for
       doors. Since it works with side effects (see below) there may be some
@@ -604,63 +510,23 @@ Part [7]. EDITING
       you have to tag all previous objects as well; if you want to trigger 
       the event with another switch just do the same procedure again ... and
       again ... and again ... 
-      
       A wall has two sides and so it has two doors and switches (one for each
       side). Therefore you can trigger different events depending of your
       flight-direction. When you want to trigger an event by flying through a 
       corridor from the left to the right, you should set the switch to the 
       left side (see demo level for examples).
-      
       IMPORTANT: Doors that are opened with switches can't be opened with la-
       serbolts (normaly). So if you got a door of the type 'open/close with
       switch' it may happen that the player is trapped without the possibili-
       ty to trigger the switch again. So be sure to make the other side of
       such a door 'open/close w. laser'. You have to press the [SHIFT] key to 
       prevent the side effect (if you don't, DEVIL will change both sides).
-
       The alternate exit-switch is only of use when you're in a level which
       has an alternate exit (this is e.g. level 10 for secret level 1). When
       you use it in level 1 it will just end the level and go to level 2.
       An exit-corridor isn't needed for this kind of exit because DESCENT
       doesn't steer the ship after passing the alternate exit: the level just
       ends.
-
-      There are some other wall-types (like 'drain shield' :))) and Achim 
-      tries to include them ASAP.
-      
---[7e]------ Textures
-
-      Each side has two textures: texture 1 is the 'main' texture, texture 2
-      overlays the first texture. Texture 2 is used for lights, monitors,
-      doors, signs,... The complete texture (1+2) is shown in the lower right
-      corner. The orientation of the texture is shown by the violet and the  
-      yellow line. The white cross marks the origin of the side.
-      You can change the orientation of the second texture (e.g. to level 
-      monitors). 
-      Notice that when you're in wall-mode, the texture of the current wall
-      will be shown. Otherwise it's the texture of the current side. You may 
-      use '<' to make the side at the current wall to the current side.
-      
-      You can also change the orientation of the whole side using 'fit 
-      bitmap' (in the pulldown-menu or hotkey 'f'). When you're in this mode,
-      you get lots of new features: you can adapt the size of the bitmap to
-      the side (with [SHIFT] + g). This will cause DEVIL to take exactly
-      one bitmap and plaster it over the side (shrinking/expanding and dis-
-      torting the texture as much as you want). With that feature you can 
-      make mega-doors: when you make a door bigger then standard cube-size,
-      DESCENT will draw many doors on that side. BUT with DEVIL's bitmap 
-      fitting you're capable of expanding the door-texture so that only one
-      door will appear in DESCENT (try it). This may be switched off when 
-      you're in 'fit bitmap' mode and press 'g' (changing things to normal).
-      With the keys 7/9 and A/Y (A/Z) you can rotate the side or change the 
-      size of it.
-
-      Another new function is 'Align bitmaps'. This function is useful when 
-      you have a texture which needs aligning (i.e. the floor in level 1). 
-      Then tag all sides you want to align to the current side (they must be 
-      connected of course, only one side per cube is handled) and make 'Align 
-      bitmaps'. Now the bitmaps should be perfectly aligned. Again: The star-
-      ting point is the current side.
 
 --[7f]------ Things
 
@@ -673,41 +539,43 @@ Part [7]. EDITING
       A robot is a bit more complicated. It consists of the type (clear), the
       drop thing and (somtimes) the drop number. The drop thing is a bit 
       uncertain, but it seems to work: DESCENT distinguishes between
-	drop nothing: robot destroyed -> no item
-	drop sth.   : robot destroyed -> random item (depends on robot, 
-					 mostly energy boost and shield)
-	drop item   : robot destroyed -> item(s)
+        drop nothing: robot destroyed -> no item
+        drop sth.   : robot destroyed -> random item (depends on robot, 
+                                         mostly energy boost and shield)
+        drop item   : robot destroyed -> item(s)
       When you choose 'drop item' you can select the item out of a list. The
       drop number is the number of this thing the robot drops when destroyed. 
       It may vary between 0 and 127. (DESCENT will become a bit slow when 127
       items are on screen.) Ever destroyed a class 1 drone and recieved 127
-      mega-missiles? :) You may even choose to drop another (or a lot of 
-      other) robot(s). So you follow this little class 1 drone, blow it up 
-      and ... 4 heavy hulks appear.
-      The behaviour of the robots is nearly decoded and will be included in
-      the next version of DEVIL.
+      mega-missiles? :)
+      For people that want to help: ther're still some unknown bytes in the
+      robot- and the reactor-structure. If you know some of them, just mail.
+      There should be something like an 'agressive byte' which rules the 
+      behaviour of the robot (some just lurk behind a corner while others
+      will follow you through the whole level). See the room in level 1 with
+      the red key: the light hulks will just stand and cover the entry while
+      the class 2 drone darts out and chases you.
+      Another thing: the gopher robot can only be inserted as a laser-
+      shooting robot. But in some levels of DESCENT the same robot will fly 
+      through the corridors, leaving proximity-bombs behind. Perhaps first 
+      is agressive, second is defensive behaviour? Check it out! 
 
 --[7g]------ Light
 
       There are two different kinds of light: cube-light and point-light.  
       Point light is only available on sides, NOT on walls, and it can be
       edited in the following modes:  
-	Point-mode: change the light level of the corner of the current side   
-	Side-mode : change the light level of all 4 corners
-	Cube-mode : change the light level of all corners in the cube
-      
+        Point-mode: change the light level of the corner of the current side   
+        Side-mode : change the light level of all 4 corners
+        Cube-mode : change the light level of all corners in the cube
       Now we have a problem. Imagine a cube with 6 adjacent cubes (on each
       side of the cube). Such a cube has only walls and no sides and there-
       fore no light level. But 'lo! Parallax has made something called 'cube 
       light'. This sets the light level in the cube. It is only available in 
       cube-mode. So it is possible to make a big, dark room (point-light set 
       to 0) with a floating reactor in the middle in bright light (cube-light 
-      to aprox. 90). Looks GREAT!
-      A new feature: If you want to change the light level of all corners at
-      a certain point, press [CONTROL] + [SPACE] to tag all corners of this
-      point. Now you can make a 'point-light' changing the light level of all 
-      corners at once. 
-      The light is entered in percent (ranges from 0 to 100).
+      to aprox. 6000). Looks GREAT!
+      The light is entered in hex and ranges from 0 to 8000 (that is 32768).
 
 --[7h]------ Direct editing
 
@@ -716,9 +584,10 @@ Part [7]. EDITING
       on the right of the screen. You may edit them directly by mouse-clicking
       on the hex-code and entering new values. [PAGE UP] and [PAGE DOWN] 
       scrolls up and down. The coloured numbers are known, the black ones 
-      ain't (they're set to zilch by DEVIL). 
-      Achim is working hard on the Specs by now so I think he'll include them
-      in no time.
+      ain't (they're set to zilch by DEVIL). So if you know what a certain 
+      address stands for, e-mail us. We will ask Parallax about the unknown 
+      bytes but I think if there are many people asking, things will go 
+      faster for us ;-)
 
 --[7i]------ Macros
 
@@ -730,7 +599,6 @@ Part [7]. EDITING
       Remember: save early, save often. There are different groups of macros
       so that you won't have to search several hours just to find a 'piece of
       corridor, 8 cubes long'. 
-      
       When you make a macro, it will not be saved until you choose the menue-
       point 'Extras -> save macro'. A macro consists of all tagged cubes and
       other objects that are tagged. The current side and point (at the mo-
@@ -740,15 +608,9 @@ Part [7]. EDITING
       side. I think it would be nice if everybody would add a standard cube to
       his macro and save the macro with reference side and point on this cube
       so that all macros in the Internet are compatible between each other.
-      
       You can make a macro regardless of the current mode but you have to be
       in cube-mode when inserting one. When you make a macro it will consist
-      of ALL objects (including switches, special areas, things, ...). You
-      insert a macro with [INSERT] (this will not connect the cubes) or 
-      [SHIFT] + [INSERT] (which will make a wall of the current side and  
-      join the current cube with the macro-cube; scaling the macro-side to
-      the current side if they don't match).
-      
+      of ALL objects (including switches, special areas, things, ...).
       All inserted macros are tagged. This is because most of the time the 
       macro has been wrong inserted and the only thing you have to do in this 
       case is pressing [DELETE] to delete the macro (since it is possible
@@ -757,10 +619,6 @@ Part [7]. EDITING
       rent mode). A foresight is in work but will take some more time.
       If the macro contains an exit, it won't appear in the macro structure.
       This is because only one exit per level is allowed.
-
-      Now you can even scale the macros when you insert them. Just use 'F2'
-      instead of [INSERT]. You may enter a scaling factor ranging from 0.01
-      to 100.
 
 --[7j]------ Side effects
 
@@ -782,143 +640,64 @@ Part [7]. EDITING
 
       Some objects in DESCENT just are 'special'. Here is a list:
       1) The exit
-	 It seems that DESCENT needs an exit 'cause it keeps crushing down
-	 when a level without exit is included (but not always, sometimes it
-	 just works). An exit consists of several parts: 
-	 - the exit-door (with'stays open, switch', 'open at exit') 
-	 - the exit-switch (with 'normal exit') 
-	 - the exit-corridor which must have a certain length (look at the 
-	   original levels) 
-	 - the exit-wall which is the last side in the exit-corridor and the 
-	   only wall not adjacent to another cube. 
-	 To make an exit, follow the following instructions:  
-	 - insert a wall at the beginning of the exit-corridor
-	 - change its door- and switch-type to match the above said
-	 When you fly through this door, DESCENT will take controls over your 
-	 ship and tries to steer it to the
-	 - exit-wall (which really ends the level) 
-	 The exit-wall is inserted on the current side with the [END] key.
-	 Since there may be only one exit-wall per level, DEVIL will delete 
-	 the old one when you insert another exit-wall.
-	 The exit-wall has no texture and should therefore be invisible from 
-	 the point of the door (DESCENT won't crash but it looks 
-	 better). This can be made by curves in the exit-corridor or by just 
-	 setting the light level very low. Also, the exit-corridor shouldn't 
-	 have sharp turns because DESCENT will refuse to steer the ship 
-	 through such hazardous areas (again, look at the originals).
+         It seems that DESCENT needs an exit 'cause it keeps crushing down
+         when a level without exit is included (but not always, sometimes it
+         just works). An exit consists of several parts: the exit-door (with
+         'stays open, switch', 'open at exit') and the switch 'normal exit');
+         the exit-corridor which seems to must have a certain length (look at 
+         the original levels) and the exit-wall which is the last side in the
+         exit-corridor and the only wall not adjacent to another cube. This
+         wall has no texture and should therefore be invisible from the point
+         of the door (DESCENT won't crash but it looks better). This can be
+         made by curves in the exit-corridor or by just setting the light 
+         level very low. Also, the exit-corridor shouldn't have sharp turns
+         because DESCENT will refuse to steer the ship through such hazardous
+         areas (again, look at the originals).
       2) The reactor
-	 The reactor needs a special cube so be shure to change the cube-type
-	 as well. You should place it next to the floor so that it doesn't 
-	 float (not nessesary but ...).
+         The reactor needs a special cube so be shure to change the cube-type
+         as well. You should place it next to the floor so that it doesn't 
+         float (not nessesary but ...).
       3) Switches
-	 They can open doors or activate producers. You may group several
-	 switches to activate one producer/door or one switch for several
-	 producers/doors. Switches work only for one side, so you may trigger
-	 two events with one wall depending of the direction in which the 
-	 wall is flown through (that's good english??).
+         They can open doors or activate producers. You may group several
+         switches to activate one producer/door or one switch for several
+         producers/doors. Switches work only for one side, so you may trigger
+         two events with one wall depending of the direction in which the 
+         wall is flown through (that's good english??).
       4) The producers 
-	 A producer produces 3 times 3 robots. When you choose more than one
-	 type of robot, DESCENT will decide randomly which robot will appear.
+         A producer produces 3 times 3 robots. When you choose more than one
+         type of robot, DESCENT will decide randomly which robot will appear.
       5) Traps
-	 A trap consists of a big room and several adjacent small cubes (con-
-	 nected via secret doors, 'not normally open'). When the player flies
-	 through the big room, a switch is triggered. This opens the secret
-	 doors and (surprise, surprise!) robots will pour out of them.
+         A trap consists of a big room and several adjacent small cubes (con-
+         nected via secret doors, 'not normally open'). When the player flies
+         through the big room, a switch is triggered. This opens the secret
+         doors and (surprise, surprise!) robots will pour out of them.
       6) Secret vault
-	 It's a secret room with a switch-triggered door that closes after
-	 some seconds. If the player is really fast he may reach the vault
-	 *just* in time to see the door closing between him and the extra 
-	 life (:))).
-      7) Energy stations
-	 The type is a cube-type (go to cube-mode to make an energy station).
-	 The yellow dots in the air are just a first texture of the walls.
-	 Sine a wall has no depth, these dots look rather bad when looked at
-	 from the side, so try to use short distances between these walls.
-	 When you place an energy station in a long, straight corridor (like
-	 in 'DEMO.RDL') this looks too regular. So use the 'fit bitmap' 
-	 option to make it look more natural. It may also help to make ener-
-	 gy stations in highly bent sections of a corridor.
+         It's a secret room with a switch-triggered door that closes after
+         some seconds. If the player is really fast he may reach the vault
+         *just* in time to see the door closing between him and the extra 
+         life (:))).
 
 ----------------------------------------------------------------------------
 
-Part [8.]. DEVIL
-
-      This part should explain (a little) how DEVIL works
-
---[8a]------ The file 'DEVIL.INI'
-
-      All virtual informations are saved here (the paths, the defaults for
-      zooming-, moving- and whatnot-factors anso on). You may change anything
-      you want (better make a backup first :). A setup program for DEVIL.INI 
-      will be available soon. 
-
---[8b]------ Macros (again!)
-
-      DEVIL will store all macros in the directory DEVIL\MACROS. You may
-      save your macros in different groups (e.g. cubes) but this will only
-      affect the file-header (there are no subdirectories 'cubes',...).
-      The description of a macro consists of the filename, a short text and
-      a long text (not yet implemented). Later I'll say something about 
-      'macro standars' which you should follow when you upload your own 
-      macros at the Internet (when long text is implemented).
-      I think it would be nice (for starters) if everybody would add a stan-
-      dard cube to his/her macro and save the macro with reference side and 
-      point on this cube so that all macros in the Internet are compatible 
-      to each other. When you make corridors try to save them that, when
-      inserted just after loading 'new.rdl' (without changes of point or 
-      side), floor and ceiling fit to the starting cube.
-
------------------------------------------------------------------------------
-
-Part [9]. DESCENT ACTS FUNNY - WHY ?
-      
-      DESCENT will exit to DOS when
-      - there is no exit-wall (took us some hours to get a grip on it 'caus
-	DESCENT still works sometimes)
-      - reactor not in reactorroom
-      - big boss and reactor in the same level (except level 7: there is a 
-	reactor in multiplayer and a big boss in single player mode)
-      In this cases the screen will turn black. Just type 'mode 80' or 'mode
-      co80' to reset the screnn. You will need earplugs when you use DEVIL or
-      play DESCENT right after such a crash, so it would be a good idea to
-      reset your soundcard.
-      DESCENT will set you in white fog if the start is out of bounds. This
-      should now be prevented by DEVIL so don't bother about it.
-      If the exit-corridor isn't straight enough, the computer will fail to
-      steer the ship through and just ending the level without the last ani-
-      mation sequence.
-      Hall of mirror effect (HOM) when: no sidetexture, no first texture or 
-      only a second texture and a walltexture on side. You may fly through
-      a side without texture but you won't be able to enter the level again.
-      Walls are black with little dots on them: DEVIL hasn't calculated all
-      of the wall's points. Just move one of the side-points to force a new
-      calculation.
+Part [8]. DESCENT CRASHES - WHY ?
 
 ----------------------------------------------------------------------------
 
-Addendum [A]. CHANGES/LAST NOTES
+Part [A]. LAST NOTES
 
-      I'll listing all the changes I made since the last version of DEVIL.
-      So, if you want to be 'up to date' just read the following sections: 
-      [2d]: more pull-down menus
-      [2e]: DEVIL uses a new scaling-factor
-      [3d]: new side/wall explanation
-      [4a]: more moving-features (swap cube)
-      [6] : new and better and more HOTKEYS
-      [7d]: how to insert a wall
-      [7e]: Textures: better bitmap-fitting, aligning bitmaps
-      [7f]: Robots: will be completely decoded soon 
-      [7g]: light was altered
-      [7i]: new macro-features (scaling)
-      
-      This is the newest version of DEVIL and we hope you'll enjoy it. If you 
-      got technichal questions (like VESA compatibility) send your e-mail to
-      Achim (ubdb@). If you got questions concerning level-building or any 
-      ideas to improve this file or DEVIL you may contact either him or me
-      (ub0u@).
+         Sorry, but I've just seen that you've get an older version of this 
+         file with the first publication of DEVIL. This is the fault of
+         campus security guard dragging me from the PC's at the uni (my only
+         access to the Internet). Well, maybe they just wanted to close for
+         this day. But so things went a little on the hectic side while we 
+         tried to upload it and send word to the newsgroup. So this is the
+         complete version of 'DEVIL.DOC' including even an explanation how
+         to handle walls (pretty unimportant anyways ;).
+          
+
 
 Ok, that's it...
  Have fun!
    Don't panic!
      The turtle moves!
-				Bye, Boris
+                                Bye, Boris

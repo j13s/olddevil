@@ -1,32 +1,30 @@
-            __          __  ___    ___        ___   __    __
-           |  ||\      |  ||___\   \  \      /  /  |  |  |  |
-           |  ||  \    |  | ____    \  \    /  /   |  |  |  |
-           |  | \   \  |  ||____\    \  \  /  /    |  |  |  |
-           |  |___\  | |  |______     \  \/  /     |  |  |  |____
-           |_________| |_________\     \____/      |__|  |_______\
+           __          __  ___    __        __   ____    __
+          |  ||\      |  ||___\   \ \      / /    ||    |  |
+          |  ||  \    |  | ____    \ \    / /     ||    |  |
+          |  | \   \  |  ||____\    \ \  / /      ||    |  |
+          |  |___\  | |  |______     \ \/ /       ||    |  |____
+          |_________| |_________\     \__/       _||_   |_______\
                                         
 
 
       I first intended to write a short documentation about building a small
       level with DEVIL but then I noticed that I should explain things more
-      thoroughly. So I wrote 'DEVIL.DOC' (ok, you mustn't read that first but 
+      thoroughly. So I wrote 'DEVIL.DOC' (ok, you needn't read that first but 
       you should read it sometimes because not all functions are explained
       here). 
-      I've also made another level (without step-by-step documentation) to 
+      I'll also write another level (without step-by-step documentation) to 
       show how producers and switches work.
 
    [A]. A LEVEL FROM THE SCRATCH
        [A1] Moving around
        [A2] The modes
-       [A3] Substructures
-       [A4] Macros and deleting
-       [A5] The seperating 
-       A5] Textures
-       [A6] Walls
-       [A7] Things
-       [A8] Exit
-       [A9] Merging the level in DESCENT
-       [A10] Stylistics
+       [A3] Macros and deleting
+       [A4] Textures
+       [A5] Walls
+       [A6] Things
+       [A7] Exit
+       [A8] Merging the level in DESCENT
+       [A9] Stylistics
 
     [B]. DEMO-LEVEL
 
@@ -52,6 +50,8 @@ Part [A]. A LEVEL FROM THE SCRATCH
       move tagged objects. Normal objects are moved relative to your point of 
       view but things with orientation (starts, robots and the reactor) are
       steered (just lik you would fly them). Just try it.
+      If you want to use your mouse, read the 'Your mouse and DEVIL' section
+      in DEVIL.DOC.
       
 --[A2]------ The modes
 
@@ -62,34 +62,25 @@ Part [A]. A LEVEL FROM THE SCRATCH
       the current object. The Internal menu is the most complicated: here you 
       can enter the move-factor, the angle of your turns when you press 
       2/4/6/8, ...
-      If you want to go to another cube (well, if you'd have more than one :) 
-      just press 'c' for the next or '[S]+c' for the previous cube. That is 
-      's' or '[S]+s' for sides, 't' or '[S]+t' for things, ... When you 
-      change sides, you will always remain in the same cube; when you change 
-      points you will remain in the same side. When you want to change seve-
-      ral objects, e.g. the textures of all walls in a level, you may find it 
-      handy to 'tag' objects. This is possible in every mode by pressing 
-      '[SPACE]'. '[S]+[SPACE]' tags/untags every object in the level.
-
---[A3]------ Substructures
-
-      When you change tho mode you'll notice that the display in the upper
-      right corner changes: it displays the substructures of the current 
-      object. You may change them using the cursor keys and [RETURN]. 
-      Example: substuctures of walls are: door-type, open-type, open at end-
-      type, switch-type, texture-type and animation texture-type (latest only
-      for doors).
       Now go to cube-mode ('[C]+c'). Let's suppose you want to change the 
-      light-level of this cube (in the substructures): just go to 'lights' 
-      using the cursor-keys and press [RETURN].
+      light-level of this cube: just go to 'lights' using the cursor-keys and 
+      press [RETURN].
       If you've chosen sth. wrong just press [ESC]. This will quit the 
       current menu. Now you may enter any value from 0000 to 8000 (hex). This 
       will change the light level in the whole cube. Sometimes it is 
       necessary to change the light level for each side seperately (e.g. when 
       there are lights on the ceiling). This is done in the side- or point-
-      mode.
+      mode. If you want to go to another cube (well, if you'd have more than 
+      one :) just press 'c' for the next or '[S]+c' for the previous cube. 
+      That is 's' or '[S]+s' for sides, 't' or '[S]+t' for things, ... 
+      When you change sides, you will always remain in the same cube; when 
+      you change points you will remain in the same side.
+      When you want to change several objects, e.g. the textures of all walls 
+      in a level, you may find it handy to 'tag' objects. This is possible in 
+      every mode by pressing '[SPACE]'. '[S]+[SPACE]' tags/untags every 
+      object in the level.
 
---[A4]------ Macros and deleting
+--[A3]------ Macros and deleting
 
       OK, after you get used to the different controls let's try our first 
       macro. Go to side-mode ('[C]+s') and choose a side with the texture 
@@ -103,36 +94,25 @@ Part [A]. A LEVEL FROM THE SCRATCH
       blue (that is: tagged). This is because it is very easy to make things 
       wrong with macros. So if you just inserted a macro and want to delete 
       it just press [DELETE]. This will delete every tagged object (hence the 
-      name). 
-      Now compare the cubes (especially concerning the lights, they should be 
-      on the same side on both cubes). Most certainly you've made a mistake 
-      so that you have to delete the cube. Now try it again while I'll try to 
-      explain just HOW this damned macros work (I got it wrong some zillion 
-      times myself). When you make a macro, DEVIL takes the current side and 
-      point. When you insert a macro, DEVIL takes the current point and side 
-      and tries to mend these with the point and the side of the macro. DEVIL 
+      name). You can't delete the active cube (which is shown green) so you
+      will have to change the cube some-times before deleting it. Now compare 
+      the cubes (especially concerning the lights, they should be on the same 
+      side on both cubes). Most certainly you've made a mistake so that you 
+      have to delete the cube. Now try it again while I'll try to explain 
+      just HOW this damned macros work (I got it wrong some zillion times my-
+      self). When you make a macro, DEVIL takes the current side and point. 
+      When you insert a macro, DEVIL takes the current point and side and 
+      tries to mend these with the point and the side of the macro. DEVIL 
       will therefore turn the cube in the macro to match the two points and 
       sides. Just keep trying until you get the hang of it. 
-      Build a corridor with a length of 9 standard cubes (corridor 1) and add 
-      another corridor of the same length to the 5th cube (corridor 2).
-      Go to the last wall of corridor 2 and press [END]. This will make the
-      exit-wall which is needed for every level.
+      Then build a corridor with an intersection (you may want to make longer 
+      macros to build your corridor faster). Be sure to make one of the bran-
+      ches very long, this branch will become the exit-corridor. After making
+      it at least aprox. 10 cubes long, go to the last cube and switch to the
+      finishing side. Then press [END] which will make the exit.
       It schould look like 'tut1.rdl'
 
---[A5]------ The separating and joining of cubes
-
-      Now we'll play a bit. Switch to side-mode and choose a wall (a wall is
-      a side with an adjacent cube). Tag it and move it around: see how the
-      cubes are connected? Now press [INSERT]. This will cause DEVIL to se-
-      parate the two cubes (it will change the wall in two sides). Move the
-      tagged side and notice the difference. When you want to join two cubes
-      you have to tag one side, then go to the side with which you want to 
-      connect the tagged side. Now press [DELETE]. This will connect the 
-      cubes (it changes the two sides into a wall). If the two sides aren't at 
-      the same position, DEVIL will try to adapt the tagged side to the 
-      current side (which will remain the same).
-
---[A6]------ Textures
+--[A4]------ Textures
 
       Texture changing is easy: just switch to side-mode and choose texture 1 
       or 2. Texture 2 is used for signs, monitors or lights. It will lay on 
@@ -142,24 +122,33 @@ Part [A]. A LEVEL FROM THE SCRATCH
       remain the same. You may want to change the orientation of the second
       texture: do that with 'change orientation'.
 
---[A7]------ Walls
+--[A5]------ Walls
 
+         side        wall      side
+            __________ __________
+           |          |          |
+           |          |          |
+      void |  cube1   |  cube2   | void  
+           |          |          |
+           |__________|__________|
+
+      Two adjacent cubes in the void: a wall is a cube-side between two cubes 
+      a side is a cube-side without another adjacent cube. 
       Walls are sides between cubes. They may have different functions: 
       switches (for doors or producers), doors, only texture or just plain 
       nothing. A wall may even be a door AND a switch. 
-      We will make two doors now:the first at the joining of corridor 1 and 2 
-      and the second in corridor 1 so that there is just one cube left 
-      Change to wall-mode and change the side of the cube so that the side in 
-      which you want to insert the door is red. Then press [INSERT]. Now 
-      let's change the types of the doors: the door at the intersection is 
-      'stay open, switch' (means you can't open it) and 'open at end' (means 
-      it will open when the reactor is blown up). In addition to that you 
-      should set the switch to 'normal exit' (means exit). This is the normal 
-      exit-door.
-      The second door is 'open/close w. laser' and 'red key'.
+      We will make two doors now:the first in the bent branch just after the 
+      intersection (branch one) and the second in the other branch so that 
+      there is just one cube left (branch two). Change to wall-mode and 
+      change the side of the cube so that the side in which you want to 
+      insert the door is red. Then press [INSERT]. Now let's change the types 
+      of the doors: the door in branch one is 'stay open, switch' (means you 
+      can't open it), 'open at end' (means it will open when the reactor is 
+      blown up). In addition to that you should set the switch to 'normal 
+      exit' (means exit). The second is 'open/close w. laser' and 'red key'.
       You are now at 'tut2.rdl'.
 
---[A8]------ Things
+--[A6]------ Things
       
       Things are Robots/Items/Weapons. Switch to thing-mode and press 
       [INSERT]. An energy boost will appear (default). Switch him into a red 
@@ -170,12 +159,13 @@ Part [A]. A LEVEL FROM THE SCRATCH
       behind the red door. Insert another thing and switch it to reactor. 
       Since the reactor is kind of special you have to change the cube-type 
       as well. Go into cube-mode and switch the cube-type to reactor.
-      You may also want to insert a robot: insert another energy boost in 
-      another cube and change it's type to 'robot'. Now choose a robot and, 
-      if you want, an item that the robot will drop (drop-type 'drop item'; 
-      choose item out of list and enter a drop-number)
+      You may also want to insert a robot: insert another energy boost and
+      change it's type to 'robot'. Now choose a robot and, if you want, an
+      item that the robot will drop (drop-type 'drop item', choose item out
+      of list and enter a drop-number)
 
---[A9]------ Exit
+
+--[A7]------ Exit
 
       The exit of a level is build a bit more complicated than in DOOM. First
       there is the exit-door: it never opens until the reactor is blown up.
@@ -188,18 +178,22 @@ Part [A]. A LEVEL FROM THE SCRATCH
       wall can't be seen from the beginning of the exit-corridor (because of
       HOM-effects). I've not done so because it's only a stylistic fault and 
       won't do any harm.
+      IMPORTANT: DESCENT seems to need an exit (we aren't 100% sure). When 
+      you load a level without exit it will crash sometimes/sometimes not, 
+      depending of the time, your age and the current moon-phase. This 
+      freaked us a lot but we thinks we have sorted it out by now.
       The exit-corridor should also have a certain minimal length (try sth
       around 10 cubes at least) and it shouldn't have sharp corners (no 90ø 
       turns).
       Your level is now ready and should look like 'tut3.rdl'.
 
---[A10]----- Merging the level in DESCENT
+--[A8]------ Merging the level in DESCENT
 
       You don't have to merge them. Just only rename them in 'levelXX.rdl'
       where XX ranges from 01 to 27 including S1,S2,S3 (for secret levels).
       DESCENT will load this levels instead of those in the .HOG-file.
 
---[A11]----- Stylistics
+--[A9]------ Stylistics
 
       Here are just some tips what you should try to do/don't :
       - don't make the exit-corridor too short/straight (see exit)
@@ -233,23 +227,18 @@ Part [B]. DEMO-LEVEL
       (mine for example). There will be another enemy and the reactor.
       Notice the mind-wheeling effect corridor <-> ball? 
       
-      Sorry, the producers didn't work and you couldn't load this level in 
-      DEVIL. This is because we've packed the wrong file (it was compiled 
-      with an earlier version of DEVIL). The one included in this pack should
-      work properly.
-
-
 
 ----------------------------------------------------------------------------
 
 Part [C]. CHANGES 
+      No more changes made.
 
-      - explained a bit more so that you won't need to read 'DEVIL.DOC'
-        (mainly 'Moving around', 'Substructres', 'The separating and ...')
-      - explained the exit structure a bit better
-      - some minor/major changes of the demo-levels
-      - updated informations about loading own levels in DESCENT
-      Anyone had problems? I can try to explain things a bit better because
-      since I'm working with DEVIL such a (relative) long time I've problems 
-      deciding what is obvious and what should be explained. 
 
+I received lotsa mails asking about mouse-controlling or how to tag/untag ...
+These things are explained more thoroughly in the DEVIL.DOC file and I won't
+explain ALL subjects here. So if you got any questions remember: first RTFD,
+then mail me. I will answer all questions if I explained some things poorly 
+and if someone has suggestions for improvement, send them (thanx go to Pat
+Johnson for suggesting how to improve the wall/side explanation).
+Don't worry, be happy 
+Boris
