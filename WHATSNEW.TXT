@@ -7,11 +7,7 @@ in the file docs/german.doc. It would be fine if someone could translate
 it to English. If you want to do it, please contact me, because I'm 
 currently updating this manual to V2.2.
 
-This is the full version of Devil V2.2d. If you prefer more bugfree
-versions use the V2.1? releases.
-
-Sorry that this version is released that late but I just haven't had enough
-time to do the necessary work on this version :-(.
+This is the full version of Devil V2.2e.
 
 Please, please e-mail all bugs you encounter to the Mailing List. 
 And please use the word "bug" somewhere in your header because all
@@ -20,6 +16,60 @@ automatically.
 
 FOR DESCENT 2 MODE, DEVIL NEEDS THE MEDIUM (48MB) INSTALLATION. Sorry about
 this, but I can't access the data from the CD, it is packed (I think).
+
+V2.2d-->V2.2e:
+--------------
+
+New (changed) features:
+-Introduced a new type of object/mode: Edges. The current point is now fully 
+ independent from the current cube and contains only the coordinate
+ data of this point. The edges are the four corners of one side containing
+ the lighting/uv data. 
+-You can change reactor time&strength
+-A new button in the side window: 'Locked'. Shows if a side is locked
+ (you can still lock a side via Special Tag or alt+space in side mode). The
+ uv-coords of a locked side won't be changed.
+-Special tag in edge-mode tags all three edges corresponding to one point
+ in the current cube. Special tag in pnt-mode tags all edges of this
+ point. Special tag in side mode locks the side. In other modes
+ special tag has no meaning.
+-Tab is now change movemode again and turning double view on/off is now
+ d instead of tab.
+
+Bug fixes:
+-Fixed a 'Floating Point Exception' in the texture mapping routines.
+ I hope it is much more stable now.
+-Fixed problems with moving the corridor with the mouse (it is not possible
+ to 'select' the yellow corridor markers and you can now move the
+ corridor markers even when they are far away)
+ 
+
+V2.2c-->V2.2d:
+--------------
+
+New features:
+-The RL2 files version 7 are now fully supported (so you can load DMB
+ levels but not levels from the Vertigo series because you need some
+ additional data (pig-files and so on) to handle this levels)
+-Blinking lights are now available (if you have Descent V1.1 or better)
+-You can tag single corners now with Alt+Space (in Point mode) and all
+ corners with Alt+Shift+Space. Then you can change all the light values
+ of the tagged corners with pressing the right mousebutton on one of
+ the four light fields (which will be changed, too, of course). This
+ is not the best solution but it is one I could do quickly. Maybe I will
+ make an additional window for the corners but I have to think about this.
+
+Fixed Bugs:
+-Problems with crashing Devil if you turn on rendering/change display options
+ without a level
+-You can now click&tag pnts (it seems that I've forgotten to program this?!)
+-Fixed the problem with moving the pnts the old way (with the buttons)
+-Added the run.bat-File (don't know why this was not in the zip file ?)
+-The message window now disappears if you press a key.
+-The graphic errors if you change the current thing are fixed.
+-Fixed bug with 'New level'.
+-Hopefully fixed problems with the producers in Descent 1 mode.
+-Fixed the problem with tagging walls.
 
 V2.2b-->V2.2c:
 --------------
@@ -134,32 +184,6 @@ Fixed bugs:
  lines/FP exceptions anymore.
 -Hopefully fixed the bug with non-convex cubes/connecting
 -Fixed the bug with deleting tagged cubes and not deleting the tag list
-
-V2.2c-->V2.2d:
-
-New features:
--The RL2 files version 7 are now fully supported (so you can load DMB
- levels but not levels from the Vertigo series because you need some
- additional data (pig-files and so on) to handle this levels)
--Blinking lights are now available (if you have Descent V1.1 or better)
--You can tag single corners now with Alt+Space (in Point mode) and all
- corners with Alt+Shift+Space. Then you can change all the light values
- of the tagged corners with pressing the right mousebutton on one of
- the four light fields (which will be changed, too, of course). This
- is not the best solution but it is one I could do quickly. Maybe I will
- make an additional window for the corners but I have to think about this.
-
-Fixed Bugs:
--Problems with crashing Devil if you turn on rendering/change display options
- without a level
--You can now click&tag pnts (it seems that I've forgotten to program this?!)
--Fixed the problem with moving the pnts the old way (with the buttons)
--Added the run.bat-File (don't know why this was not in the zip file ?)
--The message window now disappears if you press a key.
--The graphic errors if you change the current thing are fixed.
--Fixed bug with 'New level'.
--Hopefully fixed problems with the producers in Descent 1 mode.
--Fixed the problem with tagging walls.
 
 A BIG thanks to all guys at the mailing list and all others for bug reporting
 and making suggestions.
