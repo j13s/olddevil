@@ -1,0 +1,4 @@
+DEVIL 0.97 - An editor for the Parallax game Descent
+You need: copro, VESA-compatible graphics card, Descent registered version
+  (shareware available soon) and lots of time.
+Just unzip DEVIL097.ZIP in your DESCENT directory with -d.
