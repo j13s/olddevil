@@ -34,6 +34,7 @@
 #include "config.h"
 #include "credits.h"
 #include "do_event.h"
+#include "lac_cfg.h"
 
 void dec_fastquit(int ec) { savestatus(0); closegrph(); exit(1); }
 
@@ -73,7 +74,13 @@ void dec_savelevel(int ec)
   {checkmem(fname=MALLOC(strlen(l->filename)+1)); strcpy(fname,l->filename);}
  if(fname!=NULL)
   {
-  if(!savelevel(fname,l,1,1,init.d_ver,ec!=ec_savewithfulllightinfo))
+      int fulllightinfo = 0;
+      if(isF2SavingAll)
+          fulllightinfo = (ec==ec_savelevel);
+      else
+          fulllightinfo = (ec!=ec_savewithfulllightinfo);
+
+  if(!savelevel(fname,l,1,1,init.d_ver,fulllightinfo))
    waitmsg(TXT_CANTSAVELVL,l->fullname);
   else 
    { printmsg(TXT_LEVELSAVED,l->fullname,fname);
@@ -226,7 +233,12 @@ void dec_wallmode(int ec)
  { shrinkopt_win(tt_door); changecurrmode(tt_door); }
 
 void dec_movemode(int ec)
- { changemovemode(view.movemode<mt_texture-1 ? view.movemode+1 : 0); }
+ {
+   if(changeCubeEnabled)
+     changemovemode(view.movemode<mt_texture-1 ? view.movemode+1 : 0);
+   else
+     changemovemode(view.movemode<mt_texture-2 ? view.movemode+1 : 0);
+ }
 
 void dec_gridonoff(int ec) { view.gridonoff^=1; drawopt(in_internal); }
 

@@ -31,6 +31,7 @@
 #include "version.h"
 #include "askcfg.h"
 #include "config.h"
+#include "lac_cfg.h"
 
 #define CFG_FNAME "PLAY%.2d"
 #define CFG_CURNAME "TMPDEVIL"
@@ -261,7 +262,7 @@ int readlvlconfig(FILE *f,struct leveldata *ld)
 #define ERRORREADCFG(f) { fclose(f); \
  waitmsg(TXT_CANTREADSTATUSFILE,init.lastname); \
  remove(init.lastname); return; }
-void readstatus(void)
+void readstatus(char* lfname)
  {
  FILE *f;
  struct node *n;
@@ -335,10 +336,24 @@ void readstatus(void)
  for(c=0;c<lno;c++)
   {
   if(fscanf(f,"%255s",fname)!=1) ERRORREADCFG(f);
-  if((ld=readlevel(fname))==NULL) printmsg(TXT_CANTOPENLVL,fname);
-  else newlevelwin(ld,1);
+  if(lfname == NULL)
+  {
+      if((ld=readlevel(fname))==NULL)
+          printmsg(TXT_CANTOPENLVL,fname);
+      else
+          newlevelwin(ld,1);
+  }
+  }
+  if(lfname != NULL)
+  {
+      if((ld=readlevel(lfname))==NULL)
+          printmsg(TXT_CANTOPENLVL,fname);
+      else
+          newlevelwin(ld,0);
   }
  in_changecurrentlevel(NULL);
+  if(lfname == NULL)
+  {
  for(c=0,n=view.levels.head;n->next!=NULL && c<lno;c++,n=n->next)
   {
   sprintf(fname,"LEVELDATA%.2d",c);
@@ -346,6 +361,7 @@ void readstatus(void)
   if(!readlvlconfig(f,n->d.lev)) ERRORREADCFG(f);
   in_changecurrentlevel(NULL);
   }
+ }
  w_readcfg(f);
  fclose(f);
  if(d>=0) 
@@ -546,6 +562,7 @@ int readconfig(void)
  FILE *f,*hamf;
  char *ininame,*hamname,*hamfname,buffer[300];
  long int hamver;
+ lac_read_cfg();
  while((f=fopen(init.cfgname,"r+"))==NULL)
   { printf(TXT_CANTREADCFG,init.cfgname); return 0; }
  if(fscanf(f,"%s",buffer)!=1)

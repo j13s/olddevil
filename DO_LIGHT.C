@@ -25,6 +25,7 @@
 #include "initio.h"
 #include "do_event.h"
 #include "do_light.h"
+#include "lac_cfg.h"
 
 extern int init_test;
 
@@ -55,8 +56,8 @@ int setcornerlight(struct point *spos,unsigned int light,
  s=(l<=MINWAY ? 1.0 : sqr_qw_mw/((l+qw_2mw)*(l+qw_2mw)));
  if(s<=MINFACTOR) return 0;
  if(n->d.c->walls[wd]!=NULL)
-  add[wd*4+cd]=(tmp=add[wd*4+cd]+(unsigned long)(s*light))>MAX_LIGHT ?
-   MAX_LIGHT :tmp; 
+  add[wd*4+cd]=(tmp=add[wd*4+cd]+(unsigned long)(s*light))>theMaxLight ?
+   theMaxLight :tmp; 
  return 1;
  }
 
@@ -369,13 +370,14 @@ void calcillumwall(struct node *c,int wall,int *light)
       { for(i=0;i<24;i++) 
          ne->d.lse->add_light[i]=
 	  (tmp=ne->d.lse->add_light[i]+
-	   n->prev->d.lse->add_light[i])>MAX_LIGHT ? MAX_LIGHT : tmp;
-        FREE(n->prev->d.lse); FREE(n->prev); }
+           n->prev->d.lse->add_light[i])>theMaxLight ? theMaxLight : tmp;
+        ne= n->prev; FREE(ne->d.lse); unlistnode(&illum_cubes, ne); FREE(ne); }
      else
-      { n->prev->prev=effects.tail;
-        n->prev->next=effects.tail->next;
-        effects.tail->next=n->prev;
-        effects.tail=n->prev; }
+     {
+        ne = n->prev;
+        unlistnode(&illum_cubes, ne);
+        listnode_tail(&effects, ne);
+      }
      }
     }
    }
@@ -571,6 +573,7 @@ void smoothlight(void)
    new_effects.tail->next=nls->d.ls->effects.tail->next;
    nls->d.ls->effects.tail->next=new_effects.head;
    nls->d.ls->effects.tail=new_effects.tail;
+   nls->d.ls->effects.size += new_effects.size;
    }
   }
  }
@@ -701,7 +704,7 @@ void calccornerlight(int withsmooth)
 	{
 	overall+=nlse->d.lse->cube->d.c->walls[i]->corners[j].light;
 	nlse->d.lse->cube->d.c->walls[i]->corners[j].light=
-	 overall>MAX_LIGHT ? MAX_LIGHT : overall;
+         overall>theMaxLight ? theMaxLight : overall;
 	}
        if(ntc->d.ls->fl!=NULL)
 	checkmem(addnode(&nlse->d.lse->cube->d.c->fl_lights,-1,ntc->d.ls->fl));
@@ -765,7 +768,7 @@ void dec_mineillum(int ec)
  if(l==NULL) { printmsg(TXT_NOLEVEL); return; }
  if(l->tagged[tt_cube].size==0) { printmsg(TXT_NOCUBETAGGED); return; }
  time1=clock();
- calccornerlight(0); setinnercubelight();
+ calccornerlight(isAlwaysSmoothing); setinnercubelight();
  l->levelsaved=0; l->levelillum=1;
  drawopts(); plotlevel();
  printmsg(TXT_ENDCALCLIGHT,(clock()-time1)/(float)CLOCKS_PER_SEC);
@@ -814,8 +817,8 @@ void start_adjustlight(struct wall *wall)
    if((sum=n->d.lse->add_light[w*4+c])!=0)
     {
     sum+=n->d.lse->cube->d.c->walls[w]->corners[c].light;
-    n->d.lse->cube->d.c->walls[w]->corners[c].light=sum>MAX_LIGHT ?
-     MAX_LIGHT : sum;
+    n->d.lse->cube->d.c->walls[w]->corners[c].light=sum>theMaxLight ?
+     theMaxLight : sum;
     }
   }
  }
@@ -854,8 +857,8 @@ void end_adjustlight(struct wall *wall,int save)
     if((sum=n->d.lse->add_light[w*4+c])!=0)
      {
      sum+=n->d.lse->cube->d.c->walls[w]->corners[c].light;
-     n->d.lse->cube->d.c->walls[w]->corners[c].light=sum>MAX_LIGHT ?
-      MAX_LIGHT : sum;
+     n->d.lse->cube->d.c->walls[w]->corners[c].light=sum>theMaxLight ?
+      theMaxLight : sum;
      }
    }
  }

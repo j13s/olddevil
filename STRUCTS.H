@@ -326,7 +326,7 @@ struct door
  short old_txt1 NONANSI_FLAG; /* old texture 1 of the wall */
  unsigned char *txt_data NONANSI_FLAG;
  };
-#define MAX_LIGHT 65535
+#define MAX_LIGHT 65207 /* 199% */
 struct corner
  {
  short int x[2] NONANSI_FLAG;
