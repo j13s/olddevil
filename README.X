@@ -1,3 +1,5 @@
+Hastrup August 1998
+
 This is a modified version of Devil based on Devil 2.2l.
 
 You run this modified version by typing DEVILX on your commandline.
@@ -16,6 +18,37 @@ I do not offer any support at all, but you can try to reach me at DDL
 I just made this version to make my own level building easier.
 
 Read readme.txt for info about Copyright & Warranty.
+
+============== Devil 2.2LC2 =========================
+
+Bugs fixed:
+- The UVL fields in the Edge (corner) box, now works.
+
+Things changed:
+- Devil will, in Descent 1 mode, now search for a DTX 1 PIG patch file in
+  the same directory as the loaded level.
+  It will first look for a DTX or PG1 file with the same name as the
+  (RDL) level file, if non is found it will look for a file called
+  DEVIL.DTX or DEVIL.PG1.
+  If a PIG patch file is found it is used to display the modified textures
+  in the level just like when a POG file is used when making Descent 2 levels.
+  If no PIG patch file is found the normal Descent 1 textures are displayed.
+  This will allow you to develope levels using D1X with custom textures.
+- When "File->Play Level" or "File->Save to Descent Directory" is used, Devil will 
+  automaticly add any PG1/DTX and HX1 files belonging to the level which is
+  found in the level's directory.
+  Example:
+    The files:
+    MYLEVEL.RDL
+    MYLEVEL.PG1 (or MYLEVEL.DTX or DEVIL.PG1 or DEVIL.DTX)
+    MYLEVEL.HX1 (DEVIL.HX1)
+    will all be added to the HOG file if they are pressent in the same
+    directory.
+  This will allow you to develope levels using D1X with custom textures and
+  customize robots.
+
+
+============== Devil 2.2LC1 =========================
 
 Bugs fixed:
 - Deleting cubes do not cause a crash later when the level is
