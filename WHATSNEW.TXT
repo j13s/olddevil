@@ -7,7 +7,7 @@ in the file docs/german.doc. I've found someone who will translate
 the manual to English. If you want to help him (the complete manual
 are >50 pages), please send him a E-Mail (robinm@za.eds.com)
 
-This is the full version of Devil V2.2i.
+This is the full version of Devil V2.2k.
 
 Please, please e-mail all bugs you encounter to the Mailing List. 
 And please use the word "bug" somewhere in your header because all
@@ -16,6 +16,53 @@ automatically.
 
 FOR DESCENT 2 MODE, DEVIL NEEDS THE MEDIUM (48MB) INSTALLATION. Sorry about
 this, but I can't access the data from the CD, it is packed.
+
+New features: (V2.2j->V2.2k)
+-POG-files are supported. You need to copy the POG-file in the same directory
+ as the RL2 file and Devil will load it automatically when you load the level.
+ (the mission manager won't use the pog-files)
+-There is a new move mode: Select object. If you move in this mode with the
+ keys/buttons you can select the current cube, if you turn yourself, you
+ can select the current side. You change the cube in the direction you specify.
+ (should be quite clear; sometimes it is not possible to select a specific
+ side this way without changing your own orientation, i.e. if the cube
+ looks like this:
+     |\
+    0|  \
+     |    \3
+      \     \
+      1 \__2__\
+ If you press left you select side 0, if you press right/up you select 3,
+ down selects 2, 1 is not accessible without banking. If 0 is not connected
+ and 1 is you can achieve the neighbour of 1 by moving to the left.
+ (Sounds complicated, just test it, it will work in the most cases as you
+ expect it)
+-Alt+Space does in Edge mode now the same thing as in point mode.
+-After a controlled crash (the crashes with the long message) the position of
+ the windows is restored.
+-You can resize a texture in the "Fit Bitmap"-window or in the level window
+ in each direction if you press the left mouse button and the right one.
+ So be careful if you use "Fit Bitmap" in the level window because you
+ must release the left mouse button before you can move the texture
+ in the old fashioned way.
+-Level saved to the Descent directory are not regarded as 'saved levels'
+ anymore.
+
+Fixes bugs: (V2.2j->V2.2k)
+-Illuminating with 'smooth light' is working again.
+-Fixed some problems with light sources which weren't properly turned out
+ if you shoot them.
+-A wall with supertransparent textures (the textures which you can only use
+ as texture 2 on a wall, like the grate) are not longer considered as 
+ transparent for the light.
+-Fixed some problems in rendering transparent textures.
+-In D1-mode 'Flip y-axis' is available
+-Fixed some problems with clicking/tagging of objects.
+-Some assert-errors in texture-move-mode (the fit bitmap window open)
+ doesn't occur anymore.
+-Fixed problems with negative values as texture numbers.
+-Edges are now untagged if you remove their wall.
+-Solved problems with 'make room' and rendering
 
 Fixed bugs (V2.2i->V2.2j):
 -Fixed problems in the moving routines which were occuring if you rotate too
@@ -377,5 +424,4 @@ PS: Next version:
    to see what I can do with them. Anyway, I will fix the bugs that are 
    reported so maybe Devil will become a somewhat stable program in a few
    months (sounds unbelievable to me ;-).
-   For this reasons I won't release any V2.1? versions anymore.
    
