@@ -7,27 +7,43 @@ Welcome to DEVIL, the Descent Editor for Vertices, Items and Levels at all.
 	   |  |___\  | |  |______     \  \/  /     |  |  |  |____
 	   |_________| |_________\     \____/      |__|  |_______\
 					
-		This is the README.TXT for version V0.99
-
+		This is the README.TXT for version V1.01
+		
+		Mail address: ubdb@rz.uni-karlsruhe.de
 
 DEVIL is free software, and you are welcome to redistribute it under certain
 conditions, therefore DEVIL comes with ABSOLUTELY NO WARRANTY;
-for details see the file 'COPYING'. go32.exe is copyright by DJ Delorie
-for copying this see 'COPYING.DJ'. You get GNU-C with source-code on nearly 
+for details see the file 'COPYING'. go32.exe is copyright by DJ Delorie;
+for copying this see 'COPYING.DJ'. The graphics library is copyright
+by Csaba Biegel; see 'COPYING.CB'. You get GNU-C with source-code on nearly 
 every ftp-site (for example ftp.uni-stuttgart.de).
 
 I've tried to write this file in English because I think most of you
 are better in reading very bad English than correct German, but I
 would prefer if someone can correct this :-))).
 
-Don't worry that you have not DEVIL V0.98 but V0.97. V0.98 never existed.
-Sorry that I'm a bit late but I the work with making DEVIL portable has
-taken some days and wasn't planned.
 ATTENTION:
  If you think you've build a great macro, please mail it to me. I am still
  searching for a good idea for specifying macros.
+ 
+ There is a special driver for S3 cards which uses the accelerator
+ functions of the card. If you want something like this for your (not S3)
+ card also, please mail me a specification and I will see what I can do.
+ 
+ A note to all people who have mailed me something: I've erased all my
+ received mails a few weeks ago by mistake. So if you're wondering why you
+ get no mail from me, this is the reason.
+ 
+Note that DEVIL.DOC & BUILDLEV.DOC are not documenting the new features
+of release V1.01. Refer to refman.doc if you've any questions.
+
+NEW: I've introduced some sort of mailing list. If you always want to get
+the latest Devil release via E-Mail (uuencoded), please send me short
+mail (the source-code will only be included if you say so).
 
   CONTENTS:
+  
+  [0] THE VERSION NUMBERS.
   
   [1] INSTALLING DEVIL
       [1a] What do I need to run DEVIL ?
@@ -35,7 +51,6 @@ ATTENTION:
       [1c] If one file is missing what do I have to do?
       [1d] DEVIL crashes before the screen appears. 
       [1e] DEVIL runs only in VGA-mode but I have a VESA-card.
-      [1f] I've tried everything but DEVIL won't work. Is there any hope?
 
   [2] BUILDING LEVELS
       [2a] Building a level.
@@ -63,10 +78,17 @@ ATTENTION:
       [5c] Extending DEVIL.
       [5d] Recompiling DEVIL.
 
-  [A] VERSIONS
+  [A] UPDATES
   
   [B] Things I've tried without success.
-      
+  
+[0] THE VERSION NUMBERS.
+ Since version V1.0a DEVIL is numbered in the following way:
+ The full working, official release I will copy on anonymous ftp-sites
+ is called V1.0, V1.1 and so on. The beta-testing versions are
+ called V1.0a, V1.0b, V1.0c and so on. So don't copy a beta-testing
+ version on ftp-sites, please.
+
 [1] INSTALLING DEVIL
 
  [1a] What do I need to run DEVIL ?
@@ -82,87 +104,91 @@ ATTENTION:
       Some problems have occured with the built-in VESA driver from go32
       with the last version, so I have included this time all drivers
       I have.
-   4. The following files: devil.exe, devil.ini, extract.exe or
-      (new.rdl (or any other level) and palette.256).
+   4. The following files: devil.bat devilexe.exe, devil.ini, extract.exe,
+      hogfile.exe, devil.pal, devil.fnt and some levels, drivers and
+      macros & documentation files is the full version. You need
+      devil.exe, devil.ini, devil.pal and devil.fnt and one level or
+      extract.exe.
       
  [1b] How to install this thing ?
   If you have the descedit.zip file just pkunzip it with -d in the descent
   directory. Then copy the descent.hog file to a save place (inclevel.exe
   will modify it). Since you read this file you've done this before, I
   suppose? In your DESCENT directory is now a directory called DEVIL
-  with the three subdirectories LEVELS, MACROS and DRIVERS. If DEVIL
-  works normally in SVGA-mode (that is when you have a texture in the
-  lower right corner) you can kill DRIVERS, otherwise look at the
-  sections [1e] and following.
+  with the two subdirectories LEVELS and MACROS. 
   
   If you've several single files, first look if you've all files mentioned
   in [1a] if not see [1c]. If you've all files you must do the following
   things:
-   1. make an subdirectory called "DEVIL" (the name is not important)
+   1. make an subdirectory called "DEVIL" (the name IS (!) important)
       in your descent directory (this is important). In this
       directory you make two subdirectories called "MACROS" and "LEVELS"
       (name and position important). The .doc files you can copy 
       whereever you want.
-   2. copy devil.exe, devil.ini, readme.txt and extract.exe in the "DEVIL" 
-      directory.
+   2. copy *.exe and devil.* in the "DEVIL" directory.
    3. copy any *.rdl file you have in the LEVELS directory.
    4. copy any *.rmc file you have in the MACROS directory.
    
  [1c] If one file is missing what do I have to do?
-  If you've no Internet access you've a problem. Otherwise look
-  at the following sites:
+  The other files:
    - descent, registered version: buy it.
    - go32.exe,emu387: look for djgpp (gnu-c for msdos from DJ Delorie). This
       is nearly on every server.
-   - palette.256, a .rdl file: if you've extract.exe you can use this
+   - devil.pal, a .rdl file: if you've extract.exe you can use this
       to extract files from the hogfile.
-   - devil.exe,devil.ini,extract.exe: I will try to copy these files on the
-      following sites (I suppose you must look in incoming directories
-      to find it):
-     ftp.cdrom.com         (/pub/games/descent/incoming)
-     ftp.uni-heidelberg.de (/incoming) 
-     
+   - devil.exe,devil.ini,extract.exe,hogfile.exe,devil.fnt,devil.pal:
+      Have a look at the sites listed in appendix [A] for the Devil files.
+      You can also try one of the following sites (but there you probably
+      won't find the newest version):
+      (I suppose you must look in incoming directories to find it):
+       ftp.cdrom.com         (/pub/games/descent/incoming)
+       wuarchive.wustl.edu   (??? some incoming directory for DESCENT)
+       ftp.uni-heidelberg.de (/incoming) 
+   - devsrc.zip: This is the source-code. I have seperated it from the
+      rest of the file because it's much too long to copy it every time
+      if you don't need it.
+       
  [1d] DEVIL crashes before the screen appears. Help?
   If DEVIL crashes with a message like General Protection Fault or something
   like this, try a clean configuration only with HIMEM.SYS from MSDOS.
-  (QEMM won't work, OS/2 won't work, Windows won't work as fas as I know).
   If this also crashes, you have a system which go32 thinks is not worthy
   running DEVIL. Sorry about this, have a look at the next section.
   
-  If DEVIL crashes with the message "Unknown adapter type". You have two
-  chances: First look at the directory DRIVERS if you find a driver with
-  a name which is similar to your card (you can also try VESADRV.VDR) and
-  type before starting DEVIL
-    set go32=driver drivers/<drivername>
-  of course replace <drivername> with the full name of the driver
-  (i.e. vesadrv.vdr).
+  If DEVIL crashes with the message "Unknown adapter type". You have three
+  chances: First have a look in your CONFIG.SYS if there's something
+  like a DISPLAY.SYS driver loaded. If it is loaded, remove it and try again.
+  
+  If it still won't work look at the DEVIL.BAT file. There are some drivers
+  mentioned. Perhaps you can find one with a name which is similar to your
+  card. Then change the line
+    set grx20drv=vesa
+  into
+    set grx20drv=<drivername>
+  Of course you must replace <drivername> with the name of the driver
+  (i.e. cl5426)
   Also you can try to load a resident VESA-bios. Perhaps you try different
   BIOS's, not every BIOS will work with you graphics card&go32.
 
   If you've tried all drivers and DEVIL still prints this idiotic message
-  you must use VGA - sorry. Do this with
-    set go32=driver drivers/stdvga.grn
-  and then start DEVIL. This should work but it's only thought as provisional
-  solution (see section [1f]).
+  you must use VGA - sorry. Do this with 
+    set grx20drv=stdvga
+  and start DEVIL with /VGA. You can't fit bitmaps in this mode, I hope
+  I can fix this bug with the next release.
   
  [1e] DEVIL runs only in VGA-mode but I have a VESA-card.
   Try the drivers in the drivers directory. See previous section.
   
- [1f] I've tried everything but DEVIL won't work. Is there any hope?
-  I hope there will be one version compiled with Borland-C++ and one compiled 
-  with the emx-extender. One of this versions will hopefully run on nearly
-  every configuration.  
-  If you are fit in C and have enough time, look at section [5d].
-   
 [2] BUILDING LEVELS
  [2a] Building a level.
-  Start devil.exe. If it does some output and then returns to the DOS-prompt
+  Start devil.bat. If it does some output and then returns to the DOS-prompt
   look in the file devil.err and see the previous sections. 
   
   If DEVIL has started, build an level. This is not an easy task, but 
   I'm sure you will see how it works.
   See the doc-files for documentation. The saved levels will be in
   the levels-directory (that's not very surprising I suppose).
+  NEW: You can play a level with 'Play level' and the old configuration
+  will be saved.
 
  [2b] Including the level in DESCENT (easy way).
   Just copy your levelfile in the DESCENT directory and name it
@@ -187,7 +213,9 @@ ATTENTION:
   Instead of 01 you can write 01-27, S1-S3 (S must be uppercase).
   The last parameter is the hog-file from which you want to 
   extract, if it's '..\..\descent.hog' you can omit it.
-  The HOG-file is not changed.
+  The HOG-file is not changed. Try '$' instead of a 'level01.rdl' for the
+  contents of the HOG-file. Extract works also with other non-original
+  HOG-files.
 
  [2e] Extracting other files.
   The same thing as extracting the levels. extract.exe can use wildcards
@@ -204,13 +232,14 @@ ATTENTION:
 [3] BUGS AND OTHER WELL KNOWN FEATURES
  
  [3a] How many bugs I've to expect ?
-  First I want to apologize for all those bugs you will meet (because
-  there will be a lot) and thank all people who mail me bugs.
+  I hope this version is a bit more bug-free then V0.99 or V0.97 but
+  I don't guarantee for anything of course. So thanks in advance to all
+  people who mail me bugs.
   Save early and save often (as you know it from several games). 
   I hope there are not so many bugs that are destroying your savefile or
-  make DEVIL not to read saved files, but I guarantee for nothing. If you've
-  a really, really great level that you've build for hours and hours and DEVIL
-  won't load him anymore, write me an EMail with a short message
+  make DEVIL not to read saved files, but (again) I guarantee for nothing. If
+  you've a really, really great level that you've build for hours and hours
+  and DEVIL won't load him anymore, send me an EMail with a short message
   what you've done last and what's in the file devil.err. It's always
   a good idea to look in the file devil.err, perhaps you can do
   some repair for yourself.
@@ -240,17 +269,12 @@ ATTENTION:
 
 [4] Further plans
 
- [4a] Definitely next version (available in two weeks or so).
+ [4a] Definitely next (full) version.
   Inserting a cube between two other.
-  Fully implement the DESCENT - specs.
-  A light shading funcion over several cubes (thanks to Pat Johnson for the
-                                              idea)
-  Better map (don't draw the lines not necessary, like DESCENT does).
-  Brooding over a better way to mark tagged objects.
+  Set light automatically, depending on the position of the light textures.
+  Do light shading with several paths.
   
- [4b] Next weeks (After the next version it will take a while because
-                  the holidays are over then so I can't program that much
-		  anymore)
+ [4b] Next weeks 
   A setup program for DEVIL.INI, so you can change keys and menus and so on. 
   A macro previewer. 
   Making real descent specs if no one does it.
@@ -301,13 +325,17 @@ ATTENTION:
  [5d] Recompiling DEVIL.
   If you want to recompile DEVIL on another compiler, just have a look at
   the system.c/system.h files. They contain all non-ANSI-C-routines DEVIL
-  needs. The rest of DEVIL is fully ANSI-C with two exceptions:
-   1. Declaring a local array with variable length is allowed.
-   2. Empty braces are allowed as initialisiers of arrays (look at stdtypes.h)
+  needs. The rest of DEVIL is strict ANSI-C. The only non-ANSI-C
+  convention is that an 'int' is 4 bytes long.
   Please send me an E-Mail if you recompile DEVIL on another compiler so
   I can always give you the newest source-code.
   
-[A] VERSIONS
+[A] UPDATES
+ The latest release is always available at
+  http://www.uni-karlsruhe.de/~ubdb/index.html
+  http://cnt.eitc.edu/todd/descent.html
+  The Fighting Eagle BBS: (317)662-8122
+  
  0.95b - first release, a bit chaotic, COPYING files missing (in some cases),
 	 wrong DOC file.
  0.96b - Changed tiny bug with alternate exit, switch for doors in devil.ini
@@ -377,12 +405,101 @@ ATTENTION:
        - you can insert now a macro on the exit.
        - current position&direction is shown permanently.
        - added growing&shrinking cubes and walls.
-       - added button for calculating textures.
+       KNOWN BUGS: more I can describe.
+ 1.0a  - added button for calculating textures.
        - fixed the crash if you try to move a wall.
        - now showing hotkeys in menus.
        - connections for macros are now aligned vice versa 
          (the macro is aligned to the current side).
        - fixed the bug with the orientation of the second texture.
+       - crash if changing in wall mode.
+       - movebuttons won't work with mouse
+       - thing texture
+       - door texture
+       - killing of texture
+       - moving down in menu
+       - growing&shrinking now calculating textures and door grfx
+       - Clicking on scrolled data field is possible now.
+       - The doors are now correct changed if you change the animation.
+       - Setting door open - switch is now working without an error message.
+       - The items/hostages are now shown yellow not blue like the tagged 
+         objects.
+       - A blowdoor is now initialized with correct values&texture.
+       - You can now stretch the bitmap in 'fit bitmap' in x/y direction
+         (try switching numlock on/off).
+       - A thing is now inserted with the top to the current wall.
+       - Connections are now done with the variable UConn. in Internal menue.
+       - Hostages work now.
+       - Cubesize is now restricted (cause of the textures).
+       - Textures can now be selected with the mouse.
+       - Level reading tolerates now minor bugs.
+       - I hope the open-at-end bug is fixed.
+       - GPF if changing cube from producer to normal type is fixed.
+       - Arrange bitmaps works now.
+       - Source code is now strict ANSI-C.
+       - Fixed bug with Ins in side mode if a cube is surrounded by other 
+         cubes.
+       - Changed the read level routine a bit (can now read level26).
+       - Better map (try it, with lines of in Drawing Menu).
+       - Font is changed (hope that fixes the problems with several grfx 
+         cards).
+       - Added shift+left mousebutton for tagging several objects.
+       - Added tag box for tagging several objects
+       - Saving now checks for duplicate reactors and keys and starts with
+         illegal numbers. Also for reactors in no 'reactor'-cubes.
+       - You can change the level-name shown in DESCENT.
+       - Light shading feature added.
+       - Insert points.
+       - Insert&Delete sides with tagged walls.
+       - Shrink&grow now work with grid.
+       - You can lock side, so their texture is not calculated if you move
+         their points.
+       - Fit bitmap is now with&without tagged sides.
+       - Size of things is now correct (you won't see a difference).
+       - You can use the cube/side tags in side/point mode.
+       - If you leave DEVIL it starts with the same level on the same
+         position.
+       - You're asked is you want to leave DEVIL without saving changed
+         you've made.
+       - The play level feature is added.
+ 1.0b  - Fixed little bug with text in the left upper corner by fit bitmap.
+       - Changed exit codes for handling GPFs.
+       - Changed name of the exe-file.
+       - works only with V1.4
+ 1.0c  - works now with V1.0 and V1.4
+       - if macro saving is aborted, no file is created anymore.
+       - in macro choosing text is now correct even if you've overwritten
+         a macro.
+       - 'side lock' is now copied in macros & saved with levels.
+       - fixed a bug in savecube with the producers.
+       - size of things in old levels is now set & plot correctly.
+ 1.0   - fixed the bugs with tagging.
+       - you can switch now between x-tagged display mode and normal tagged
+         display mode.
+       - introduced the number of tagged objects in the upper right corner.
+       - fixed the bug with updating the texture window.
+       - fixed the mouse bug if you click buttons rapidly.
+       - Devil now changes to cube mode after making a macro.
+       - Devil works with DPMI
+       - S3 cards can use the accelerated line function of the card
+         (have a look in the devil.bat file)
+       - Fit bitmap in VGA mode won't work.
+ 1.01  - fixed some more bugs with tagging (when connecting cubes,
+         light shading and align bitmaps).
+       - changed the shape of the hostages.
+       - S3 cards can now use the accelerated rectangle fill function also.
+       - fixed the bug with the producers who forget their data.
+       - you can now make a macro with a connected side as reference.
+       - the old connect cubes feature is now available with Shift+Del.
+         The delete all feature is only available over the menu.
+       - Fixed the bug with 'Bitmaptype 13 not implemented'.
+       - The whole file is now a bit more strict ANSI:
+         <string.h> is included.
+	 Constant strings are no longer changed.
+	 connect() is now called connectsides() because it collides with
+	  a Linux function.
+       - The z-key in Modify-Mode now works.
+       - A simple statistic is included.
 
 [B] Things I've tried without success.
  Hope this section won't get very long:
@@ -391,6 +508,22 @@ ATTENTION:
     this can help anyone to make a level. If someone has a good idea how
     to draw a three dimensional grid, mail me.
        
-Have a good time, build many levels, bomb all enemies, send me an email
+Have a good time, build many levels, bomb all enemies and send me an email
 
 Achim (ubdb@rz.uni-karlsruhe.de)
+
+The Tao of programming
+----------------------
+
+ Master : The Tao of programming is in every program,
+          no matter of how insignificant it is.
+ Student: Really in every program?
+ Master : Yes, in every program.
+ Student: Is the Tao of programming in a handheld-calculator?
+ Master : It is in a handheld-calculator.
+ Student: Is the Tao even in a digital wrist watch?
+ Master : It is even in a digital wrist watch.
+ Student: And is the Tao of programming in a DOS for a PC?
+ The master coughed, shifted his position slightly and said:
+          'The lesson is over for today.'
+
