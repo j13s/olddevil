@@ -1,11 +1,11 @@
-            __          __  ___    __        __   ____    __
-           |  ||\      |  ||___\   \ \      / /    ||    |  |
-           |  ||  \    |  | ____    \ \    / /     ||    |  |
-           |  | \   \  |  ||____\    \ \  / /      ||    |  |
-           |  |___\  | |  |______     \ \/ /       ||    |  |____
-           |_________| |_________\     \__/       _||_   |_______\
+           __          __  ___    ___     ___   __    __
+          |  ||\      |  ||___\  |   \  /   /  |  |  |  |
+          |  ||  \    |  | ____   \   \ \  /   |  |  |  |
+          |  | \   \  |  ||____\   \   \ \/    |  |  |  |
+          |  |___\  | |  |______    \   \      |  |  |  |____
+          |_________| |_________\    \__|      |__|  |_______\
                                         
-                    The DEVIL V1.01 reference manual
+                    The DEVIL V1.02 reference manual
 		    
 This manual is directly extracted out of the source-code. If DEVIL's 
 behaviour differs from what is described here, you have found a bug and it
@@ -35,7 +35,7 @@ Contents
   [2i] Data.
  [3] Inserting&deleting,growing&shrinking objects.
   [3a] Cube mode.
- +[3b] Side mode.
+  [3b] Side mode.
   [3c] Point mode.
   [3d] Thing mode.
   [3e] Wall mode.
@@ -55,8 +55,9 @@ Contents
 
  [0a] What this file is for&how you use it.
   This manual is a reference manual. Therefore if you're a beginner with
-  DEVIL you should at least read the Tutorial (BUILDLEV.DOC). Here you can
-  find a complete list of the functions of DEVIL and their exact behaviour.
+  DEVIL you should first read the normal documentation (USERMAN.DOC)
+  written by Chris Kotchey (thanks, Chris). Here you can find a complete list
+  of the functions of DEVIL and their exact behaviour.
  
   I only refer to the menupoints, not to the hotkeys in this manual.
   Referring to the menupoints is done with 'menu->menupoint', so if you're
@@ -64,7 +65,7 @@ Contents
   (try case insensitive search).
  
   All sections with a '+' in the contents are new or changed since the last
-  release of DEVIL (V1.0c).
+  release of DEVIL (V1.01, no change for the user to V1.02, just bug-fixes).
   
  [0b] Definitions.
   Here are some words and their meaning:
@@ -384,6 +385,9 @@ Contents
     but also connect the side from the macro with the side of the level.
     The shape of the side of the macro is changed if they don't fit
     together and if DEVIL can find the points belonging together.
+    The light of the connected side from the macro is set to the value
+    of the light of the side this side is connected with (quite 
+    complicated ;-).
    'edit->delete': Delete all tagged cubes. On the sides where they have
     neighbour cubes is a standard-side inserted. If there's a wall in
     the cube, the cube is not deleted.

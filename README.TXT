@@ -1,56 +1,56 @@
 Welcome to DEVIL, the Descent Editor for Vertices, Items and Levels at all.
 
-	    __          __  ___    ___        ___   __    __
-	   |  ||\      |  ||___\   \  \      /  /  |  |  |  |
-	   |  ||  \    |  | ____    \  \    /  /   |  |  |  |
-	   |  | \   \  |  ||____\    \  \  /  /    |  |  |  |
-	   |  |___\  | |  |______     \  \/  /     |  |  |  |____
-	   |_________| |_________\     \____/      |__|  |_______\
-					
-		This is the README.TXT for version V1.01
-		
-		Mail address: ubdb@rz.uni-karlsruhe.de
+           __          __  ___    ___     ___   __    __
+          |  ||\      |  ||___\  |   \  /   /  |  |  |  |
+          |  ||  \    |  | ____   \   \ \  /   |  |  |  |
+          |  | \   \  |  ||____\   \   \ \/    |  |  |  |
+          |  |___\  | |  |______    \   \      |  |  |  |____
+          |_________| |_________\    \__|      |__|  |_______\
+     (thanks to Johan Herman Wilhelm Basberg for the new ASCII art)
+
+             This is the README.TXT for version V1.01
+
+              Mail address: ubdb@rz.uni-karlsruhe.de
 
 DEVIL is free software, and you are welcome to redistribute it under certain
 conditions, therefore DEVIL comes with ABSOLUTELY NO WARRANTY;
 for details see the file 'COPYING'. go32.exe is copyright by DJ Delorie;
 for copying this see 'COPYING.DJ'. The graphics library is copyright
-by Csaba Biegel; see 'COPYING.CB'. You get GNU-C with source-code on nearly 
+by Csaba Biegel; see 'COPYING.CB'. You get GNU-C with source-code on nearly
 every ftp-site (for example ftp.uni-stuttgart.de).
 
-I've tried to write this file in English because I think most of you
-are better in reading very bad English than correct German, but I
-would prefer if someone can correct this :-))).
+Devil is sponsored by the german magazine "PC PLAYER". They are
+paying me some money to encourage further development of Devil :-)).
+In return they asked me to be allowed to show up in the new
+title screen. There is no other obligation. DEVIL IS STILL FREEWARE!
+Great Deal, huh? Freeware-Sponsoring. :-)
+
+PC PLAYER can be reached by E-Mail at devil@pcplayer.mhs.compuserve.com
 
 ATTENTION:
- If you think you've build a great macro, please mail it to me. I am still
- searching for a good idea for specifying macros.
- 
- There is a special driver for S3 cards which uses the accelerator
- functions of the card. If you want something like this for your (not S3)
- card also, please mail me a specification and I will see what I can do.
- 
- A note to all people who have mailed me something: I've erased all my
- received mails a few weeks ago by mistake. So if you're wondering why you
- get no mail from me, this is the reason.
- 
-Note that DEVIL.DOC & BUILDLEV.DOC are not documenting the new features
-of release V1.01. Refer to refman.doc if you've any questions.
+There is a special driver for S3 cards which uses the accelerator
+functions of the card. If you want something like this for your (not S3)
+card also, please mail me a specification and I will see what I can do.
 
-NEW: I've introduced some sort of mailing list. If you always want to get
-the latest Devil release via E-Mail (uuencoded), please send me short
-mail (the source-code will only be included if you say so).
+A note to all people who have mailed me something: I've erased all my
+received mails a few weeks ago by mistake. So if you're wondering why you
+get no mail from me, this is the reason.
+
+If you always want to get the latest Devil release via E-Mail (uuencoded),
+please send me short mail (the source-code will only be included if you say so).
+
+Check for the new doc-file written by Chris Kotchey!! (Thanks, Chris :-)
 
   CONTENTS:
-  
+
   [0] THE VERSION NUMBERS.
-  
+
   [1] INSTALLING DEVIL
-      [1a] What do I need to run DEVIL ?
-      [1b] How to install this thing ?
+      [1a] What do I need to run DEVIL?
+      [1b] How to install this thing?
       [1c] If one file is missing what do I have to do?
-      [1d] DEVIL crashes before the screen appears. 
-      [1e] DEVIL runs only in VGA-mode but I have a VESA-card.
+      [1d] DEVIL crashes before the screen appears.
+      [1e] DEVIL crashes after the screen has appeared.
 
   [2] BUILDING LEVELS
       [2a] Building a level.
@@ -62,7 +62,7 @@ mail (the source-code will only be included if you say so).
       [2g] Copying macros.
 
   [3] BUGS AND OTHER WELL KNOWN FEATURES
-      [3a] How many bugs I've to expect ?
+      [3a] How many bugs I've to expect?
       [3b] Bugtypes.
       [3c] Report a bug.
 
@@ -71,7 +71,7 @@ mail (the source-code will only be included if you say so).
       [4b] Soon.
       [4c] Sometimes.
       [4d] Never.
-      
+
   [5] ONE OR TWO WORDS TO THE SOURCECODE
       [5a] Why is DEVIL.INI so long?
       [5b] Sourcecode itself.
@@ -87,7 +87,8 @@ mail (the source-code will only be included if you say so).
  The full working, official release I will copy on anonymous ftp-sites
  is called V1.0, V1.1 and so on. The beta-testing versions are
  called V1.0a, V1.0b, V1.0c and so on. So don't copy a beta-testing
- version on ftp-sites, please.
+ version on ftp-sites, please. Minor updates and bugfixes will be called
+ V1.01, V1.02...
 
 [1] INSTALLING DEVIL
 
@@ -100,31 +101,25 @@ mail (the source-code will only be included if you say so).
       plotting with floating point, so without a copro it's very very very
       very slow, but you can try it with emu387 (is not included).
       On a 486/66 it should be quite good).
-   3. A VESA-compatible graphics card is recommended for 640*480*256.
-      Some problems have occured with the built-in VESA driver from go32
-      with the last version, so I have included this time all drivers
-      I have.
-   4. The following files: devil.bat devilexe.exe, devil.ini, extract.exe,
+   3. A VESA-compatible graphics card.
+   4. The following files: devil.bat d.exe, devil.ini, extract.exe,
       hogfile.exe, devil.pal, devil.fnt and some levels, drivers and
       macros & documentation files is the full version. You need
       devil.exe, devil.ini, devil.pal and devil.fnt and one level or
       extract.exe.
       
  [1b] How to install this thing ?
-  If you have the descedit.zip file just pkunzip it with -d in the descent
-  directory. Then copy the descent.hog file to a save place (inclevel.exe
-  will modify it). Since you read this file you've done this before, I
+  If you have the devilXXX.zip file just pkunzip it with -d in the descent
+  directory. Since you read this file you've done this before, I
   suppose? In your DESCENT directory is now a directory called DEVIL
   with the two subdirectories LEVELS and MACROS. 
   
   If you've several single files, first look if you've all files mentioned
   in [1a] if not see [1c]. If you've all files you must do the following
   things:
-   1. make an subdirectory called "DEVIL" (the name IS (!) important)
-      in your descent directory (this is important). In this
-      directory you make two subdirectories called "MACROS" and "LEVELS"
-      (name and position important). The .doc files you can copy 
-      whereever you want.
+   1. make an subdirectory called "DEVIL" in your descent directory. In this
+      directory you make two subdirectories called "MACROS" and "LEVELS".
+      The .doc files you can copy whereever you want.
    2. copy *.exe and devil.* in the "DEVIL" directory.
    3. copy any *.rdl file you have in the LEVELS directory.
    4. copy any *.rmc file you have in the MACROS directory.
@@ -133,9 +128,9 @@ mail (the source-code will only be included if you say so).
   The other files:
    - descent, registered version: buy it.
    - go32.exe,emu387: look for djgpp (gnu-c for msdos from DJ Delorie). This
-      is nearly on every server.
+     is nearly on every server (i.e. oak.oakland.edu).
    - devil.pal, a .rdl file: if you've extract.exe you can use this
-      to extract files from the hogfile.
+      to extract files from the hogfile (devil.pal=palette.256).
    - devil.exe,devil.ini,extract.exe,hogfile.exe,devil.fnt,devil.pal:
       Have a look at the sites listed in appendix [A] for the Devil files.
       You can also try one of the following sites (but there you probably
@@ -151,8 +146,8 @@ mail (the source-code will only be included if you say so).
  [1d] DEVIL crashes before the screen appears. Help?
   If DEVIL crashes with a message like General Protection Fault or something
   like this, try a clean configuration only with HIMEM.SYS from MSDOS.
-  If this also crashes, you have a system which go32 thinks is not worthy
-  running DEVIL. Sorry about this, have a look at the next section.
+  Especially QEMM makes problems, so if you use it and Devil crashes
+  try good old HIMEM.SYS.
   
   If DEVIL crashes with the message "Unknown adapter type". You have three
   chances: First have a look in your CONFIG.SYS if there's something
@@ -169,15 +164,11 @@ mail (the source-code will only be included if you say so).
   Also you can try to load a resident VESA-bios. Perhaps you try different
   BIOS's, not every BIOS will work with you graphics card&go32.
 
-  If you've tried all drivers and DEVIL still prints this idiotic message
-  you must use VGA - sorry. Do this with 
-    set grx20drv=stdvga
-  and start DEVIL with /VGA. You can't fit bitmaps in this mode, I hope
-  I can fix this bug with the next release.
-  
- [1e] DEVIL runs only in VGA-mode but I have a VESA-card.
-  Try the drivers in the drivers directory. See previous section.
-  
+ [1e] DEVIL crashes after the screen has appeared.
+  Perhaps your level-file is corrupted. Try starting devil with
+   devil /nocfg
+  Perhaps this will help. 
+
 [2] BUILDING LEVELS
  [2a] Building a level.
   Start devil.bat. If it does some output and then returns to the DOS-prompt
@@ -186,25 +177,22 @@ mail (the source-code will only be included if you say so).
   If DEVIL has started, build an level. This is not an easy task, but 
   I'm sure you will see how it works.
   See the doc-files for documentation. The saved levels will be in
-  the levels-directory (that's not very surprising I suppose).
-  NEW: You can play a level with 'Play level' and the old configuration
+  the levels-directory (that's not very surprising, I suppose).
+  You can play a level with 'Play level' and the old configuration
   will be saved.
 
  [2b] Including the level in DESCENT (easy way).
   Just copy your levelfile in the DESCENT directory and name it
   LEVEL01.RDL (the 01 can be replaced by 01-27,S1-S3). DESCENT will
-  load this level automatically and replace the original level. You can
-  also use the batch file launch.bat like
-   c:\descent\devil> launch my_level
-  This will copy levels\my_level.rdl to ..\level01.rdl (if you're in the 
-  devil directory) and start DESCENT.
+  load this level automatically and replace the original level. 
   
  [2c] Including the level in descent/Compiling your own HOG-files.
   If you want to produce your own missions you can compile your own
   HOG-files with hogfile.exe. It will ask you all necessary data
   and produce the specified HOG-file. If this HOG-file and the corresponding
   MSN-file is in the DESCENT-directory, DESCENT will recognize this and
-  ask you which mission you want to play.
+  ask you which mission you want to play. You can also use makemsn from
+  Andy Bay which is much more comfortable than little hogfile.exe.
   
  [2d] Extracting the original levels.
   This is done with extract.exe. Assuming that you will extract
@@ -215,7 +203,7 @@ mail (the source-code will only be included if you say so).
   extract, if it's '..\..\descent.hog' you can omit it.
   The HOG-file is not changed. Try '$' instead of a 'level01.rdl' for the
   contents of the HOG-file. Extract works also with other non-original
-  HOG-files.
+  HOG-files. Makemsn from Andy Bay makes this much easier, too.
 
  [2e] Extracting other files.
   The same thing as extracting the levels. extract.exe can use wildcards
@@ -232,10 +220,11 @@ mail (the source-code will only be included if you say so).
 [3] BUGS AND OTHER WELL KNOWN FEATURES
  
  [3a] How many bugs I've to expect ?
-  I hope this version is a bit more bug-free then V0.99 or V0.97 but
-  I don't guarantee for anything of course. So thanks in advance to all
-  people who mail me bugs.
-  Save early and save often (as you know it from several games). 
+  Well, V1.00 and V1.01 are now in use for more than three months and
+  I hope that I have eliminated most of the bugs. But I don't guarantee for
+  anything of course. So thanks in advance to all people who mail me bugs.
+  One tip: Save early and save often (as you know it from several games)
+  and sometimes with different filenames. 
   I hope there are not so many bugs that are destroying your savefile or
   make DEVIL not to read saved files, but (again) I guarantee for nothing. If
   you've a really, really great level that you've build for hours and hours
@@ -263,20 +252,22 @@ mail (the source-code will only be included if you say so).
 
  [3c] Report a bug.
   Report a bug to: ubdb@rz.uni-karlsruhe.de
-       or          ub0u@rz.uni-karlsruhe.de
-  Just send one of the four topics under [3b] as head of your email so we
-  can sort it.
+  Please, please make a description what you have done when Devil has
+  crashed and mail the level you are working on with your bug report.
 
 [4] Further plans
 
  [4a] Definitely next (full) version.
-  Inserting a cube between two other.
-  Set light automatically, depending on the position of the light textures.
-  Do light shading with several paths.
+  A complete new graphics user interface.
+  Save/read hogfiles directly and special Devil file format.
+  An Undo feature.
+  A cube move mode.
+  Making seven cubes out of one.
+  Some corridor generators.
+  A macro viewer. 
   
  [4b] Next weeks 
   A setup program for DEVIL.INI, so you can change keys and menus and so on. 
-  A macro previewer. 
   Making real descent specs if no one does it.
   Describing exactly what to do to extend DEVIL.
   Tune the plot-routine especially avoid the copro. 
@@ -332,9 +323,11 @@ mail (the source-code will only be included if you say so).
   
 [A] UPDATES
  The latest release is always available at
-  http://www.uni-karlsruhe.de/~ubdb/index.html
-  http://cnt.eitc.edu/todd/descent.html
-  The Fighting Eagle BBS: (317)662-8122
+  http://www.uni-karlsruhe.de/~ubdb/index.html (my site)
+  http://www.interplay.com/website/devil.html (official US site)
+  US: The Integrated Connection BBS: 317-921-8619
+  UK: The Shed BBS: 
+  Australia: Southern Acces BBS: 61-53-428357
   
  0.95b - first release, a bit chaotic, COPYING files missing (in some cases),
 	 wrong DOC file.
@@ -500,7 +493,16 @@ mail (the source-code will only be included if you say so).
 	  a Linux function.
        - The z-key in Modify-Mode now works.
        - A simple statistic is included.
-
+ 1.02  - fixed the GPF with the animation of the doors.
+       - the new connect cubes feature is now working (with Del).
+       - a little coordinate system is shown.
+       - fixed the GPF when changing 'no switch' to 'no switch'.
+       - walls with 'nothing but switch' have a texture 'Nothing' now.
+       - fixed the problem with the tagging with the mouse with the box
+         and the white lines.
+       - now Devil know the Descent limits and gives warnings.
+       - hope I fixed the bug with the play-level feature.
+       
 [B] Things I've tried without success.
  Hope this section won't get very long:
   - Drawing a grid. Well, this is a difficult point. I've tried it with
@@ -525,5 +527,4 @@ The Tao of programming
  Master : It is even in a digital wrist watch.
  Student: And is the Tao of programming in a DOS for a PC?
  The master coughed, shifted his position slightly and said:
-          'The lesson is over for today.'
-
+          'The lesson is over for today.'

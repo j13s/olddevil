@@ -7,18 +7,19 @@ rem mach64  --  ATI
 rem stdvga  --  DEVIL will work but you can't fit textures
 rem s3svga  --  This is accelerated. If you've a S3-card give it a chance.
 rem I don't know if they all will work, I've only tested vesa and s3svga
-set grx20drv=s3svga
+set grx20drv=vesa
 rem This is for key moving
 mode CON: Rate=32 Delay=1
 copy >nul levels\tmpdevil.msn .. 
 d %1 %2
 if errorlevel 1 goto done
+if not exist levels\tmpdevil.rdl goto done
 :loop
 copy >nul levels\tmpdevil.rdl ..\tmpdevil.rdl 
 cd ..
 call descent
 cd devil
-d tmpdevil
+d tmpdevil /notitle
 if not errorlevel 1 goto loop
 :done
 if errorlevel 2 goto ok
