@@ -7,7 +7,7 @@ in the file docs/german.doc. I've found someone who will translate
 the manual to English. If you want to help him (the complete manual
 are >50 pages), please send him a E-Mail (robinm@za.eds.com)
 
-This is the full version of Devil V2.2h.
+This is the full version of Devil V2.2i.
 
 Please, please e-mail all bugs you encounter to the Mailing List. 
 And please use the word "bug" somewhere in your header because all
@@ -15,7 +15,72 @@ the mails with this header will be sorted out from my mailing program
 automatically.
 
 FOR DESCENT 2 MODE, DEVIL NEEDS THE MEDIUM (48MB) INSTALLATION. Sorry about
-this, but I can't access the data from the CD, it is packed (I think).
+this, but I can't access the data from the CD, it is packed.
+
+Fixed bugs (V2.2i->V2.2j):
+-Fixed problems in the moving routines which were occuring if you rotate too
+ fast. This sometimes resulted in a crash in the rendering routine or a black
+ screen.
+-Fixed the crazy menuline.
+-The window tagging is now respecting the max. visibility.
+-Fixed problems with inserting macros with things.
+
+Changed features (2.2h->2.2i):
+-Rendering is faster.
+-Due to the complaints about point/edge-mode, I have changed it again
+ (the reason for seperating points/edges was that I was not able to find a
+ intuitive way for clicking an edge and a point simultanously, so I have
+ NOT made the changes undone):
+ If you change the current edge you will change the current point, too,
+ or in other words: Just use 'e' instead of 'p' and it will work as you are
+ used to, but you can still use 'p' to get to an arbitrary point.
+ This way you can still click points the way you think it should work and
+ you are able to select points that are nearby without using the mouse.
+ I hope you can live with this solution.
+ BTW you can still use 'tag points' if you want to set the light: Just tag
+ the points you want to change and then use 'use point tag' in edge mode.
+ Or use special tag in point mode (to tag all edges corresponding to this
+ point) or in edge mode (to tag all edges in the current cube corresponding
+ to the point of the edge)
+-You can flip the y-axis if you move with the keys:
+ Have a look in the Internal menu.
+-You can untag things with the tagbox is you press the right instead
+ of the left button while you're holding ctrl down. (to be honest:
+ this is a fixed bug not a new feature...:-)
+-"tag flat sides" does not untag all sides before doing anything else.
+ Warning: Due to this fact, all sides being 'flat' to a tagged side will
+ be tagged not only sides being 'flat' to the current side.
+-the lighting algorithm doesn't smooth the lights anymore. You'll have to
+ use the new menupoint 'set smooth corner light' and then 
+ 'set inner cube light' to have this effect. The normal algorithm is working
+ much better now and it does the light quite correctly, so IMHO you should
+ use it without smoothing.
+
+Fixed bugs (2.2h->2.2i)
+-Removed warning if a level with flickering lights specifying connected sides
+ is loaded.
+-Illuminating a level several times in a row don't accumulate the light 
+ anymore.
+-Fixed problems with moving textures & floating point exceptions &
+ complaining about texture you can't see .
+-Problems with moving corridor window fixed
+-Problems with rendering textures which were used as Texture 1 and Texture 2
+ are solved
+-If rendering is on and you change a texture the level window is updated
+-Fixed some problems with the up/down-buttons for the textures 
+-Fixed two bugs in the corridor generator causing a 'Floating Point Exception'
+ and an assert error
+-The keys which are dropped by robots are counted correctly in the level
+ statistics.
+-a lot of bugs in illuminating algorithm fixed. I'm wondering why the result
+ was reasonable at all. (thanks to Luke Schneider for the excellent example)
+-Fixed problems with the S3 graphic driver.
+-Fixed the HOM problem. Strange: The reason for the HOM effects was
+ a zero in reactor time/strength in a level without a reactor. So if you
+ have built a level with these HOM effects, just insert a reactor, give
+ him reasonable values for time/strength (at least >0) and the HOM effects
+ will vanish. Really don't understand this....
+ (thanks to Bradley Schneider for the reproducable bug description).
 
 V2.2g-->V2.2h:
 New features:

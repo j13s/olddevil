@@ -32,6 +32,11 @@ paying me some money to encourage further development of Devil :-)).
 In return they asked me to be allowed to show up in the new
 title screen. There is no other obligation. Devil IS STILL FREEWARE!
 
+If you want to distribute Devil commercially, please contact me via
+E-Mail, especially if you want to publish an article about Devil in a
+gamer's magazine and put the program on the CD delivered with the 
+magazine.
+
 PC PLAYER can be reached by E-Mail at Devil@pcplayer.mhs.compuserve.com
 
 ATTENTION:
