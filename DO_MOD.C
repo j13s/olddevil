@@ -46,7 +46,7 @@ void dec_enlargeshrink(int ec)
    { cubepnts[0]=4; for(i=0;i<4;i++) cubepnts[i+1]=wallpts[n->no%6][i]; }
   growshrink(n->d.n->d.c->p,cubepnts,ec==ec_enlarge);
   }
- plotlevel();
+ plotlevel(); drawopt(in_pnt);
  }
 
 void dec_setexit(int ec)
@@ -268,7 +268,7 @@ void init_ce_relpnts(struct corridor *c,struct corridorelement *ce,
     INVMATRIXMULT(&ce->rel_pnts[i],coords,&p); }
  }
  
-void connect_cube_layer(struct corridor *c,struct node *start)
+int connect_cube_layer(struct corridor *c,struct node *start)
  {
  struct node *n,*n2;
  int i,j,k;
@@ -280,15 +280,16 @@ void connect_cube_layer(struct corridor *c,struct node *start)
     for(n2=start,k=0;n2->next!=NULL && k<c->connected[i*6+j]/6;n2=n2->next,
      k++);
     if(n2->next && n2->d.c->nc[c->connected[i*6+j]%6]==NULL)
-     connectcubes(&c->points,n,j,n2,c->connected[i*6+j]%6);
+     if(!connectcubes(&c->points,n,j,n2,c->connected[i*6+j]%6)) return 0;
     }
  w_display_msgs(1);
+ return 1;
  }
  
 /* Add a new layer of cubes to corridor c. */
-void new_cube_layer(struct corridor *c)
+int new_cube_layer(struct corridor *c)
  {
- struct node *fcube;
+ struct node *fcube,*n;
  int i;
  my_assert(c->elements.tail->next!=NULL);
  checkmem(fcube=insertcube(&c->cubes,&c->points,
@@ -296,8 +297,13 @@ void new_cube_layer(struct corridor *c)
  for(i=1;i<c->num_cubes;i++)
   checkmem(insertcube(&c->cubes,&c->points,c->elements.tail->d.ce->cubes[i],
    c->front_wall[i],c->depth));
- connect_cube_layer(c,fcube);
+ if(!connect_cube_layer(c,fcube))
+  {
+  for(n=fcube;n->next!=NULL;n=n->next) deletecube(&c->cubes,&c->points,n);
+  return 0;
+  }
  add_correlem(c,fcube,0);
+ return 1;
  }
   
 /* recalculate the corridor element n in corridor c. New coords are a,
@@ -307,7 +313,7 @@ struct node *recalc_correlem(struct corridor *c,struct node *n,
  {
  int i,j;
  if(n->next==NULL)
-  { new_cube_layer(c); n=c->elements.tail;
+  { if(!new_cube_layer(c)) return NULL; n=c->elements.tail;
     init_ce_relpnts(c,n->d.ce,prev_coords); }
  n->d.ce->center=*a;
  for(i=0;i<c->num_pnts;i++)
@@ -318,10 +324,17 @@ struct node *recalc_correlem(struct corridor *c,struct node *n,
 
 void kill_corr_elem(struct corridor *c,struct node *n)
  { 
- int i;
- FREE(n->d.ce->pnts); 
+ int i,j;
+ FREE(n->d.ce->pnts);
  for(i=0;i<c->num_cubes;i++) 
+  {
+  /* to avoid a recalculation of some textures coords which will cause
+     a crash if the cube was an illegal one */
+  for(j=0;j<6;j++)
+   if(n->d.ce->cubes[i]->d.c->walls[j])
+    n->d.ce->cubes[i]->d.c->walls[j]->locked=1; 
   deletecube(&c->cubes,&c->points,n->d.ce->cubes[i]);
+  }
  FREE(n->d.ce->cubes); FREE(n->d.ce); killnode(&c->elements,n);
  } 
    
@@ -419,13 +432,16 @@ struct node *recalc_track(struct corridor *c,struct track *st,
  n=start->next;
  d_twist=overall_twist/(curve.size+1);
  for(tn=curve.head->next,twist=0.0;tn!=NULL;tn=tn->next,twist+=d_twist)
-  { turn(&tn->prev->d.p[1],&tn->prev->d.p[1],0,1,2,twist);
-    n=recalc_correlem(c,n,&tn->prev->d.p[0],&tn->prev->d.p[1],
-     old_coords);
-    for(i=0;i<3;i++) old_coords[i]=tn->prev->d.p[1+i];
-    if(tn->prev->no>0) d_twist/=2; else if(tn->prev->no<0) d_twist*=2;
-    FREE(tn->prev->d.p); killnode(&curve,tn->prev); }
- n=recalc_correlem(c,n,&et->x,et->coords,old_coords);
+  {
+  turn(&tn->prev->d.p[1],&tn->prev->d.p[1],0,1,2,twist);
+  if((n=recalc_correlem(c,n,&tn->prev->d.p[0],&tn->prev->d.p[1],
+   old_coords))==NULL) { start=NULL; break; }
+  for(i=0;i<3;i++) old_coords[i]=tn->prev->d.p[1+i];
+  if(tn->prev->no>0) d_twist/=2; else if(tn->prev->no<0) d_twist*=2;
+  FREE(tn->prev->d.p); killnode(&curve,tn->prev);
+  }
+ if(start==NULL || (n=recalc_correlem(c,n,&et->x,et->coords,old_coords))==NULL)
+  return NULL;
  for(tn=start;tn!=n && tn->next!=NULL;tn=tn->next)
   for(i=0;i<c->num_cubes;i++)
    if(!testcube(tn->d.ce->cubes[i],0)) return NULL; 
@@ -453,7 +469,7 @@ int movecorr(struct point *add,union move_params *params)
  c=params->c.c;
  t=params->c.t;
  if(t->fixed==-1) return 0;
- plotcorridor(c); 
+ plotcorridor(c);
  switch(c->b_stdform->d.ls->selected)
   {
   case 0: 

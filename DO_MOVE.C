@@ -309,10 +309,10 @@ void dec_move3(int ec) { b_move(0,-1); }
 void dec_move4(int ec) { b_move(1,-1); }
 void dec_move5(int ec) { b_move(0,1); }
 void dec_turn0(int ec) { b_turn(0,1,2,1); }
-void dec_turn1(int ec) { b_turn(1,2,0,-1); }
+void dec_turn1(int ec) { b_turn(1,2,0,view.flip_y_axis ? 1 : -1); }
 void dec_turn2(int ec) { b_turn(0,1,2,-1); }
 void dec_turn3(int ec) { b_turn(2,0,1,-1); }
-void dec_turn4(int ec) { b_turn(1,2,0,1); }
+void dec_turn4(int ec) { b_turn(1,2,0,view.flip_y_axis ? -1 : 1); }
 void dec_turn5(int ec) { b_turn(2,0,1,1); }
 
 void dec_beam(int ec)
@@ -427,16 +427,17 @@ void plotpntcubelist(struct list *lp,int hilight,int xor,int start)
   }    
  }
 
-void turnsinglepnt(struct point *axis,float cosang,float sinang,
+void turnsinglepnt(struct point *dir_axis,float cosang,float sinang,
  struct point *s)
  {
  float x,l;
  int i;
- struct point vp,vs,vs2,e1,e2;
- x=SCALAR(axis,s);
- for(i=0;i<3;i++) { vp.x[i]=axis->x[i]*x; vs.x[i]=s->x[i]-vp.x[i]; }
+ struct point vp,vs,vs2,e1,e2,axis;
+ axis=*dir_axis; normalize(&axis);
+ x=SCALAR(&axis,s);
+ for(i=0;i<3;i++) { vp.x[i]=axis.x[i]*x; vs.x[i]=s->x[i]-vp.x[i]; }
  if((l=LENGTH(&vs))!=0)
-  { e1=vs; for(i=0;i<3;i++) e1.x[i]/=l; VECTOR(&e2,axis,&e1);
+  { e1=vs; for(i=0;i<3;i++) e1.x[i]/=l; VECTOR(&e2,&axis,&e1);
     for(i=0;i<3;i++) vs2.x[i]=cosang*l*e1.x[i]+sinang*l*e2.x[i]; }
  else vs2=vs;
  for(i=0;i<3;i++) s->x[i]=vp.x[i]+vs2.x[i];
@@ -676,6 +677,10 @@ void moving_with_mouse(struct w_window *w,int wx,int wy,
      ws_mousewarp(ox=w_xwinincoord(w,start.x+(lr ? xs+(xs-1)/2 : (xs-1)/2)), 
       oy=w_ywinincoord(w,(w_ywininsize(w)-1)/2-start.y)); continue; }
   if(ws.x==ox && ws.y==oy) continue;
+  if((ws.x-ox)*32>xs) ws.x=ox+xs/32;
+  else if((ox-ws.x)*32>xs) ws.x=ox-xs/32;
+  if((ws.y-oy)*32>w_ywininsize(w)) ws.y=oy+w_ywininsize(w)/32;
+  else if((oy-ws.y)*32>w_ywininsize(w)) ws.y=oy-w_ywininsize(w)/32;
   x=w_xscreencoord(w,ws.x); y=w_yscreencoord(w,ws.y);
   ox=w_xscreencoord(w,ox); oy=w_yscreencoord(w,oy);
   if((ws.kbstat&ws_ks_shift)==0 && ((ws.buttons&ws_bt_left)!=0
@@ -911,17 +916,16 @@ float txt_calcangle(struct wall *w)
  for(i=0;i<3;i++)
   { d1.x[i]=w->p[2]->d.p->x[i]-w->p[0]->d.p->x[i];
     d2.x[i]=w->p[3]->d.p->x[i]-w->p[1]->d.p->x[i]; }
- VECTOR(&n,&d1,&d2);
- if(SCALAR(&n,&view.e[2])>=0.0) return 4*M_PI;
+ normalize(&d1); normalize(&d2);
+ VECTOR(&n,&d1,&d2); 
+ if(SCALAR(&n,&view.e[2])>=0.5) return 4*M_PI; /* 0.5=cos(MAX_VIEWANGLE) */
  /* Calculate angle between x-axis of screen and u-axis of texture */
  a=acos((c[1].x[0]-c[0].x[0])/
   sqrt((c[1].x[0]-c[0].x[0])*(c[1].x[0]-c[0].x[0])+
    (c[1].x[1]-c[0].x[1])*(c[1].x[1]-c[0].x[1])));
  if(c[1].x[1]-c[0].x[1]<0) a=-a;
  for(i=0;i<3;i++) d1.x[i]=w->p[1]->d.p->x[i]-w->p[0]->d.p->x[i];
- b=acos(SCALAR(&view.e[0],&d1)/
-  sqrt(SCALAR(&view.e[0],&d1)*SCALAR(&view.e[0],&d1)+
-   SCALAR(&view.e[1],&d1)*SCALAR(&view.e[1],&d1)));
+ b=acos(SCALAR(&view.e[0],&d1)/LENGTH(&d1));
  if(SCALAR(&view.e[1],&d1)>0) b=-b;
  return a+b;
  }
@@ -1006,7 +1010,7 @@ void moveobj_mouse(int withtagged,int wx,int wy,struct node *nc,int wall)
     if(nc->d.c->walls[wall])
      {
      angle=txt_calcangle(nc->d.c->walls[wall]);
-     fprintf(errf,"angle=%g\n",angle);
+     fprintf(errf,"angle=%g\n",angle/M_PI);
      if(angle>2*M_PI) { printmsg(TXT_CANTSEETXTWALL); return; }
      move_texture_with_mouse(w_xwinincoord(l->w,wx),w_ywinincoord(l->w,wy),
       NULL,nc,wall,withtagged&1,angle,plotlevel);
@@ -1080,6 +1084,10 @@ void moveyou_mouse(struct w_window *w,int wx,int wy)
     }
    }
   if(ws.x==ox && ws.y==oy && (ws.kbstat&ws_ks_ctrl)==0) continue;
+  if((ws.x-ox)*8>xs) ws.x=ox+xs/8;
+  else if((ox-ws.x)*8>xs) ws.x=ox-xs/8;
+  if((ws.y-oy)*8>w_ywininsize(w)) ws.y=oy+w_ywininsize(w)/8;
+  else if((oy-ws.y)*8>w_ywininsize(w)) ws.y=oy-w_ywininsize(w)/8;
   ws_mousewarp(ox,oy);
   fx=(float)(ws.x-ox)/xs;
   fy=(float)(ws.y-oy)/w_ywininsize(w);
@@ -1125,6 +1133,7 @@ void moveyou_mouse(struct w_window *w,int wx,int wy)
        for(i=0;i<3;i++) 
         new_e0.x[i]+=(lr?-view.e[0].x[i]:view.e[2].x[i])*view.distcenter; }
    }
+  for(i=0;i<3;i++) normalize(&view.e[i]);
   move_user(&new_e0);
   initcoordsystem(lr,&e0,er,&x0); plotlevel();
   }

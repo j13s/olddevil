@@ -113,14 +113,16 @@ int savestatus(int playlevel)
   if(fprintf(f,"%d ",tl_win[i].zoom.selected)<0) ERRORSAVECFG(f);
  fprintf(f,"\n");
  if(fprintf(f,
-  "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+  "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d "\
+  "%d\n",
   view.displayed_group,view.gridonoff,view.askone,view.asktagged,
   view.drawwhat|DW_ALLLINES,view.currmode,view.movemode,
   CUROBJNO(view.pdeflevel),CUROBJNO(view.pdefcube),view.defwall,
   view.warn_convex,view.warn_doublekeys,view.warn_tworeactors,
   view.warn_thingoutofbounds,view.warn_gridrot,view.doubleclick,
   view.whichdisplay,view.render,corr_win1_xpos,corr_win1_ypos,
-  corr_win2_xpos,corr_win2_ypos,view.gamma_corr,view.coord_axis)<0) 
+  corr_win2_xpos,corr_win2_ypos,view.gamma_corr,view.coord_axis,
+  view.flip_y_axis)<0) 
   ERRORSAVECFG(f);
  if(fprintf(f,"%s\n%s\n%s\n%s\n%s\n",init.levelpath,init.macropath,
   init.missionpath,init.txtlistpath,init.lightname)<0) ERRORSAVECFG(f);
@@ -277,13 +279,13 @@ void readstatus(void)
   if(fscanf(f,"%d",&tl_win[i].zoom.selected)!=1) ERRORREADCFG(f);
   tl_win[i].oldxsize=-1;
   }
- if(fscanf(f,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%hd%d",
+ if(fscanf(f,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%hd%d%d",
   &view.displayed_group,&view.gridonoff,&view.askone,&view.asktagged,
   &view.drawwhat,&d,&e,&lno,&c,&view.defwall,&view.warn_convex,
   &view.warn_doublekeys,&view.warn_tworeactors,&view.warn_thingoutofbounds,
   &view.warn_gridrot,&view.doubleclick,&view.whichdisplay,&view.render,
   &corr_win1_xpos,&corr_win1_ypos,&corr_win2_xpos,&corr_win2_ypos,
-  &view.gamma_corr,&view.coord_axis)!=24) 
+  &view.gamma_corr,&view.coord_axis,&view.flip_y_axis)!=25) 
   ERRORREADCFG(f);
  set_illum_brightness(new_brightness);
  view.currmode=d; view.movemode=e;

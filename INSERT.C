@@ -369,7 +369,8 @@ void deletecube(struct list *cubes,struct list *pts,struct node *n)
    for(m=0,w=-1;m<6;m++)
     if(nc->nc[m]!=NULL && nc->nc[m]->no==n->no) { w=m; break; }
    my_assert(w!=-1 && c->nc[k]->d.c->walls[w]==NULL);
-   nc->nc[w]=NULL; insertwall(c->nc[k],w,-1,-1,-1);
+   nc->nc[w]=NULL;
+   insertwall(c->nc[k],w,-1,-1,-1);
    }
   }
  for(k=0;k<8;k++)

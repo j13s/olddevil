@@ -326,14 +326,14 @@ void click_in_level(struct w_window *w,struct w_event *we)
  struct ws_event ws;
  int i,right_pressed=0,t;
  int x=we->ws->x,y=we->ws->y,wx=we->x,wy=we->y;
- if(we->ws->flags==ws_f_rbutton && we->ws->buttons==ws_bt_right)
-  { moveyou_mouse(w,we->x,we->y); plotlevel(); drawopt(view.currmode); 
-    return; }
- if(we->ws->buttons!=ws_bt_left) return;
  /* First check if this should be a tagging with the mousebox */
  if(we->ws->kbstat&ws_ks_ctrl)
   { mousetagbox(l,we,(we->ws->buttons&ws_bt_left)==ws_bt_left);   
     plotlevel(); drawopt(view.currmode); return; }
+ if(we->ws->flags==ws_f_rbutton && we->ws->buttons==ws_bt_right)
+  { moveyou_mouse(w,we->x,we->y); plotlevel(); drawopt(view.currmode); 
+    return; }
+ if(we->ws->buttons!=ws_bt_left) return;
  /* OK, left button is pressed. Now run the scan sequence. Moving the
   white circle and hilighting all objects of the current mode under the
   circle until the button is released again */

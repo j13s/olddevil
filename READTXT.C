@@ -152,8 +152,9 @@ void inittxts(void)
   my_assert(pig.rdl_txts[rdlnum].pigno>=0 && 
    pig.rdl_txts[rdlnum].pigno<pig.num_pigtxts);
   pig.rdl_txts[rdlnum].pig=&pig.pig_txts[pig.rdl_txts[rdlnum].pigno];
-  if(init_test&1) fprintf(errf,"rdlnum=%d pignum=%d name=%s\n",
-   rdlnum,pig.rdl_txts[rdlnum].pigno,pig.rdl_txts[rdlnum].pig->name);
+  if(init_test&1) fprintf(errf,"rdlnum=%d pignum=%d name=%s type1=%x\n",
+   rdlnum,pig.rdl_txts[rdlnum].pigno,pig.rdl_txts[rdlnum].pig->name,
+   pig.rdl_txts[rdlnum].pig->type1);
   pig.rdl_txts[rdlnum].pig->num_anims=1; 
   pig.rdl_txts[rdlnum].pig->anim_t2=0; 
   strcpy(text,pig.rdl_txts[rdlnum].pig->name);
@@ -262,7 +263,7 @@ void inittxts(void)
  txt_default.pig=&ptxt_default; txt_default.rdlno=-1;
  inserttexture(txt2_normal,&txt_nothing);
  inserttexture(txt2_wall,&txt_nothing);
- inserttexture(txt_all,&txt_nothing);
+ inserttexture(txt_all,&txt_nothing); 
  inserttexture(txt_thing,&txt_default); 
  inserttexture(txt_all,&txt_default);
  /* now sort the lists alphabetically */

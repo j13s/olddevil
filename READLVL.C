@@ -464,18 +464,20 @@ int initlevel(struct leveldata *ld)
    my_assert(ld->secretcube!=NULL);
    makesecretstart(ld,n->d.sd->d);
    }
-  for(n=ld->flickeringlights.head;n->next!=NULL;n=n->next)
+  for(n=ld->flickeringlights.head->next;n!=NULL;n=n->next)
    {
-   if((n->d.fl->c=findnode(&ld->cubes,n->d.fl->cube))==NULL)
+   if((n->prev->d.fl->c=findnode(&ld->cubes,n->prev->d.fl->cube))==NULL)
     {
-    waitmsg("Can't find cube %d for flickering light %d",(int)n->d.fl->cube,
-     n->no);
+    waitmsg(TXT_NOCUBEFORFL,(int)n->prev->d.fl->cube,
+     n->prev->no);
     continue;
     }
-   if(n->d.fl->c->d.c->walls[n->d.fl->wall]==NULL)
-    { waitmsg("Cube %d, side %d has no texture for flickering light %d.",
-       n->no); continue; }
-   n->d.fl->c->d.c->walls[n->d.fl->wall]->fl=n;
+   if(n->prev->d.fl->c->d.c->walls[n->prev->d.fl->wall]==NULL)
+    { /* waitmsg(TXT_NOTXTFORFL,n->no); 
+      some original levels have this... */
+      freenode(&ld->flickeringlights,n->prev,free);
+      continue; }
+   n->prev->d.fl->c->d.c->walls[n->prev->d.fl->wall]->fl=n->prev;
    }
   }
  for(i=0;i<(ld->edoors ? ld->edoors->num : 0);i++)
@@ -607,6 +609,7 @@ struct leveldata *emptylevel(void)
     strcpy(ld->pigname,l->pigname); }
  else ld->pigname=NULL;
  ld->w=NULL; ld->exitcube=NULL; ld->exitwall=0;
+ ld->reactor_time=0x1e; ld->reactor_strength=0xffffffff;
  ld->levelsaved=1; ld->levelillum=0; ld->secretcube=ld->secretstart=NULL; 
  for(i=0;i<9;i++) ld->secret_orient[i]=stdorientation[i];
  ld->pcurrpnt=ld->pcurrcube=ld->pcurrthing=ld->pcurrdoor=ld->rendercube=NULL;
@@ -978,7 +981,7 @@ int D1_REG_savelevel(FILE *f,struct leveldata *ld)
  md.numcubes=ld->cubes.size; md.numpts=ld->pts.size;
  if(fwrite(&lh,sizeof(struct D1_REG_levelfilehead),1,f)!=1)
   { fclose(f); return 0; }
- lh.minedata_offset=ftell(f);
+ lh.minedata_offset=ftell(f); md.version=0;
  if(fwrite(&md,sizeof(struct D1_minedata),1,f)!=1)
   { fclose(f); return 0; }
  /* now write all points */
@@ -1052,7 +1055,7 @@ int D2_REG_savelevel(FILE *f,struct leveldata *ld)
    !yesnomsg("WARNING: If you save this level for Descent 2 V1.0,\n"\
     "you will loose all data about flickering lights. Continue?")) return 0;
   }
- md.numcubes=ld->cubes.size; md.numpts=ld->pts.size;
+ md.numcubes=ld->cubes.size; md.numpts=ld->pts.size; md.version=0;
  if(fwrite(&lh,sizeof(struct fileheadversion)+sizeof(unsigned long)*2,1,f)!=1)
   { fclose(f); return 0; }
  if(fwrite(ld->pigname,strlen(ld->pigname),1,f)!=1)

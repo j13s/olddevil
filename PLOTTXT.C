@@ -31,10 +31,10 @@ void plottxt(int lr,struct polygon *p,struct render_point *start,
  unsigned char *txt,int transparent)
  {
  if(transparent) 
-  psys_plottransparent(p,start,w_ywinincoord(l->w,0)*init.xres+
+  psys_256_transparent_plottxt(p,start,w_ywinincoord(l->w,0)*init.xres+
    w_xwinincoord(l->w,lr ? w_xwininsize(l->w)/2+1 : 0),txt);
  else 
-  psys_plottxt(p,start,w_ywinincoord(l->w,0)*init.xres+
+  psys_256_plottxt(p,start,w_ywinincoord(l->w,0)*init.xres+
    w_xwinincoord(l->w,lr ? w_xwininsize(l->w)/2+1 : 0),txt); 
  } 
 
@@ -62,9 +62,9 @@ void pol_init_rscoords(struct polygon *p)
  if(p->pnts[0].corner!=NULL)
   {
   for(i=0;i<2;i++) 
-   { p->a_txt.x[i]=p->pnts[0].corner->x[i]<<7;
-     u.x[i]=(p->pnts[1].corner->x[i]<<7)-p->a_txt.x[i];
-     v.x[i]=(p->pnts[p->num_pnts-1].corner->x[i]<<7)-p->a_txt.x[i]; }
+   { p->a_txt.x[i]=p->pnts[0].corner->x[i]<<3;
+     u.x[i]=(p->pnts[1].corner->x[i]<<3)-p->a_txt.x[i];
+     v.x[i]=(p->pnts[p->num_pnts-1].corner->x[i]<<3)-p->a_txt.x[i]; }
   /* we need to stretch r_txt and s_txt */
   for(i=0;i<2;i++) 
    { p->r_txt.x[i]=-u.x[i]/lr;
@@ -427,7 +427,7 @@ static int renderdepth=MAX_RENDERDEPTH,render_drawwhat,render_lr;
 void render_cube(int depth,struct node *from,struct node *cube,
  struct render_point *bounds)
  {
- unsigned char w,j,x,y;
+ unsigned int w,j,x,y;
  static struct render_point *render_start,*rp;
  static struct point_2d m1,m2;
  static unsigned char *txt1,*txt2,*txt; /* static because I need to 
@@ -485,26 +485,28 @@ void render_cube(int depth,struct node *from,struct node *cube,
      {
      case 0:
       for(y=0;y<64;y++) for(x=0;x<64;x++)
-       txt[y*64+x]=(txt2[y*64+x]==0xff ? txt1[y*64+x] : txt2[y*64+x]);
+       txt[y*64+x]=(txt2[y*64+x]>=0xfe ? txt1[y*64+x] : txt2[y*64+x]);
       break; 
      case 1:
       for(y=0;y<64;y++) for(x=0;x<64;x++)
-       txt[y*64+x]=(txt2[x*64+63-y]==0xff ? txt1[y*64+x] : txt2[x*64+63-y]);
+       txt[y*64+x]=(txt2[x*64+63-y]>=0xfe ? txt1[y*64+x] : txt2[x*64+63-y]);
       break;
      case 2:
       for(y=0;y<64;y++) for(x=0;x<64;x++)
-       txt[y*64+x]=(txt2[(63-y)*64+63-x]==0xff ? txt1[y*64+x] :
+       txt[y*64+x]=(txt2[(63-y)*64+63-x]>=0xfe ? txt1[y*64+x] :
         txt2[(63-y)*64+63-x]);
       break;
      case 3:
       for(y=0;y<64;y++) for(x=0;x<64;x++)
-       txt[y*64+x]=(txt2[(63-x)*64+y]==0xff ? txt1[y*64+x] : 
+       txt[y*64+x]=(txt2[(63-x)*64+y]>=0xfe ? txt1[y*64+x] : 
         txt2[(63-x)*64+y]);
       break; 
      default: my_assert(0);
      }
     }
    else txt=gettexture(cube->d.c->walls[w]->texture1,1);
+   if(cube->d.c->nc[w])
+    { for(x=0;x<64*64;x++) if(txt[x]==0xff) txt[x]=0xfe; }
    for(j=0;j<2;j++)
     {
     if(DEBUG) { fprintf(errf,"** %d Clipping&Plotting %d %d %d (%p)\n",depth,

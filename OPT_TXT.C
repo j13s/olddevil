@@ -54,6 +54,8 @@ int next_txtno(struct txt_list_win *tlw,int offset,int add)
  {
  int incdec=add>0 ? 1 : -1,rdlno;
  enum txttypes tt;
+ fprintf(errf,"type %d offset %d add %d incdec %d maxnum %d\n",tlw->type,
+  offset,add,incdec,tlw->maxnum);
  switch(tlw->type)
   {
   case tlw_t1: tt=view.pcurrcube && view.pcurrcube->d.c->nc[view.currwall] ? 
@@ -65,13 +67,18 @@ int next_txtno(struct txt_list_win *tlw,int offset,int add)
   default: my_assert(0); exit(2);
   }
  rdlno=offset>=0 && offset<tlw->maxnum ? tlw->t[offset]->rdlno : -1;
+ fprintf(errf,"tt %d rdlno %d\n",tt,rdlno);
  while(add!=0)
   { 
   offset+=incdec;
+  fprintf(errf,"offset+=incdec=%d\n",offset);
   if(offset<0) return -1;
   else if(offset>=tlw->maxnum) return tlw->maxnum;
+  fprintf(errf,"txtlistno=%d new rdlno %d rdlno %d\n",
+   tlw->t[offset]->txtlistno[tt],tlw->t[offset]->rdlno,rdlno);
   if(tlw->t[offset]->txtlistno[tt]>=0 && tlw->t[offset]->rdlno!=rdlno)
    { add-=incdec; rdlno=tlw->t[offset]->rdlno; }
+  fprintf(errf,"new add=%d\n",add);
   }
  return offset;
  }
@@ -126,12 +133,16 @@ void initdisplay(struct txt_list_win *tlw)
  tlw->offset=next_txtno(tlw,-1,1); tlw->curtxtno=-1;
  if(tlw->marked_txts) FREE(tlw->marked_txts);
  checkmem(tlw->marked_txts=CALLOC(sizeof(unsigned char),tlw->maxnum));
- for(i=0;i<tlw->maxnum;i++)
-  if(tlw->t[i]->rdlno==rdl_curtxt) 
-   { tlw->marked_txts[i]=1; 
-     tlw->offset=next_txtno(tlw,i-tl_xnumtxt(tlw)*tl_ynumtxt(tlw)/2<0 ? -1 : 
-      i-tl_xnumtxt(tlw)*tl_ynumtxt(tlw)/2,1);
-     tlw->curtxtno=i; break; }
+ if(rdl_curtxt==0 && (tlw->type==txt2_normal || tlw->type==txt2_wall)) i=0;
+ else
+  for(i=0;i<tlw->maxnum;i++) if(tlw->t[i]==&pig.rdl_txts[rdl_curtxt]) break;
+ if(i<tlw->maxnum)
+  {
+  tlw->marked_txts[i]=1; 
+  tlw->offset=next_txtno(tlw,i-tl_xnumtxt(tlw)*tl_ynumtxt(tlw)/2<0 ? -1 : 
+   i-tl_xnumtxt(tlw)*tl_ynumtxt(tlw)/2,1);
+  tlw->curtxtno=i;
+  }
  }
 
 void tl_drawmarktxt(struct w_button *b,int on)
@@ -599,6 +610,66 @@ void tl_changemode(struct txt_list_win *tlw,int mode)
 void tl_selectmode(struct w_button *b) 
  { tl_changemode(b->data,b->d.ls->selected); }
 
+void init_texturehandling(enum tlw_types tlw_type)
+ {
+ tl_win[tlw_type].type=tlw_type; 
+ tl_win[tlw_type].up.delay=25; tl_win[tlw_type].up.repeat=10;
+ tl_win[tlw_type].up.l_pressed_routine=
+  tl_win[tlw_type].up.l_routine=tl_l_up;
+ tl_win[tlw_type].up.r_pressed_routine=
+  tl_win[tlw_type].up.r_routine=tl_r_up;
+ tl_win[tlw_type].down.delay=25; tl_win[tlw_type].down.repeat=10;
+ tl_win[tlw_type].down.l_pressed_routine=
+  tl_win[tlw_type].down.l_routine=tl_l_down;
+ tl_win[tlw_type].down.r_pressed_routine=
+  tl_win[tlw_type].down.r_routine=tl_r_down;
+ tl_win[tlw_type].texture.delay=0; tl_win[tlw_type].texture.repeat=-1;
+ tl_win[tlw_type].texture.l_pressed_routine=
+  tl_win[tlw_type].texture.r_pressed_routine=NULL;
+ tl_win[tlw_type].texture.l_routine=tl_l_texture;
+ tl_win[tlw_type].texture.r_routine=tl_r_texture;
+ tl_win[tlw_type].display.d_xsize=tl_win[tlw_type].mode.d_xsize=-1;
+ tl_win[tlw_type].display.num_options=TLW_TM_NUM_OPTIONS; 
+ tl_win[tlw_type].display.options=tlw_tm_options; 
+ tl_win[tlw_type].display.select_lroutine=
+  tl_win[tlw_type].display.select_rroutine=tl_selectdisplay;
+ tl_win[tlw_type].display.selected=tl_win[tlw_type].mode.selected=
+  tl_win[tlw_type].zoom.selected=0;
+ tl_win[tlw_type].mode.num_options=2;
+ tl_win[tlw_type].mode.options=tlw_modes;
+ tl_win[tlw_type].mode.select_lroutine=
+  tl_win[tlw_type].mode.select_rroutine=tl_selectmode;
+ tl_win[tlw_type].display.num_options=TLW_TM_NUM_OPTIONS; 
+ tl_win[tlw_type].display.options=tlw_tm_options; 
+ tl_win[tlw_type].display.select_lroutine=
+  tl_win[tlw_type].display.select_rroutine=tl_selectdisplay;
+ tl_win[tlw_type].display.selected=0;
+ tl_win[tlw_type].m_clear.delay=0; tl_win[tlw_type].m_clear.repeat=-1; 
+ tl_win[tlw_type].m_clear.l_pressed_routine=
+  tl_win[tlw_type].m_clear.r_pressed_routine=NULL;
+ tl_win[tlw_type].m_clear.l_routine=
+  tl_win[tlw_type].m_clear.r_routine=tl_m_clear;
+ tl_win[tlw_type].m_load=tl_win[tlw_type].m_clear;
+ tl_win[tlw_type].m_load.l_routine=
+  tl_win[tlw_type].m_load.r_routine=tl_m_load;
+ tl_win[tlw_type].m_save=tl_win[tlw_type].m_clear;
+ tl_win[tlw_type].m_save.l_routine=
+  tl_win[tlw_type].m_save.r_routine=tl_m_save;
+ tl_win[tlw_type].m_level=tl_win[tlw_type].m_clear;
+ tl_win[tlw_type].m_level.l_routine=
+  tl_win[tlw_type].m_level.r_routine=tl_m_level;
+ tl_win[tlw_type].zoom.num_options=3;
+ tl_win[tlw_type].zoom.options=tlw_zoom;
+ tl_win[tlw_type].zoom.select_lroutine=
+  tl_win[tlw_type].zoom.select_rroutine=tl_selectzoom;   
+ tl_win[tlw_type].olddisplay=-1;
+ tl_win[tlw_type].txt_xsize=TXT_XSIZE;
+ tl_win[tlw_type].txt_ysize=TXT_YSIZE;
+ tl_win[tlw_type].oldxsize=0;
+ tl_win[tlw_type].dontcalltwice=0;
+ tl_win[tlw_type].oldmode=tl_win[tlw_type].olddisplay=-1;
+ }
+
 void texture_list(struct infoitem *i,enum txttypes tt,int no)
  {
  struct w_window tl_wininit;
@@ -618,63 +689,10 @@ void texture_list(struct infoitem *i,enum txttypes tt,int no)
    { saved_zoom=tl_win[tlw_type].zoom.selected; tl_win[tlw_type].oldxsize=0; }
   if(tl_win[tlw_type].oldxsize==0)
    {
-   tl_win[tlw_type].type=tlw_type; 
    tl_wininit.xpos=0; tl_wininit.ypos=0; tl_wininit.xsize=136;
    tl_wininit.ysize=w_ymaxwinsize();
-   tl_win[tlw_type].up.delay=25; tl_win[tlw_type].up.repeat=10;
-   tl_win[tlw_type].up.l_pressed_routine=
-    tl_win[tlw_type].up.l_routine=tl_l_up;
-   tl_win[tlw_type].up.r_pressed_routine=
-    tl_win[tlw_type].up.r_routine=tl_r_up;
-   tl_win[tlw_type].down.delay=25; tl_win[tlw_type].down.repeat=10;
-   tl_win[tlw_type].down.l_pressed_routine=
-    tl_win[tlw_type].down.l_routine=tl_l_down;
-   tl_win[tlw_type].down.r_pressed_routine=
-    tl_win[tlw_type].down.r_routine=tl_r_down;
-   tl_win[tlw_type].texture.delay=0; tl_win[tlw_type].texture.repeat=-1;
-   tl_win[tlw_type].texture.l_pressed_routine=
-    tl_win[tlw_type].texture.r_pressed_routine=NULL;
-   tl_win[tlw_type].texture.l_routine=tl_l_texture;
-   tl_win[tlw_type].texture.r_routine=tl_r_texture;
-   tl_win[tlw_type].display.d_xsize=tl_win[tlw_type].mode.d_xsize=-1;
-   tl_win[tlw_type].display.num_options=TLW_TM_NUM_OPTIONS; 
-   tl_win[tlw_type].display.options=tlw_tm_options; 
-   tl_win[tlw_type].display.select_lroutine=
-    tl_win[tlw_type].display.select_rroutine=tl_selectdisplay;
-   tl_win[tlw_type].display.selected=tl_win[tlw_type].mode.selected=
-    tl_win[tlw_type].zoom.selected=0;
-   tl_win[tlw_type].mode.num_options=2;
-   tl_win[tlw_type].mode.options=tlw_modes;
-   tl_win[tlw_type].mode.select_lroutine=
-    tl_win[tlw_type].mode.select_rroutine=tl_selectmode;
-   tl_win[tlw_type].display.num_options=TLW_TM_NUM_OPTIONS; 
-   tl_win[tlw_type].display.options=tlw_tm_options; 
-   tl_win[tlw_type].display.select_lroutine=
-    tl_win[tlw_type].display.select_rroutine=tl_selectdisplay;
-   tl_win[tlw_type].display.selected=0;
-   tl_win[tlw_type].m_clear.delay=0; tl_win[tlw_type].m_clear.repeat=-1; 
-   tl_win[tlw_type].m_clear.l_pressed_routine=
-    tl_win[tlw_type].m_clear.r_pressed_routine=NULL;
-   tl_win[tlw_type].m_clear.l_routine=
-    tl_win[tlw_type].m_clear.r_routine=tl_m_clear;
-   tl_win[tlw_type].m_load=tl_win[tlw_type].m_clear;
-   tl_win[tlw_type].m_load.l_routine=
-    tl_win[tlw_type].m_load.r_routine=tl_m_load;
-   tl_win[tlw_type].m_save=tl_win[tlw_type].m_clear;
-   tl_win[tlw_type].m_save.l_routine=
-    tl_win[tlw_type].m_save.r_routine=tl_m_save;
-   tl_win[tlw_type].m_level=tl_win[tlw_type].m_clear;
-   tl_win[tlw_type].m_level.l_routine=
-    tl_win[tlw_type].m_level.r_routine=tl_m_level;
-   tl_win[tlw_type].zoom.num_options=3;
-   tl_win[tlw_type].zoom.options=tlw_zoom;
-   tl_win[tlw_type].zoom.select_lroutine=
-    tl_win[tlw_type].zoom.select_rroutine=tl_selectzoom;   
    tl_win[tlw_type].i=i;
-   tl_win[tlw_type].olddisplay=-1;
-   tl_win[tlw_type].txt_xsize=TXT_XSIZE;
-   tl_win[tlw_type].txt_ysize=TXT_YSIZE;
-   tl_win[tlw_type].oldxsize=0;
+   init_texturehandling(tlw_type);
    }
   else
    { tl_wininit.xpos=tl_win[tlw_type].oldxpos;
@@ -777,6 +795,7 @@ void b_changetexture(struct infoitem *i,long no,int withtagged)
   drawoptbuttons(i-i->multifuncnr+5);
  if(i->type==it_texture) drawoptbuttons(i-i->multifuncnr+10);
  drawoptbuttons(i-i->multifuncnr);
+ if(view.render) plotlevel();
  }
  
 /* function for the 8 top/up/down/list buttons */
@@ -801,8 +820,11 @@ void b_selecttexture(struct w_button *b,int withtagged)
  if(tlw->t==NULL) 
   { tlw->t=pig.txtlist[txt_all]; tlw->maxnum=pig.num_txtlist[txt_all];
     tlw->type=tlw-tl_win; }
- for(j=0,txtno=-10;j<tlw->maxnum;j++) 
-  if(tlw->t[j]->rdlno==rdlno) { txtno=j; break; }
+ if(rdlno==0 && (tlw->type==txt2_normal || tlw->type==txt2_wall))
+  txtno=1;
+ else
+  for(j=0,txtno=-10;j<tlw->maxnum;j++) 
+   if(tlw->t[j]==&pig.rdl_txts[rdlno]) { txtno=j; break; }
  if(txtno==-10)
   txtno=(rdlno>=0 && rdlno<pig.num_rdltxts && pig.rdl_txts[rdlno].pig!=NULL
    && pig.rdl_txts[rdlno].txtlistno[tt]>=0) ?

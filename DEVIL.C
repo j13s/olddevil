@@ -55,10 +55,10 @@ void my_exit(void)
     fprintf(errf,"Severe bug. Trying to save current work...");
     savestatus(-1);
     fprintf(errf,"Done. Maybe you are a lucky guy.\n"); }
- closegrph(); ws_textmode(); 
+ ws_textmode(); 
  printf("Severe bug. Please have a look in the devil.err and try to\n");
  printf("reconstruct how this happened and mail your bug report to the\n");
- printf("Descent Designer Mailing List (see http://www.ladder.org)\n");
+ printf("Descent Designer Mailing List (see http://www.warpcore.org)\n");
  printf("If you're lucky, your current work will be restored when you\n");
  printf("enter the program again. If this doesn't work and it won't start\n");
  printf("anymore at all, try devil /new.\n");

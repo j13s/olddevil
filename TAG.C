@@ -235,7 +235,7 @@ int tag_testfunc(int lr,struct point *p,int x1,int y1,
  int x2,int y2)
  {
  struct pixel pix;
- if(!getpixelcoords(lr,p,&pix)) return 0;
+ if(!getpixelcoords(lr,p,&pix) || pix.d>view.maxvisibility*1.1) return 0;
  return (pix.x>=x1 && pix.x<=x2 && pix.y>=y1 && pix.y<=y2);
  }
  
@@ -469,7 +469,6 @@ int tagflatsides(struct node *cube,int wall)
  struct point dv1,dv2,nv1,nv2;
  float cmp_angle;
  cmp_angle=cos(view.flatsideangle);
- untagall(tt_wall);
  tag(tt_wall,cube,wall);
  for(tw=l->tagged[tt_wall].head;tw->next!=NULL;tw=tw->next)
   {

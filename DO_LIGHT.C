@@ -49,11 +49,13 @@ int setcornerlight(struct point *spos,unsigned int light,
  int j;
  float s,l;
  struct point d1,*epos=n->d.c->p[wallpts[wd][cd]]->d.p;
+ unsigned long tmp;
  for(j=0;j<3;j++) d1.x[j]=epos->x[j]-spos->x[j];
  l=sqrt(SCALAR(&d1,&d1));
  s=(l<=MINWAY ? 1.0 : sqr_qw_mw/((l+qw_2mw)*(l+qw_2mw)));
  if(s<=MINFACTOR) return 0;
- if(n->d.c->walls[wd]!=NULL) add[wd*4+cd]+=s*light; 
+ if(n->d.c->walls[wd]!=NULL)
+  add[wd*4+cd]=(tmp=add[wd*4+cd]+(unsigned long)(s*light))>65535 ? 65535 :tmp; 
  return 1;
  }
 
@@ -64,19 +66,27 @@ int checkcolltriangle(struct point *p1,struct point *m,struct point *r,
  {
  float d,x1,x2;
  struct point h;
+ if(init_test&8)
+  fprintf(errf,
+   "check trg: p1 %g %g %g m %g %g %g\n r %g %g %g s %g %g %g t %g %g %g\n",
+   p1->x[0]/65536.0,p1->x[1]/65536.0,p1->x[2]/65536.0,
+   m->x[0]/65536.0,m->x[1]/65536.0,m->x[2]/65536.0,
+   r->x[0]/65536.0,r->x[1]/65536.0,r->x[2]/65536.0,
+   s->x[0]/65536.0,s->x[1]/65536.0,s->x[2]/65536.0,
+   t->x[0]/65536.0/65536.0,t->x[1]/65536.0/65536.0,t->x[2]/65536.0/65536.0);
  d=SCALAR(m,t);
  if(fabs(d)<=ZERO) /* the line runs parallel to the triangle */
   return fabs(SCALAR(t,p1))<=ZERO ? 1 : 0;
  else /* well, at least the line is not parallel to the plane of the wall */
   {
   d=1/d;
-  x1=-SCALAR(p1,t)*d; 
+  x1=-SCALAR(p1,t)*d;
   if(x1<-ZERO || x1>1.0+ZERO) return 0;
-  VECTOR(&h,p1,m); 
+  VECTOR(&h,p1,m);
   x1=-SCALAR(&h,s)*d;
   if(x1<-ZERO || x1>1.0+ZERO) return 0;
   x2=SCALAR(&h,r)*d;
-  if(x2<-ZERO || x2>1.0+ZERO) return 0;
+  if(x2<-ZERO || x1+x2>1.0+ZERO) return 0;
   }
  return 1;
  }
@@ -90,24 +100,31 @@ int checkforline(struct point *p1,struct point *p2,int num_s,
  struct point ea,r,s,t,m,a;
  /* m=p2-p1 */
  for(i=0;i<3;i++) m.x[i]=p2->x[i]-p1->x[i];
+ if(init_test&8) fprintf(errf,"Checking p1 %g %g %g p2 %g %g %g num_s %d\n",
+  p1->x[0]/65536.0,p1->x[1]/65536.0,p1->x[2]/65536.0,
+  p2->x[0]/65536.0,p2->x[1]/65536.0,p2->x[2]/65536.0,num_s);
  for(side=num_s-1;side>=0;side--)
   {
+  if(init_test&8)
+   fprintf(errf,"side=%d nc %d nc_w %d\n",side,nc[side]->no,nc_w[side]);
   for(i=0;i<3;i++) 
    { ea.x[i]=nc[side]->d.c->p[wallpts[nc_w[side]][0]]->d.p->x[i];
      r.x[i]=nc[side]->d.c->p[wallpts[nc_w[side]][1]]->d.p->x[i]-ea.x[i];
      s.x[i]=nc[side]->d.c->p[wallpts[nc_w[side]][3]]->d.p->x[i]-ea.x[i]; 
      a.x[i]=p1->x[i]-ea.x[i]; }
-  VECTOR(&t,&s,&r);
+  VECTOR(&t,&r,&s);
   if(!checkcolltriangle(&a,&m,&r,&s,&t))
    { /* missed the triangle at all */
    for(i=0;i<3;i++) 
     { ea.x[i]=nc[side]->d.c->p[wallpts[nc_w[side]][2]]->d.p->x[i];
-      r.x[i]=nc[side]->d.c->p[wallpts[nc_w[side]][1]]->d.p->x[i]-ea.x[i];
-      s.x[i]=nc[side]->d.c->p[wallpts[nc_w[side]][3]]->d.p->x[i]-ea.x[i]; 
+      r.x[i]=nc[side]->d.c->p[wallpts[nc_w[side]][3]]->d.p->x[i]-ea.x[i];
+      s.x[i]=nc[side]->d.c->p[wallpts[nc_w[side]][1]]->d.p->x[i]-ea.x[i]; 
       a.x[i]=p1->x[i]-ea.x[i]; }
    VECTOR(&t,&r,&s);
    if(!checkcolltriangle(&a,&m,&r,&s,&t)) return 0;
+   else if(init_test&8) fprintf(errf,"2. checkcolltriangle true\n");
    }
+  else if(init_test&8) fprintf(errf,"1. checkcolltriangle true\n");
   }
  return 1;
  }
@@ -150,6 +167,10 @@ void calclseffects(struct point *lsp,unsigned int light,struct node *cube_n,
  for(w=0;w<6;w++)
   if(c->nc[w]!=NULL && c->nc[w]->d.c->tagged) 
    {
+   /* check: don't run in circles */
+   for(j=depth;j>=0;j--) if(nc[j]==c->nc[w]) break;
+   if(j>-1) continue;
+   /* check: is this cube already check from this lightsource? */
    if(init_test&4)
     {
     fprintf(errf,"ILLUM: Checking cube %d from cube %d wall %d over ",
@@ -157,10 +178,6 @@ void calclseffects(struct point *lsp,unsigned int light,struct node *cube_n,
     for(j=0;j<depth;j++) fprintf(errf," %d,%d",nc[j]->no,nc_w[j]);
     fprintf(errf,"\n");
     }
-   /* check: don't run in circles */
-   for(j=depth;j>=0;j--) if(nc[j]==c->nc[w]) break;
-   if(j>-1) continue;
-   /* check: is this cube already check from this lightsource? */
    for(n=effects->head,lse=NULL;n->next!=NULL;n=n->next)
     if(c->nc[w]==n->d.lse->cube) { lse=n->d.lse; break; }
    /* ok, a new cube. check if there's a wall which is in the way... */
@@ -183,7 +200,7 @@ void calclseffects(struct point *lsp,unsigned int light,struct node *cube_n,
      vis=checkforline(lsp,&endp,depth+1,nc,nc_w);
      if(vis && (!lse || lse->add_light[w*4+cd]==0)) 
       onevis|=setcornerlight(lsp,light,c->nc[w],wd,cd,add);
-     if(init_test&4) fprintf(errf," %d:%d:%d:%d",wd,cd,vis,add[wd*4+cd]);
+     if(init_test&4) fprintf(errf," %d:%d:%d:%d\n",wd,cd,vis,add[wd*4+cd]);
      }
    if(init_test&4) fprintf(errf," %d\n",onevis);
    /* not one of the points is visible */
@@ -222,6 +239,7 @@ void calcillumwall(struct node *c,int wall,int *light)
  struct lightsource *ls;
  struct list effects,illum_cubes;
  struct ls_effect *lse;
+ unsigned long tmp;
  if(init_test&4) 
   fprintf(errf,"Calculating effects of light source %d,%d\n",c->no,wall);
  checkmem(nc_w=MALLOC(sizeof(int)*maxdepth));
@@ -249,8 +267,8 @@ void calcillumwall(struct node *c,int wall,int *light)
   { waitmsg(TXT_CANTCALCLIGHT,c->no,wall); return; }
  for(i=0;i<3;i++) 
   { center.x[i]=0.0;
-    for(x=0;x<4;x++) center.x[i]+=w->p[x]->d.p->x[i];
-    center.x[i]/=4;
+    for(x=0;x<8;x++) center.x[i]+=c->d.c->p[x]->d.p->x[i];
+    center.x[i]/=8;
     e1.x[i]=w->p[1]->d.p->x[i]-w->p[0]->d.p->x[i];
     e2.x[i]=w->p[3]->d.p->x[i]-w->p[0]->d.p->x[i];
     e3.x[i]=w->p[1]->d.p->x[i]-w->p[2]->d.p->x[i];
@@ -320,9 +338,10 @@ void calcillumwall(struct node *c,int wall,int *light)
        for(i=0;i<3;i++)
         lsp.x[i]+=w->p[2]->d.p->x[i]+sub_a[j]*e3.x[i]+sub_b[j]*e4.x[i];
       }
-    /* make the lightsources a bit more in the middle of the bitmap,
-       then they are not at the edges. */
-    for(i=0;i<3;i++) lsp.x[i]=lsp.x[i]/sub_in_sum/* *0.9+center.x[i]*0.1 */;
+    /* move the lightsource a bit into the middle of the cube, away from
+       the wall, so we don't get trouble with flat walls */
+    for(i=0;i<3;i++)
+     lsp.x[i]=lsp.x[i]/sub_in_sum*0.99+center.x[i]*0.01;
     a=sub_in_sum>=ILLUM_SUBGRIDSIZE*(ILLUM_SUBGRIDSIZE-1) ? 1.0 :
      (float)(sub_in_sum+ILLUM_SUBGRIDSIZE)/
      (ILLUM_SUBGRIDSIZE*ILLUM_SUBGRIDSIZE);
@@ -345,7 +364,9 @@ void calcillumwall(struct node *c,int wall,int *light)
       if(ne->d.lse->cube==n->prev->d.lse->cube) break;
      if(ne->next)
       { for(i=0;i<24;i++) 
-         ne->d.lse->add_light[i]+=n->prev->d.lse->add_light[i]; 
+         ne->d.lse->add_light[i]=
+	  (tmp=ne->d.lse->add_light[i]+n->prev->d.lse->add_light[i])>65535 ?
+	  65535 : tmp;
         FREE(n->prev->d.lse); FREE(n->prev); }
      else
       { n->prev->prev=effects.tail;
@@ -358,7 +379,8 @@ void calcillumwall(struct node *c,int wall,int *light)
  checkmem(ls=MALLOC(sizeof(struct lightsource)));
  copylisthead(&ls->effects,&effects);
  ls->cube=c; ls->w=wall;
- checkmem(addnode(&l->lightsources,-1,ls));
+ my_assert(c->d.c->walls[wall]!=NULL)
+ checkmem(c->d.c->walls[wall]->ls=addnode(&l->lightsources,-1,ls));
  if(init_test&4)
   {
   fprintf(errf,"Light from wall %d %d\n",ls->cube->no,ls->w);
@@ -376,7 +398,7 @@ void calcillumwall(struct node *c,int wall,int *light)
  
 #define MAX_CORNERNB 20
 /* this is cos(phi), phi=max. angle to smooth the edges */
-#define MAX_SMOOTHANGLE 0.87
+#define MAX_SMOOTHANGLE 0.87 
 
 struct smoothcorner
  {
@@ -615,7 +637,7 @@ int read_lightsources(void)
  return 1;
  }
  
-void calccornerlight(void)
+void calccornerlight(int withsmooth)
  {
  struct node *ntc,*nlse;
  int ldrawn,per,w,c,i,j,x,y,light[ILLUM_GRIDSIZE*ILLUM_GRIDSIZE],overall;
@@ -635,6 +657,7 @@ void calccornerlight(void)
     {
     if(ntc->d.n->d.c->walls[w]->ls) 
      freenode(&l->lightsources,ntc->d.n->d.c->walls[w]->ls,freelightsource);
+    ntc->d.n->d.c->walls[w]->ls=NULL;
     for(c=0;c<4;c++) ntc->d.n->d.c->walls[w]->corners[c].light=
      view.illum_minvalue;
     }
@@ -683,7 +706,7 @@ void calccornerlight(void)
     }
   }
  l->levelillum=1;
- smoothlight();
+ if(withsmooth) smoothlight();
  /* OK, now set the lights&create the turnoffs */
  sortlist(&l->cubes,0);
  for(ntc=l->lightsources.head;ntc->next!=NULL;ntc=ntc->next)
@@ -753,7 +776,7 @@ void dec_setcornerlight(int ec)
  if(l==NULL) { printmsg(TXT_NOLEVEL); return; }
  if(l->tagged[tt_cube].size==0) { printmsg(TXT_NOCUBETAGGED); return; }
  time1=clock();
- calccornerlight();
+ calccornerlight(ec==ec_mineillumsmooth);
  l->levelsaved=0;
  drawopts(); plotlevel();
  printmsg(TXT_ENDSETCORNERLIGHT,(clock()-time1)/(float)CLOCKS_PER_SEC);
@@ -775,7 +798,7 @@ void dec_mineillum(int ec)
  if(l==NULL) { printmsg(TXT_NOLEVEL); return; }
  if(l->tagged[tt_cube].size==0) { printmsg(TXT_NOCUBETAGGED); return; }
  time1=clock();
- calccornerlight(); setinnercubelight();
+ calccornerlight(0); setinnercubelight();
  l->levelsaved=0;
  drawopts(); plotlevel();
  printmsg(TXT_ENDCALCLIGHT,(clock()-time1)/(float)CLOCKS_PER_SEC);
@@ -801,3 +824,11 @@ void dec_setlsfile(int ec)
  printmsg(TXT_LSFILENAME,init.lightname);
  }
 
+/* this is not completed.... */
+void dec_modifylseffect(int ec)
+ {
+ if(!l || !view.pcurrcube) { printmsg(TXT_NOLEVEL); return; }
+ if(!l->levelillum) { printmsg(TXT_FIRSTILLUMLEVEL); return; }
+ if(!view.pcurrwall || !view.pcurrwall->ls)
+  { printmsg(TXT_NOLIGHTSOURCE); return; } 
+ }

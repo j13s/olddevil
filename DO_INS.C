@@ -367,7 +367,7 @@ void dec_makeroom(int ec)
    if(n->d.n->d.c->nc[w]==NULL)
     if(connectsides(n->d.n,w)>0) l->levelsaved=0;
     else tag(tt_wall,n->d.n,w);
- printmsg(TXT_MAKEROOM);
+ plotlevel(); drawopts(); printmsg(TXT_MAKEROOM);
  }
 
 void dec_splitcube(int ec)

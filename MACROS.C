@@ -311,7 +311,7 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
    MATRIXMULT(&hp1,naxis,&hp2);
    for(i=0;i<3;i++) n->d.t->orientation[j*3+i]=hp1.x[i];
    }
-  setthingpts(t); 
+  setthingpts(t);  t->nc=NULL; setthingcube(t);
   checkmem(addheadnode(&l->things,n->no,t));
   }
  /* inserting the doors, sdoors and producers and flickering lights */

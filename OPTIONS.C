@@ -753,7 +753,7 @@ void drawopt(enum infos what)
         b_refreshtagno(what); }
      break;
     case in_pnt:
-     act=l->doors.size;
+     act=l->pts.size;
      if(act && view.pcurrpnt)
       { i=view.pcurrpnt->no; 
         b_optwins[what][3]->d.s->on=testtag(tt_pnt,view.pcurrpnt);

@@ -1,4 +1,12 @@
-/*  plotsys.c - texture mapping, system dependent routines */
+/*  plotsys.c - texture mapping, system dependent routines
+    THIS IS NOT THE CODE USED IN V2.2i. I HAVE NOT TESTED THIS CODE.
+    I think it should be working but I'm not sure. Maybe the uvl-coords
+    are not shifted the right way. If you want to have a source code
+    which is working, use the source for V2.2h
+    Sorry for all that, but I don't know if I want to use parts of the code
+    for V2.2i commercially. The changes made in V2.2i are only performance
+    (some routines were coded in assembler and such things...), so you may
+    want to optimize this routines by yourself... */
 #include "structs.h"
 #include "plotdata.h"
 #include "plotsys.h"
@@ -10,6 +18,7 @@
 
 static unsigned char *drawbuffer;
 struct ws_bitmap *drawbitmap;
+static unsigned char fp_buffer[1000] __attribute__((unused));
 
 #define SYS_LIGHTSCANLINE(NUM_PIXELS,ADD_F1,ADD_F2,ADD_F3) {\
      txt_u=n_txt_u; txt_v=n_txt_v; \
@@ -22,7 +31,7 @@ struct ws_bitmap *drawbitmap;
      for(cur_pos=cur_line+ps_x,i=(NUM_PIXELS);i>0;i--)\
       {\
       *(cur_pos++)=*(colors+\
-       *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE)))); \
+       *(txt_data+((txt_u>>8)&0x3f)+((txt_v>>8)&(0x3f*TXTSIZE)))); \
       txt_u+=add_txt_u; txt_v+=add_txt_v; light+=d_light;\
       if(light>c_light) { c_light+=d_x; colors+=add_colors; }\
       }   \
@@ -45,7 +54,7 @@ struct ws_bitmap *drawbitmap;
       for(cur_pos=cur_line+e_r_ps_x,i=e_rest;i>0;i--) \
        { \
        *(cur_pos++)=*(colors+ \
-        *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE)))); \
+        *(txt_data+((txt_u>>8)&0x3f)+((txt_v>>8)&(0x3f*TXTSIZE)))); \
        txt_u+=add_txt_u; txt_v+=add_txt_v; light+=d_light;\
        if(light>c_light) { c_light+=d_x; colors+=add_colors; } \
        } \
@@ -67,7 +76,7 @@ struct ws_bitmap *drawbitmap;
      for(cur_pos=cur_line+ps_x,i=(NUM_PIXELS);i>0;i--)\
       {\
       *(cur_pos++)=*(colors+\
-       *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE)))); \
+       *(txt_data+((txt_u>>8)&0x3f)+((txt_v>>8)&(0x3f*TXTSIZE)))); \
       txt_u+=add_txt_u; txt_v+=add_txt_v; \
       }   \
      ps_x+=(NUM_PIXELS); \
@@ -89,7 +98,7 @@ struct ws_bitmap *drawbitmap;
       for(cur_pos=cur_line+e_r_ps_x,i=e_rest;i>0;i--) \
        { \
        *(cur_pos++)=*(colors+ \
-        *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE)))); \
+        *(txt_data+((txt_u>>8)&0x3f)+((txt_v>>8)&(0x3f*TXTSIZE)))); \
        txt_u+=add_txt_u; txt_v+=add_txt_v; \
        } \
       } \
@@ -100,7 +109,7 @@ struct ws_bitmap *drawbitmap;
    
    
 /* The plottxt functions use the y-coord with negative sign.!!!! */
-void psys_plottxt(struct polygon *p,struct render_point *start,
+void psys_256_plottxt(struct polygon *p,struct render_point *start,
  unsigned long offset,unsigned char *txt_data)
  {
  struct render_point *ppl,*ppr;
@@ -202,7 +211,7 @@ void psys_plottxt(struct polygon *p,struct render_point *start,
      for(cur_pos=cur_line+ps_x,i=(NUM_PIXELS);i>0;i--)\
       {\
       if((pixel=\
-       *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE))))!= \
+       *(txt_data+((txt_u>>8)&0x3f)+((txt_v>>8)&(0x3f*TXTSIZE))))!= \
        TRANSPARENT_COLOR) \
        *(cur_pos++)=*(colors+pixel); \
       else cur_pos++; \
@@ -228,7 +237,7 @@ void psys_plottxt(struct polygon *p,struct render_point *start,
       for(cur_pos=cur_line+e_r_ps_x,i=e_rest;i>0;i--) \
        { \
        if((pixel= \
-        *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE))))!= \
+        *(txt_data+((txt_u>>8)&0x3f)+((txt_v>>8)&(0x3f*TXTSIZE))))!= \
 	TRANSPARENT_COLOR) \
         *(cur_pos++)=*(colors+pixel); \
        else cur_pos++; \
@@ -253,7 +262,7 @@ void psys_plottxt(struct polygon *p,struct render_point *start,
      for(cur_pos=cur_line+ps_x,i=(NUM_PIXELS);i>0;i--)\
       {\
       if((pixel= \
-       *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE))))!= \
+       *(txt_data+((txt_u>>8)&0x3f)+((txt_v>>8)&(0x3f*TXTSIZE))))!= \
        TRANSPARENT_COLOR) \
        *(cur_pos++)=*(colors+pixel); \
       else cur_pos++; \
@@ -278,7 +287,7 @@ void psys_plottxt(struct polygon *p,struct render_point *start,
       for(cur_pos=cur_line+e_r_ps_x,i=e_rest;i>0;i--) \
        { \
        if((pixel= \
-        *(txt_data+((txt_u>>12)&0x3f)+((txt_v>>12)&(0x3f*TXTSIZE)))) \
+        *(txt_data+((txt_u>>8)&0x3f)+((txt_v>>8)&(0x3f*TXTSIZE)))) \
         !=TRANSPARENT_COLOR) \
         *(cur_pos++)=*(colors+pixel); \
        else cur_pos++; \
@@ -292,7 +301,7 @@ void psys_plottxt(struct polygon *p,struct render_point *start,
    
    
 /* The plottxt functions use the y-coord with negative sign.!!!! */
-void psys_plottransparent(struct polygon *p,struct render_point *start,
+void psys_256_transparent_plottxt(struct polygon *p,struct render_point *start,
  unsigned long offset,unsigned char *txt_data)
  {
  struct render_point *ppl,*ppr;

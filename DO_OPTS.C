@@ -74,6 +74,9 @@ static void wi_changeobject(struct w_button *b,int dowhat)
     if(view.curredge>3) view.curredge=0;
     else if(view.curredge<0) view.curredge=3;
     sprintf(b->d.str->str,"%.4d",view.curredge);
+    n=&view.pcurrpnt; ls=&l->pts;
+    drawopt(in_edge); what=in_pnt;
+    dowhat=view.pcurrcube->d.c->p[wallpts[view.currwall][view.curredge]]->no;
     }
    else sprintf(b->d.str->str,"----");
    break;
