@@ -227,7 +227,7 @@ int askconfigdata(int *d_ver,char *devilpath,char *d1path,char *d2path,
  }
  
 /* for a list of keycodes see file do_event.c, function dec_help. */
-#define NUM_HOTKEYS 98
+#define NUM_HOTKEYS 99
 struct hotkey { int kbstat,key,event; const char *txt; } 
 hotkeys[NUM_HOTKEYS]={ 
 { 0x01, 27, 59, "schnell beenden" },
@@ -282,6 +282,13 @@ hotkeys[NUM_HOTKEYS]={
 { 0x00,100, 69, "n„chstes Ding" },
 { 0x01, 90, 70, "vorherige Zwischenand" },
 { 0x00,122, 71, "n„chste Zwischenwand" },
+{ 0x00, 48,129, "setze Seite&Ecke auf 0" },
+{ 0x05, 88, 34, "ausrichten an -x-axis" },
+{ 0x04,120, 31, "ausrichten an +x-axis" },
+{ 0x05, 89, 35, "ausrichten an -y-axis" },
+{ 0x04,121, 32, "ausrichten an +y-axis" },
+{ 0x05, 90, 36, "ausrichten an -z-axis" },
+{ 0x04,122, 33, "ausrichten an +z-axis" },
 { 0x01, 42, 76, "Drehwinkel +" },
 { 0x01, 47, 77, "Drehwinkel -" },
 { 0x00, 42, 74, "Schrittweite +" },

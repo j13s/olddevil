@@ -55,7 +55,8 @@ int setcornerlight(struct point *spos,unsigned int light,
  s=(l<=MINWAY ? 1.0 : sqr_qw_mw/((l+qw_2mw)*(l+qw_2mw)));
  if(s<=MINFACTOR) return 0;
  if(n->d.c->walls[wd]!=NULL)
-  add[wd*4+cd]=(tmp=add[wd*4+cd]+(unsigned long)(s*light))>65535 ? 65535 :tmp; 
+  add[wd*4+cd]=(tmp=add[wd*4+cd]+(unsigned long)(s*light))>MAX_LIGHT ?
+   MAX_LIGHT :tmp; 
  return 1;
  }
 
@@ -140,11 +141,11 @@ int illum_checkwall(struct cube *c,int w)
    return (c->walls[w]->texture1<pig.num_rdltxts && 
    pig.rdl_txts[c->walls[w]->texture1].pig!=NULL &&
    pig.rdl_txts[c->walls[w]->texture1].txtlistno[txt1_wall]>=0 &&
-   pig.rdl_txts[c->walls[w]->texture1].txtlistno[txt1_normal]<0)/* ||
+   pig.rdl_txts[c->walls[w]->texture1].txtlistno[txt1_normal]<0) ||
    (c->walls[w]->texture2<pig.num_rdltxts && c->walls[w]->texture2!=0 &&
    pig.rdl_txts[c->walls[w]->texture2].pig!=NULL &&
    pig.rdl_txts[c->walls[w]->texture2].txtlistno[txt2_wall]>=0 &&
-   pig.rdl_txts[c->walls[w]->texture2].txtlistno[txt2_normal]<0) */;
+   pig.rdl_txts[c->walls[w]->texture2].txtlistno[txt2_normal]<0);
    break;
   case door1_onlyswitch: return 1; break;
   }
@@ -165,7 +166,7 @@ void calclseffects(struct point *lsp,unsigned int light,struct node *cube_n,
  struct cube *c=cube_n->d.c;
  struct ls_effect *lse;
  for(w=0;w<6;w++)
-  if(c->nc[w]!=NULL && c->nc[w]->d.c->tagged) 
+  if(c->nc[w]!=NULL)
    {
    /* check: don't run in circles */
    for(j=depth;j>=0;j--) if(nc[j]==c->nc[w]) break;
@@ -181,7 +182,8 @@ void calclseffects(struct point *lsp,unsigned int light,struct node *cube_n,
    for(n=effects->head,lse=NULL;n->next!=NULL;n=n->next)
     if(c->nc[w]==n->d.lse->cube) { lse=n->d.lse; break; }
    /* ok, a new cube. check if there's a wall which is in the way... */
-   if(c->d[w]!=NULL && !illum_checkwall(c,w)) continue;
+   if(c->d[w]!=NULL)
+    if(!illum_checkwall(c,w)) continue;
    /* no wall in the way. OK, no we have to check the neighbour cube
     c->nc[w]. The light must pass the side w of the cube w: */
    nc[depth]=cube_n; nc_w[depth]=w;
@@ -197,7 +199,8 @@ void calclseffects(struct point *lsp,unsigned int light,struct node *cube_n,
        c->nc[w]->d.c->p[wallpts[wd][cd]]->d.p->x[j]*0.98;
      /* check if the light can go from point p to point c->nc[w],p by
       passing all sides in the arrays nc, nc_w */
-     vis=checkforline(lsp,&endp,depth+1,nc,nc_w);
+     vis=(c->nc[w]->d.c->nc[wd]!=cube_n &&
+      checkforline(lsp,&endp,depth+1,nc,nc_w));
      if(vis && (!lse || lse->add_light[w*4+cd]==0)) 
       onevis|=setcornerlight(lsp,light,c->nc[w],wd,cd,add);
      if(init_test&4) fprintf(errf," %d:%d:%d:%d\n",wd,cd,vis,add[wd*4+cd]);
@@ -365,8 +368,8 @@ void calcillumwall(struct node *c,int wall,int *light)
      if(ne->next)
       { for(i=0;i<24;i++) 
          ne->d.lse->add_light[i]=
-	  (tmp=ne->d.lse->add_light[i]+n->prev->d.lse->add_light[i])>65535 ?
-	  65535 : tmp;
+	  (tmp=ne->d.lse->add_light[i]+
+	   n->prev->d.lse->add_light[i])>MAX_LIGHT ? MAX_LIGHT : tmp;
         FREE(n->prev->d.lse); FREE(n->prev); }
      else
       { n->prev->prev=effects.tail;
@@ -378,7 +381,7 @@ void calcillumwall(struct node *c,int wall,int *light)
    }
  checkmem(ls=MALLOC(sizeof(struct lightsource)));
  copylisthead(&ls->effects,&effects);
- ls->cube=c; ls->w=wall;
+ ls->cube=c; ls->w=wall; ls->fl=NULL;
  my_assert(c->d.c->walls[wall]!=NULL)
  checkmem(c->d.c->walls[wall]->ls=addnode(&l->lightsources,-1,ls));
  if(init_test&4)
@@ -486,50 +489,7 @@ int getnbcorners(struct smoothcorner *nbcorners,struct node *c,
  VECTOR(&cmp,&d1,&d2); normalize(&cmp);
  return rec_getnbcorners(nbcorners,0,c,w,p,&cmp);
  }
- 
-void createturnoff(struct lightsource *ls)
- {
- struct turnoff *to;
- struct changedlight *lc;
- struct node *n;
- int i,j;
- i=ls->cube->d.c->walls[(int)ls->w]->texture1;
- j=ls->cube->d.c->walls[(int)ls->w]->texture2;
- if(i<0 || i>=pig.num_rdltxts || j<0 || j>=pig.num_rdltxts || 
-  (pig.rdl_txts[i].shoot_out_txt<0 && pig.rdl_txts[j].shoot_out_txt<0
-   && pig.rdl_txts[i].anim_seq<0 && pig.rdl_txts[j].anim_seq<0))
-  {
-  /* now check if the light is turned out by a switch */
-  for(n=l->sdoors.head,j=0;n->next!=NULL && !j;n=n->next)
-   if(n->d.sd->type==switch_turnofflight)
-    for(i=0;i<n->d.sd->num && !j;i++)
-     if(n->d.sd->target[i]==ls->cube && (int)n->d.sd->walls[i]==ls->w) j=1;
-  /* or if it is a flickering light */
-  for(n=l->flickeringlights.head;n->next!=NULL && !j;n=n->next)
-   if(n->d.fl->c==ls->cube && n->d.fl->wall==ls->w) j=1;
-  if(!j) return;
-  }
- checkmem(to=MALLOC(sizeof(struct turnoff)));
- to->cube=ls->cube->no; to->side=ls->w;
- sortlist(&ls->effects,0);
- to->offset=l->changedlights.size;
- checkmem(addnode(&l->turnoff,-1,to));
- for(n=ls->effects.head;n->next!=NULL;n=n->next)
-  {
-  for(i=0;i<6;i++)
-   if((n->d.lse->add_light[i*4]>>10)+(n->d.lse->add_light[i*4+1]>>10)+
-    (n->d.lse->add_light[i*4+2]>>10)+(n->d.lse->add_light[i*4+3]>>10)>0)
-    {
-    checkmem(lc=MALLOC(sizeof(struct changedlight)));
-    lc->cube=n->d.lse->cube->no; lc->side=i;
-    lc->stuff=0; 
-    for(j=0;j<4;j++) lc->sub[j]=n->d.lse->add_light[i*4+j]>>10;
-    checkmem(addnode(&l->changedlights,-1,lc));
-    }
-  }
- to->num_changed=l->changedlights.size-to->offset;
- }
- 
+
 void smoothlight(void)
  {
  struct node *nls,*nlse,*nlse2;
@@ -644,6 +604,8 @@ void calccornerlight(int withsmooth)
  int ldrawn,per,w,c,i,j,x,y,light[ILLUM_GRIDSIZE*ILLUM_GRIDSIZE],overall;
  clock_t time1;
  struct ws_event ws;
+ struct flickering_light fl;
+ sortlist(&l->cubes,0);
  /* read the lightsource file */
  if(!read_lightsources()) return;
  /* Set all lights to the default values */
@@ -652,18 +614,7 @@ void calccornerlight(int withsmooth)
  qw_2mw=view.illum_quarterway-2*MINWAY;
  maxdepth=(view.illum_quarterway/(10*65536.0))*
   (view.illum_quarterway/(10*65536.0))+4.5;
- for(ntc=l->tagged[tt_cube].head;ntc->next!=NULL;ntc=ntc->next)
-  for(w=0;w<6;w++)
-   if(ntc->d.n->d.c->walls[w]!=NULL)
-    {
-    if(ntc->d.n->d.c->walls[w]->ls) 
-     freenode(&l->lightsources,ntc->d.n->d.c->walls[w]->ls,freelightsource);
-    ntc->d.n->d.c->walls[w]->ls=NULL;
-    for(c=0;c<4;c++) ntc->d.n->d.c->walls[w]->corners[c].light=
-     view.illum_minvalue;
-    }
- /* clear lists turnoff and changedlight */
- freelist(&l->turnoff,free); freelist(&l->changedlights,free);
+ /* reset the tagged edges */
  for(ntc=l->tagged[tt_cube].head,per=0,ldrawn=-10;ntc->next!=NULL;
   ntc=ntc->next,per++)
   {
@@ -679,6 +630,14 @@ void calccornerlight(int withsmooth)
   for(w=0;w<6;w++)
    if(ntc->d.n->d.c->walls[w]!=NULL)
     {
+    fl.delay=0;
+    if(ntc->d.n->d.c->walls[w]->ls)
+     { /* an old lightsource. Delete it but keep the fl */
+     if(ntc->d.n->d.c->walls[w]->ls->d.ls->fl)
+      fl=*ntc->d.n->d.c->walls[w]->ls->d.ls->fl;
+     freenode(&l->lightsources,ntc->d.n->d.c->walls[w]->ls,freelightsource);
+     }
+    ntc->d.n->d.c->walls[w]->ls=NULL;
     overall=0;
     if(ntc->d.n->d.c->walls[w]->texture1<pig.num_rdltxts &&
      pig.rdl_txts[ntc->d.n->d.c->walls[w]->texture1].pig!=NULL)
@@ -703,43 +662,50 @@ void calccornerlight(int withsmooth)
         pig.rdl_txts[ntc->d.n->d.c->walls[w]->texture2].my_light[
          i*ILLUM_GRIDSIZE+j]);
        }
-    if(overall>0) calcillumwall(ntc->d.n,w,light);
+    if(overall>0)
+     {
+     calcillumwall(ntc->d.n,w,light);
+     if(fl.delay>0 && ntc->d.n->d.c->walls[w]->ls)
+      {
+      checkmem(ntc->d.n->d.c->walls[w]->ls->d.ls->fl=MALLOC(
+       sizeof(struct flickering_light)));
+      *ntc->d.n->d.c->walls[w]->ls->d.ls->fl=fl;
+      ntc->d.n->d.c->walls[w]->ls->d.ls->fl->ls=ntc->d.n->d.c->walls[w]->ls;
+      }
+     }
     }
   }
  l->levelillum=1;
  if(withsmooth) smoothlight();
- /* OK, now set the lights&create the turnoffs */
- sortlist(&l->cubes,0);
+ /* OK, now set the lights & init the light lists */
+ for(ntc=l->tagged[tt_cube].head;ntc->next!=NULL;ntc=ntc->next)
+  for(w=0;w<6;w++) if(ntc->d.n->d.c->walls[w]!=NULL)
+    for(c=0;c<4;c++) ntc->d.n->d.c->walls[w]->corners[c].light=
+		      view.illum_minvalue;
+ for(ntc=l->cubes.head;ntc->next!=NULL;ntc=ntc->next)
+  freelist(&ntc->d.c->fl_lights,NULL);
  for(ntc=l->lightsources.head;ntc->next!=NULL;ntc=ntc->next)
   {
   if(init_test&4)
    fprintf(errf,"Light from cube %d wall %d\n",ntc->d.ls->cube->no,
     ntc->d.ls->w);
-  if(init.d_ver>=d2_10_sw) createturnoff(ntc->d.ls);
   for(nlse=ntc->d.ls->effects.head;nlse->next!=NULL;nlse=nlse->next)
-   for(i=0;i<6;i++) 
+   for(i=0;i<6;i++)
     if(nlse->d.lse->cube->d.c->walls[i])
      for(j=0;j<4;j++)
       if((overall=nlse->d.lse->add_light[i*4+j])!=0)
        {
        if(init_test&4) fprintf(errf," %d,%d,%d:%d",nlse->d.lse->cube->no,
         i,j,overall);
-       overall+=nlse->d.lse->cube->d.c->walls[i]->corners[j].light;
-       nlse->d.lse->cube->d.c->walls[i]->corners[j].light=
-        overall>32767 ? 32767 : overall;
+       if(ntc->d.ls->cube->d.c->tagged)
+	{
+	overall+=nlse->d.lse->cube->d.c->walls[i]->corners[j].light;
+	nlse->d.lse->cube->d.c->walls[i]->corners[j].light=
+	 overall>MAX_LIGHT ? MAX_LIGHT : overall;
+	}
+       if(ntc->d.ls->fl!=NULL)
+	checkmem(addnode(&nlse->d.lse->cube->d.c->fl_lights,-1,ntc->d.ls->fl));
        }
-  }
- /* kill the useless flickering lights */
- for(ntc=l->flickeringlights.head->next;ntc!=NULL;ntc=ntc->next)
-  {
-  if(!ntc->prev->d.fl->c->d.c->tagged) continue;
-  for(nlse=l->turnoff.head;nlse->next!=NULL;nlse=nlse->next)
-   if(nlse->d.to->cube==ntc->prev->d.fl->cube && 
-    nlse->d.to->side==ntc->prev->d.fl->wall) break;
-  if(nlse->next==NULL)
-   { if(ntc->prev->d.fl->c->d.c->walls[ntc->prev->d.fl->wall])
-      ntc->prev->d.fl->c->d.c->walls[ntc->prev->d.fl->wall]->fl=NULL;
-     freenode(&l->flickeringlights,ntc->prev,free); }
   }
  }
  
@@ -800,7 +766,7 @@ void dec_mineillum(int ec)
  if(l->tagged[tt_cube].size==0) { printmsg(TXT_NOCUBETAGGED); return; }
  time1=clock();
  calccornerlight(0); setinnercubelight();
- l->levelsaved=0;
+ l->levelsaved=0; l->levelillum=1;
  drawopts(); plotlevel();
  printmsg(TXT_ENDCALCLIGHT,(clock()-time1)/(float)CLOCKS_PER_SEC);
  }
@@ -825,12 +791,71 @@ void dec_setlsfile(int ec)
  printmsg(TXT_LSFILENAME,init.lightname);
  }
 
-/* this is not completed.... 
-void dec_modifylseffect(int ec)
+void start_adjustlight(struct wall *wall)
  {
- if(!l || !view.pcurrcube) { printmsg(TXT_NOLEVEL); return; }
- if(!l->levelillum) { printmsg(TXT_FIRSTILLUMLEVEL); return; }
- if(!view.pcurrwall || !view.pcurrwall->ls)
-  { printmsg(TXT_NOLIGHTSOURCE); return; } 
+ struct node *n,*nl;
+ int w,c,sum;
+ my_assert(l!=NULL && wall!=NULL && wall->ls!=NULL);
+ for(nl=l->lightsources.head;nl->next!=NULL;nl=nl->next)
+  for(n=nl->d.ls->effects.head;n->next!=NULL;n=n->next)
+   {
+   my_assert(n->d.lse->cube!=NULL);
+   for(w=0;w<6;w++) if(n->d.lse->cube->d.c->walls[w]) for(c=0;c<4;c++)
+    if((sum=-n->d.lse->add_light[w*4+c])!=0)
+     {
+     sum+=n->d.lse->cube->d.c->walls[w]->corners[c].light;
+     n->d.lse->cube->d.c->walls[w]->corners[c].light=sum<0 ? 0 : sum;
+     }
+   }
+ for(n=wall->ls->d.ls->effects.head;n->next!=NULL;n=n->next)
+  {
+  my_assert(n->d.lse->cube!=NULL);
+  for(w=0;w<6;w++) if(n->d.lse->cube->d.c->walls[w]) for(c=0;c<4;c++)
+   if((sum=n->d.lse->add_light[w*4+c])!=0)
+    {
+    sum+=n->d.lse->cube->d.c->walls[w]->corners[c].light;
+    n->d.lse->cube->d.c->walls[w]->corners[c].light=sum>MAX_LIGHT ?
+     MAX_LIGHT : sum;
+    }
+  }
  }
- */
+
+void end_adjustlight(struct wall *wall,int save)
+ {
+ struct node *n,*nl;
+ struct ls_effect *lse;
+ int w,c,sum;
+ my_assert(l!=NULL && wall!=NULL && wall->ls!=NULL);
+ if(save)
+  {
+  freelist(&wall->ls->d.ls->effects,free);
+  for(n=l->cubes.head;n->next!=NULL;n=n->next)
+   {
+   lse=NULL;
+   for(w=0;w<6;w++) if(n->d.c->walls[w]) for(c=0;c<4;c++)
+    if(n->d.c->walls[w]->corners[c].light) 
+     {
+     if(!lse)
+      {
+      checkmem(lse=MALLOC(sizeof(struct ls_effect)));
+      checkmem(addnode(&wall->ls->d.ls->effects,-1,lse));
+      }
+     lse->cube=n;
+     lse->add_light[w*4+c]=n->d.c->walls[w]->corners[c].light;
+     lse->smoothed[w*4+c]=0;
+     }
+   }
+  }
+ for(nl=l->lightsources.head;nl->next!=NULL;nl=nl->next)
+  for(n=nl->d.ls->effects.head;n->next!=NULL;n=n->next)
+   {
+   my_assert(n->d.lse->cube!=NULL);
+   for(w=0;w<6;w++) if(n->d.lse->cube->d.c->walls[w]) for(c=0;c<4;c++)
+    if((sum=n->d.lse->add_light[w*4+c])!=0)
+     {
+     sum+=n->d.lse->cube->d.c->walls[w]->corners[c].light;
+     n->d.lse->cube->d.c->walls[w]->corners[c].light=sum>MAX_LIGHT ?
+      MAX_LIGHT : sum;
+     }
+   }
+ }

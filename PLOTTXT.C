@@ -20,12 +20,16 @@
 #include "plotdata.h"
 #include "plotsys.h"   
 #include "readtxt.h"
+#include "userio.h"
 #include "in_plot.h"
 #include "plottxt.h"
 
 #define DEBUG 0
 
 #include "plotmath.c"
+
+void inittimer(void) { psys_inittimer(); }
+void releasetimer(void) { psys_releasetimer(); }
 
 void plottxt(int lr,struct polygon *p,struct render_point *start,
  unsigned char *txt,int transparent)
@@ -172,7 +176,7 @@ struct render_point *pol_clip_pnts(struct polygon *p,
     rp->x[0]=v_s0[old_i]+(v_s0[i]-v_s0[old_i])*f1;
     rp->x[1]=v_s1[old_i]+(v_s1[i]-v_s1[old_i])*f1;
     if(pp->corner)
-     rp->light=((long)(pp->corner->light+(pp->corner->light-
+     rp->light=(((long)pp->corner->light+(pp->corner->light-
       pp->prev->corner->light))<<6)*f1-1;
     else rp->light=0;
     if(DEBUG>1) fprintf(errf,"Inserted rp %d (%d) %g: %g %g %lx\n",i,cur_rp-1,
@@ -186,7 +190,7 @@ struct render_point *pol_clip_pnts(struct polygon *p,
     rp->x[0]=v_s0[i]+(v_s0[old_i]-v_s0[i])*f1;
     rp->x[1]=v_s1[i]+(v_s1[old_i]-v_s1[i])*f1;
     if(pp->corner)
-     rp->light=((long)(pp->prev->corner->light+
+     rp->light=(((long)pp->prev->corner->light+
       (pp->prev->corner->light-pp->corner->light))<<6)*f1-1;
     else rp->light=0;
     if(DEBUG>1) fprintf(errf,"Changed rp %d (%d) %g: %g %g %lx\n",i,cur_rp-1,
@@ -234,7 +238,7 @@ struct render_point *pol_clip_pnts(struct polygon *p,
      rp->prev->next=rp; rp->next->prev=rp;
      rp->x[0]=sp.x[0]+f1*(ep.x[0]-sp.x[0]);
      rp->x[1]=sp.x[1]+f1*(ep.x[1]-sp.x[1]);
-     rp->light=ls+(le-ls)*f1;
+     rp->light=(long)ls+((long)le-ls)*f1;
      if(DEBUG>1) fprintf(errf,"Inserted rp %d (%d): %g %g %lx\n",i,cur_rp-1,
       rp->x[0],rp->x[1],rp->light);
      rp=rp->next;
@@ -243,7 +247,7 @@ struct render_point *pol_clip_pnts(struct polygon *p,
      { 
      rp->x[0]-=f2*(ep.x[0]-sp.x[0]);
      rp->x[1]-=f2*(ep.x[1]-sp.x[1]);
-     rp->light-=(le-ls)*f2; 
+     rp->light-=((long)le-ls)*f2; 
      if(DEBUG>1) fprintf(errf,"Changed rp %d: %g %g %lx\n",i,rp->x[0],
       rp->x[1],rp->light);
      }
@@ -290,11 +294,12 @@ void clearlevelwin(void)
  }
 
 void render_filled_polygon(int lr,struct polygon *p,struct render_point *rp,
- unsigned char *texture,int transparent)
+ unsigned char *texture,int transparent,int sublight)
  {
  int i,j;
  struct point d; 
  struct render_point *db_rp;
+ long maxlight;
  if(SCALAR(&p->n_3d,&er[2])>=(xviewphi>yviewphi ? xviewphi : yviewphi)) 
   return;
  for(i=0;i<p->num_pnts;i++)
@@ -302,13 +307,18 @@ void render_filled_polygon(int lr,struct polygon *p,struct render_point *rp,
   for(j=0;j<3;j++) d.x[j]=p->pnts[i].p_3d->x[j]-x0.x[j];
   if(SCALAR(&p->n_3d,&d)<-LENGTH(&d)*0.01) break;
   } 
- if(i==p->num_pnts) return; 
+ if(i==p->num_pnts) return;
+ maxlight=31+sublight;
+ if(maxlight<0) maxlight=0;
+ else maxlight=(maxlight<<16)+0xffff;
  rp->x[0]=round(rp->x[0]);
  rp->x[1]=round(rp->x[1]);
  rp->light=(rp->light*(NUM_LIGHTCOLORS-1-(view.gamma_corr>>10)))/
   (NUM_LIGHTCOLORS-1)-0x8000;
  if(rp->light<0) rp->light=0;
+ if(rp->light>maxlight) rp->light=maxlight;
  rp->light=(((int)view.gamma_corr<<6)&0x1f0000)+(rp->light&0x1fffff);
+ if(rp->light>maxlight) rp->light=maxlight;
  db_rp=rp->next;
  do
   {
@@ -325,7 +335,9 @@ void render_filled_polygon(int lr,struct polygon *p,struct render_point *rp,
    db_rp->light=(db_rp->light*(NUM_LIGHTCOLORS-1-
     (view.gamma_corr>>10)))/(NUM_LIGHTCOLORS-1)-0x8000;
    if(db_rp->light<0) db_rp->light=0;
+   if(db_rp->light>maxlight) db_rp->light=maxlight;
    db_rp->light=(((int)view.gamma_corr<<6)&0x1f0000)+(db_rp->light&0x1fffff);
+   if(db_rp->light>maxlight) db_rp->light=maxlight;
    }
   db_rp=db_rp->next; 
   }
@@ -431,13 +443,19 @@ unsigned char *gettexture(int rdlno,char txt1or2)
  return pig.rdl_txts[rdlno].pig->data;
  }
  
+static int lightsenabled=0;
+void render_enablelights(void) { lightsenabled=1; }
+void render_disablelights(void)
+ { lightsenabled=0; render_resetlights(l); }
+
 /* I think I have some trouble with too big stacks, so I make as much 
  variables as possible static and/or global */
 static struct render_point render_pnts[MAX_RENDERDEPTH][MAX_RENDERPNTS];
 static unsigned char buffer[64*64];
 static int renderdepth=MAX_RENDERDEPTH,render_drawwhat,render_lr;
+static unsigned long timestamp;
 void render_cube(int depth,struct node *from,struct node *cube,
- struct render_point *bounds)
+ struct render_point *bounds,int sublight)
  {
  unsigned int w,j,x,y;
  static struct render_point *render_start;
@@ -445,8 +463,47 @@ void render_cube(int depth,struct node *from,struct node *cube,
  static struct point_2d m1,m2;
  static unsigned char *txt1,*txt2,*txt; /* static because I need to 
   save mem on the stack */
- struct node *n;
+ struct node *n,*ne;
+ static struct wall *wall;
+ static long overflow;
+ static int curpos;
  if(depth>=renderdepth) return;
+ if(view.blinkinglightson && lightsenabled)
+  {
+  for(n=cube->d.c->fl_lights.head;n->next!=NULL;n=n->next)
+   {
+   if(!n->d.fl->calculated)
+    {
+    n->d.fl->calculated=1;
+    curpos=(unsigned long)(timestamp/n->d.fl->delay)&0x1f;
+    j=((n->d.fl->mask>>curpos)&1);
+    if(j!=n->d.fl->state)
+     {
+     n->d.fl->state=j;
+     if(j)
+      {
+      for(ne=n->d.fl->ls->d.ls->effects.head;ne->next!=NULL;ne=ne->next)
+       for(w=0;w<6;w++) if((wall=ne->d.lse->cube->d.c->walls[w])!=NULL)
+        for(x=0;x<4;x++)
+	 {
+	 overflow=(long)wall->corners[x].light+ne->d.lse->add_light[w*4+x];
+	 wall->corners[x].light=overflow>MAX_LIGHT ? MAX_LIGHT : overflow;
+	 }
+      }
+     else
+      {
+      for(ne=n->d.fl->ls->d.ls->effects.head;ne->next!=NULL;ne=ne->next)
+       for(w=0;w<6;w++) if((wall=ne->d.lse->cube->d.c->walls[w])!=NULL)
+        for(x=0;x<4;x++)
+	 {
+	 overflow=(long)wall->corners[x].light-ne->d.lse->add_light[w*4+x];
+	 wall->corners[x].light=overflow<0 ? 0 : overflow;
+	 }
+      }
+     }
+    }
+   }
+  }
  for(w=0;w<6;w++) 
   {
   if(!cube->d.c->polygons[w*2] || cube->d.c->recalc_polygons[w])
@@ -483,11 +540,14 @@ void render_cube(int depth,struct node *from,struct node *cube,
      while(rp!=render_start);
      if(DEBUG) { fprintf(errf,"\n"); fflush(errf); }
      if(render_start->next!=render_start->prev) 
-      render_cube(depth+1,cube,cube->d.c->nc[w],render_start);
+      render_cube(depth+1,cube,cube->d.c->nc[w],render_start,
+       cube->d.c->d[w]!=NULL && cube->d.c->d[w]->d.d->type1==door1_cloaked
+       ? sublight-(31-cube->d.c->d[w]->d.d->cloaking) : sublight);
      }
     }
   if(cube->d.c->walls[w] && (!cube->d.c->d[w] ||
-   cube->d.c->d[w]->d.d->type1!=door1_onlyswitch))
+   (cube->d.c->d[w]->d.d->type1!=door1_onlyswitch &&
+   cube->d.c->d[w]->d.d->type1!=door1_cloaked)))
    {
    if(cube->d.c->walls[w]->texture2!=0) 
     { 
@@ -527,7 +587,7 @@ void render_cube(int depth,struct node *from,struct node *cube,
      (render_start=pol_clip_pnts(cube->d.c->polygons[w*2+j],
      render_pnts[depth],bounds,scr_xsize,scr_ysize))!=NULL)
      render_filled_polygon(render_lr,cube->d.c->polygons[w*2+j],
-       render_start,txt,cube->d.c->nc[w]!=NULL); 
+       render_start,txt,cube->d.c->nc[w]!=NULL,sublight); 
     }
    }
   }
@@ -540,15 +600,43 @@ void render_cube(int depth,struct node *from,struct node *cube,
   for(n=cube->d.c->things.head;n->next!=NULL;n=n->next)
    in_plotthing(render_lr,n->d.t,0);
  }
- 
-void render_level(int lr,struct node *start_cube,int drawwhat,
- int depth)
+
+void render_resetlights(struct leveldata *ld)
+ {
+ struct node *n,*ne;
+ int w,c;
+ long overflow;
+ struct flickering_light *fl;
+ for(n=ld->lightsources.head;n->next!=NULL;n=n->next) if(n->d.ls->fl!=NULL)
+  {
+  fl=n->d.ls->fl;
+  if(!fl->state)
+   {
+   fl->state=1;
+   for(ne=n->d.ls->effects.head;ne->next!=NULL;ne=ne->next)
+    {
+    my_assert(ne->d.lse->cube!=NULL);
+    for(w=0;w<6;w++) if(ne->d.lse->cube->d.c->walls[w]) for(c=0;c<4;c++)
+     {
+     overflow=(long)ne->d.lse->cube->d.c->walls[w]->corners[c].light+
+      ne->d.lse->add_light[w*4+c];
+     ne->d.lse->cube->d.c->walls[w]->corners[c].light=overflow>MAX_LIGHT ?
+      MAX_LIGHT : overflow;
+     }
+    }
+   }
+  }
+ }
+
+unsigned long render_level(int lr,struct leveldata *ld,struct node *start_cube,
+ int drawwhat,int depth)
  {
  struct render_point screen_bounds[4];
  int i;
- if(start_cube==NULL) return;
+ if(start_cube==NULL) return 0;
  renderdepth=depth<1 ? MAX_RENDERDEPTH : depth;
  if(DEBUG) fprintf(errf,"\n\n*******RENDER LEVEL START********\n\n");
+ timestamp=psys_gettime()<<(16-TIMER_DIGITS_POW_2);
  screen_bounds[0].x[0]=-max_xcoord;
  screen_bounds[0].x[1]=-max_ycoord;
  screen_bounds[0].light=0.0;
@@ -565,7 +653,8 @@ void render_level(int lr,struct node *start_cube,int drawwhat,
   { screen_bounds[i].prev=&screen_bounds[i==0 ? 3 : i-1];
     screen_bounds[i].next=&screen_bounds[i==3 ? 0 : i+1]; }
  render_drawwhat=drawwhat; render_lr=lr;
- render_cube(0,start_cube,start_cube,screen_bounds);
+ render_cube(0,start_cube,start_cube,screen_bounds,0);
+ return (psys_gettime()<<(16-TIMER_DIGITS_POW_2))-timestamp;
  }
  
-void init_txtgrfx(void) { psys_initdrawbuffer(); }
+void init_txtgrfx(void) { psys_initdrawbuffer();  }

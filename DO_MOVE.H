@@ -33,6 +33,7 @@ void dec_prevwall(int ec);
 void dec_nextwall(int ec);
 void dec_prevedge(int ec);
 void dec_nextedge(int ec);
+void dec_resetsideedge(int ec);
 void turnsinglepnt(struct point *axis,float cosang,float sinang,
  struct point *s);
 void dec_savepos(int ec);

@@ -22,6 +22,8 @@ struct txt_list_win
  int num_usertxtlist,num_leveltxtlist;
  struct ham_txt **usertxtlist,**leveltxtlist;
  };
+struct txtwin_savedata { int zoom,xpos,ypos,xsize,ysize; };
+extern struct txtwin_savedata tw_savedata[tlw_num];
 struct fitbitmap_savedata
  { int xpos,ypos,xsize,ysize; };
 extern struct fitbitmap_savedata fb_savedata;

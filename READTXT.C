@@ -40,7 +40,7 @@ void readpogfile(FILE *f)
  struct POG_header head;
  struct pig_txt pt;
  unsigned short int *texture_index,i;
- if(f==NULL) return;
+ if(f==NULL) return; 
  printmsg(TXT_READINGPOGFILE);
  rewind(f);
  if(fread(&head,sizeof(struct POG_header),1,f)!=1)
@@ -67,6 +67,8 @@ void readpogfile(FILE *f)
   pt.pigno=texture_index[i];
   pt.num_anims=pt.anim_t2=0;
   pt.data=NULL; pt.offset+=head.num_textures*(18+2)+sizeof(struct POG_header);
+  if(pig.pig_txts[texture_index[i]].data)
+   FREE(pig.pig_txts[texture_index[i]].data);
   pig.pig_txts[texture_index[i]]=pt;
   }
  FREE(texture_index);
@@ -336,11 +338,12 @@ void inittxts(void)
  }
 
 int newpigfile(char *pigname,FILE *pogfile)
- { 
+ {
  char *pigfname=NULL,*palfname=NULL;
  int i;
  FILE *pf;
- if(!pig.current_pigname || strcmp(pig.current_pigname,pigname))
+ if(!pig.current_pigname || strcmp(pig.current_pigname,pigname) ||
+  pogfile!=pig.pogfile)
   { /* new pig-file */
   checkmem(pigfname=MALLOC(strlen(pigname)+
    strlen(init.pigpaths[init.d_ver])+2));
@@ -350,7 +353,8 @@ int newpigfile(char *pigname,FILE *pogfile)
    { printf("Can't open pigfile in newpigfile: '%s'\n",pigfname);
      FREE(pigfname); return 0; }
   if(!readtxts(pf)) { fclose(pf); FREE(pigfname); return 0; }
-  readpogfile(pogfile);
+  if(pogfile!=pig.pogfile) fclose(pig.pogfile);
+  readpogfile(pogfile); pig.pogfile=pogfile;
   checkmem(palfname=MALLOC(strlen(pigname)+1));
   strcpy(palfname,pigname); palfname[strlen(palfname)-4]=0;
   for(i=0;i<strlen(palfname);i++) palfname[i]=toupper(palfname[i]);

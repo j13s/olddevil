@@ -24,6 +24,10 @@
  "Es existiert in dem Level kein geheimer Ausgang,\n"\
  "fÅr den dieser Startpunkt gebraucht wÅrde."
 /* readlvl.c */
+#define TXT_ADJLIGHTMODE "Vor dem Abspeichern bitte den\n"\
+ "Licht-justieren-Modus fÅr WÅrfel %d Seite %d verlassen."
+#define TXT_WRONGBLKHEAD "Datei %s hat den falschen Anfang:\n"\
+ "\"%s\"!=\"DMB_BLOCK_FILE\""
 #define TXT_NOCUBEFORFL "Kann WÅrfel %d fÅr flackerndes Licht %d nicht finden."
 #define TXT_CORRINWORK "Der Hexer ist in diesem Level aktiv.\n"\
  "Der Level kann erst geschlossen werden,\n"\
@@ -103,6 +107,8 @@
  "die am Ende geîffnet werden kann."
 #define TXT_LEVELREAD "Level %s\nvon Datei %s gelesen."
 /* grfx.h */
+#define TXT_DEFAULTPOGFILE "Die Standardtextures benutzen?"
+#define TXT_POGFILE "POG-Datei auswÑhlen"
 #define TXT_INFO "Info"
 #define TXT_MOVEYOU "Bewege Dich"
 #define TXT_MOVECURRENT "WÅrfel auswÑhlen"
@@ -131,6 +137,8 @@
  "Es kînnen nur WÑnde mit zwei Seiten geschaltet werden."
 #define TXT_WALLTYPENEEDSNB "Dieser Wandtyp benîtigt eine verbundene Seite."
 /* do_event.c */
+#define TXT_CLOSETXTWIN "Bitte die Texturefenster schliessen,\n"\
+ "bevor die Fensterpositionen abgespeichert/geladen werden."
 #define TXT_SAVEWINPOS "Fensterposition speichern"
 #define TXT_LOADWINPOS "Fensterposition laden"
 #define TXT_CANTSAVEWINPOS \
@@ -289,6 +297,10 @@
 #define TXT_REALLYDELTAGGED "Wirklich die %d markierten Objekte lîschen?"
 #define TXT_CANTINSERTTHING "Kann Ding nicht einfÅgen!???"
 /* do_opts.c */
+#define TXT_DOUBLEADJLIGHT \
+ "Es wird schon eine andere Lichtquelle (cube %d, side %d) bearbeitet."
+#define TXT_CANCELADJLIGHT "Die Lichteffekte wirklich nicht abspeichern?"
+#define TXT_ADJUSTLIGHT "Licht justieren"
 #define TXT_LIGHTEFFECTS "ausgesendetes Licht"
 #define TXT_EMPTYWALLNOTLOCK "Kann eine Seite ohne Mauer nicht sperren."
 #define TXT_LOCKEDTAGGEDSIDES "%d Seiten gesperrt."
@@ -485,4 +497,11 @@
 #define TXT_READINGPOGFILE "Lese zusÑtzliche Textures..."
 #define TXT_LOOKINGFORPOGFILE "Suche Pog-Datei %s..."
 #define TXT_POGERRORINHEADER "Kann Kopf von Pog-Datei nicht lesen."
-
+/* plottxt.h */
+#define TXT_FRAMERATETOOSMALL \
+ "Warnung: Dieser Computer braucht %g s um den Level zu malen.\n"\
+ "Eine der dargestellten Lichtquellen (WÅrfel %d Seite %d) Ñndert\n"\
+ "ihr Licht alle %g s. Das hat zur Folge, da· das Flackern dieser\n"\
+ "Lichtquelle nicht richtig dargestellt wird. Ich schlage deshalb vor,\n"\
+ "die Zeitskala um den Faktor %g zu dehnen, um das Problem zu vermeiden.\n"\
+ "Soll ich die Zeitskala neu setzen?"

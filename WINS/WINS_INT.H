@@ -90,6 +90,7 @@ struct notebook
  struct list windows;
  struct list menu;
  struct node *cur_but;
+ char *titlebar_text;
  struct kbstatcursor *kbstatcursors; 
  int num_kbstatcursors,current_cursor; /* current cursor==-1 for normal c. */
  };

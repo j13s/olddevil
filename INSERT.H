@@ -18,6 +18,8 @@ void deleteconnect(struct node *c,int wallnum,int fast);
 void deletesdoor(struct node *n);
 void deletedoor(struct node *n);
 void deletecube(struct list *cubes,struct list *pts,struct node *n);
+void delflickeringlight(struct lightsource *ls);
+void freewall(struct leveldata *ld,struct cube *c,int w);
 int initcube(struct node *c);
 int initdoor(struct node *d);
 void makedoorpnt(struct door *d);

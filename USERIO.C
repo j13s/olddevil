@@ -730,7 +730,7 @@ void uio_hogfile_write(struct w_button *b)
  fclose(df); fclose(mf); 
  if(sf) fclose(sf);
  if(samefile) { remove(hogfilename); rename(newhogname,hogfilename); }
- FREE(newhogname);
+ hogfilename=newhogname;
  }
  
 void uio_hogfile_read(struct w_button *b)

@@ -208,6 +208,7 @@ int changedoortype(struct node *n,int no,int tagged)
     if(!tagged && view.pcurrwall==n->d.d->w) drawopt(in_wall); }
  if(no!=door1_blow && no!=door1_normal) /* no door, no blow door -> no anim*/
   n->d.d->animtxt=-1;
+ if(no!=door1_normal) n->d.d->key=1; /* no door, no key */
  if(!tagged) drawopt(in_door);
  return 1;
  }
@@ -221,6 +222,7 @@ int dsc_walltype(struct infoitem *i,void *d,struct node *n,int wallno,
  if(ok && n->d.d->d && (no==door1_normal || no==door1_blow || 
   n->d.d->d->d.d->type1==door1_normal || n->d.d->d->d.d->type1==door1_blow))
   changedoortype(n->d.d->d,no,tagged);
+ plotlevel();
  return ok;
  }
  
@@ -282,7 +284,7 @@ int dsc_switch(struct infoitem *i,void *d,struct node *n,int wallno,
   case sdtype_none:
    if(sd->type==switch_secretexit && init.d_ver>=d2_10_sw &&
     l->secretstart==NULL) 
-    makesecretstart(l,n); 
+    makesecretstart(l,n,n->d.d->c); 
    break;
   case sdtype_cube:
    for(sn=l->tagged[tt_cube].head;sn->next!=NULL;sn=sn->next)
@@ -403,6 +405,7 @@ int dsc_flythrough(struct infoitem *i,void *d,struct node *n,int wallno,
  else view.drawwhat|=DW_CUBES;
  view.render=nft;
  if(!view.pcurrcube) return 1;
+ if(view.render==0 && nft>0) render_resetlights(l);
  if(view.render==3)
   for(j=0;j<3;j++)
    {
@@ -420,22 +423,42 @@ int dsc_fl_delay(struct infoitem *i,void *d,struct node *n,int wallno,
  {
  int delay=*(long *)d;
  struct flickering_light *fl;
- if(!l || !n || !n->d.c->walls[wallno]) return 0;
+ struct node *nc;
+ if(!l || !n || !n->d.c->walls[wallno] || !n->d.c->walls[wallno]->ls) return 0;
  if(delay<1)
-  { if(n->d.c->walls[wallno]->fl)
-     freenode(&l->flickeringlights,n->d.c->walls[wallno]->fl,free);
-    n->d.c->walls[wallno]->fl=NULL; if(!tagged) drawopt(in_wall);
-    return 1; }
- if(!n->d.c->walls[wallno]->fl)
-  { if(delay<1) return 0; 
-    checkmem(fl=MALLOC(sizeof(struct flickering_light)));
-    checkmem(n->d.c->walls[wallno]->fl=addnode(&l->flickeringlights,-1,fl));
-    fl->c=n; fl->cube=n->no; fl->wall=wallno; fl->mask=0xffffffff; }
- else fl=n->d.c->walls[wallno]->fl->d.fl;
- fl->delay=fl->timer=delay; if(!tagged) drawopt(in_wall);
+  {
+  if(n->d.c->walls[wallno]->ls->d.ls->fl)
+   delflickeringlight(n->d.c->walls[wallno]->ls->d.ls);
+  if(!tagged) drawopt(in_wall);
+  return 1;
+  }
+ if(!n->d.c->walls[wallno]->ls->d.ls->fl)
+  {
+  if(delay<1) return 0; 
+  checkmem(n->d.c->walls[wallno]->ls->d.ls->fl=fl=
+   MALLOC(sizeof(struct flickering_light)));
+  fl->cube=n->no; fl->wall=wallno; fl->mask=0xffffffff;
+  fl->ls=n->d.c->walls[wallno]->ls; fl->state=1;
+  fl->calculated=0;
+  for(nc=n->d.c->walls[wallno]->ls->d.ls->effects.head;nc->next!=NULL;
+      nc=nc->next)
+   checkmem(addnode(&nc->d.lse->cube->d.c->fl_lights,-1,fl));
+  }
+ else fl=n->d.c->walls[wallno]->ls->d.ls->fl;
+ fl->delay=fl->timer=delay;
+ if(!tagged) drawopt(in_wall);
  return 1;
  }
- 
+
+int dsc_plotlevel(struct infoitem *i,void *d,struct node *n,int wallno,
+ int pntno,int tagged)
+ {
+ if(!setno(i,d,n)) return 0;
+ if(!l) return 1;
+ plotlevel();
+ return 1;
+ }
+
 /* i is the current infoitem, d is a pointer to the data which was given
    by the user and may be changed in the functions, n is a pointer to
    the node which should be changed by the data. If needed wallno and
@@ -454,7 +477,7 @@ int (*dsc_sideeffect[sc_number])(struct infoitem *i,void *d,
    dsc_change_pnt_coord,dsc_set_uvl,dsc_thing_type,dsc_robot,
    dsc_hostagesize,dsc_itemgrfx,dsc_walltype,dsc_dooranim,dsc_switch,
    dsc_illum_brightness,dsc_dropsomething,dsc_changedrawwhat,
-   dsc_thingpos,dsc_perspective,dsc_flythrough,dsc_fl_delay };
+   dsc_thingpos,dsc_perspective,dsc_flythrough,dsc_fl_delay,dsc_plotlevel };
 
 int do_sideeffect(enum sidecodes sc,struct infoitem *i,void *d,
  struct node *n,int wallno,int pntno,int tagged)

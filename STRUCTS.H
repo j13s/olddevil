@@ -57,12 +57,13 @@
 #define SCALAR(a,b) ((float)(a)->x[0]*(b)->x[0]+ \
  (float)(a)->x[1]*(b)->x[1]+(float)(a)->x[2]*(b)->x[2])
 #define LENGTH(a) sqrt((float)SCALAR(a,a))
+#define DW_GROUPPREVIEW 0x20
 #define DW_XTAGGED 0x10
 #define DW_DOORS 0x8
 #define DW_THINGS 0x4
 #define DW_ALLLINES 0x2
 #define DW_CUBES 0x1
-#define DW_DEFAULT 0x0f
+#define DW_DEFAULT 0x2f
 /* colors */
 #define BLACK 0
 #define GRAYSCALE 16
@@ -71,7 +72,7 @@
 #define DOORCOLORS (THINGCOLORS+NUM_OF_THINGS)
 #define NUM_OF_DOORS 5
 #define HILIGHTCOLORS (DOORCOLORS+NUM_OF_DOORS)
-#define MAXHILIGHT 6
+#define MAXHILIGHT 8
 #define USEDCOLORS (HILIGHTCOLORS+MAXHILIGHT+1)
 #define WHITE (USEDCOLORS-1)
 
@@ -87,7 +88,7 @@ enum datastructs { ds_cube,ds_wall,ds_corner,ds_thing,ds_door,ds_internal,
 enum infotype { it_selbutton,it_markbutton,it_light,it_size,it_coord,
  it_degree,it_float,it_int,it_cubelight,it_sidelight,it_texture,
  it_dooranim,it_thingtexture,it_thingcoord,it_fl_mask,it_fl_delay,
- it_uvcoord };
+ it_uvcoord,it_deltalight };
 
 struct point {float x[3];};
 struct pixel {int x,y; float d;};
@@ -309,7 +310,8 @@ struct door
  unsigned char sdoor NONANSI_FLAG;
  unsigned char animtxt NONANSI_FLAG;
  unsigned char key NONANSI_FLAG;
- unsigned short stuff NONANSI_FLAG; /* 0 */
+ unsigned char stuff NONANSI_FLAG; /* 0 */
+ unsigned char cloaking NONANSI_FLAG;
  /* my stuff */
  unsigned char edoor NONANSI_FLAG; /* open at end? */
  unsigned char switchtype NONANSI_FLAG; /* needed that you can change the
@@ -324,6 +326,7 @@ struct door
  short old_txt1 NONANSI_FLAG; /* old texture 1 of the wall */
  unsigned char *txt_data NONANSI_FLAG;
  };
+#define MAX_LIGHT 65535
 struct corner
  {
  short int x[2] NONANSI_FLAG;
@@ -361,7 +364,6 @@ struct wall
  int no NONANSI_FLAG;
  int locked NONANSI_FLAG;
  struct node *ls NONANSI_FLAG; /* lightsource */
- struct node *fl NONANSI_FLAG; /* flickering light */
  };
 struct producer
  {
@@ -379,13 +381,13 @@ struct cube
  {
  unsigned char type NONANSI_FLAG;
  char prodnum NONANSI_FLAG;
+ /* value: count every cube with type==4 and write this number in value. */
  unsigned char value NONANSI_FLAG;
  unsigned char flags NONANSI_FLAG; /* is set by Descent ?? */
  unsigned short int light NONANSI_FLAG;
  unsigned short int high_light NONANSI_FLAG;
  unsigned short int pts[8] NONANSI_FLAG;
  unsigned short int nextcubes[6] NONANSI_FLAG;
- /* value: count every cube with type==4 and write this number in value. */
  unsigned char doors[6] NONANSI_FLAG;
  /* my stuff */
  struct list sdoors NONANSI_FLAG;
@@ -397,13 +399,17 @@ struct cube
  struct polygon *polygons[12] NONANSI_FLAG;
  unsigned char recalc_polygons[6] NONANSI_FLAG;
  struct list things NONANSI_FLAG;
+ struct list fl_lights NONANSI_FLAG; /* list of f.l. lights that affect this
+					cube */
  };
 struct flickering_light
  {
  short int cube NONANSI_FLAG,wall NONANSI_FLAG;
  unsigned long mask NONANSI_FLAG,timer NONANSI_FLAG,delay NONANSI_FLAG;
- /* my_data */
- struct node *c;
+ /* for rendering: */
+ struct node *ls NONANSI_FLAG; /* corresponding light source */
+ int state NONANSI_FLAG; /* is this light source on or off? */
+ unsigned char calculated NONANSI_FLAG;
  }; 
 struct turnoff
  {
@@ -430,6 +436,7 @@ struct lightsource
  struct node *cube;
  char w; /* source cube and wall */
  struct list effects; /* list of ls_effects */
+ struct flickering_light *fl; 
  };
 #define NUM_SAVED_POS 12
 struct saved_position
@@ -440,8 +447,7 @@ struct saved_position
 struct leveldata
  {
  long reactor_time,reactor_strength;
- struct list pts,cubes,things,doors,sdoors,producers,turnoff,changedlights,
-  lightsources,flickeringlights;
+ struct list pts,cubes,things,doors,sdoors,producers,lightsources;
  struct edoor *edoors;
  char *fullname;
  char *filename;
@@ -465,7 +471,6 @@ struct leveldata
  struct corridor *cur_corr;
  struct saved_position saved_pos[NUM_SAVED_POS];
  int x_size[2],y_size[2];  /* window size for single&double mode */
- FILE *pogfile; /* !=NULL if there is a pogfile for the level */
  };
 struct objtype
  {
@@ -559,6 +564,14 @@ struct viewdata
 /* 164 */
  int coord_axis NONANSI_FLAG;
  int flip_y_axis NONANSI_FLAG;
+ int draw_orig_lines NONANSI_FLAG;
+ int littlebulbson NONANSI_FLAG;
+/* 180 */
+ unsigned short int mouse_flipaxis NONANSI_FLAG;
+ unsigned short int blinkinglightson NONANSI_FLAG;
+ float timescale NONANSI_FLAG;
+ int warn_illuminate NONANSI_FLAG;  
+ int warn_frameratetoosmall NONANSI_FLAG;  
  float minclicksodist NONANSI_FLAG;
   /* minimum distance screen<->object for clicking */
  struct point e[3]; /* orientation of screen (left-handed system) */
@@ -627,12 +640,13 @@ struct ham_txt
   /* this is a grid over the texture indicating the brightness of each point
      of the texture */
  };
+#define BULBSIZE 8
 struct pigdata
  {
- char *current_pigname,*default_pigname;
+ char *current_pigname,*default_pigname,*current_pogname;
  char *txt_buffer,*door_buffer,*thing_buffer;
  struct ws_bitmap *txt_bm,*door_bm,*thing_bm;
- FILE *pigfile;
+ FILE *pigfile,*pogfile;
  int num_pigtxts;
  struct pig_txt *pig_txts; /* Array of textures read out of PIG-file,
   index is number of texture in pig-file */
@@ -649,6 +663,8 @@ struct pigdata
   value is rdl_num */
  struct ham_txt **anims; /* Array of pointer to txts for doors,
   index is number of animation in rdl-file */
+ char *bulbname,*brokenbulbname;
+ char bulb[BULBSIZE*BULBSIZE],brokenbulb[BULBSIZE*BULBSIZE];
  };
 struct initdata
  {
@@ -656,7 +672,7 @@ struct initdata
  char *fontname,*cfgname,*lastname,*menuname,*batchfilename,*lightname,
   *convtablename;
  char *macropath,*levelpath,*cfgpath,*missionpath,levelext[4],*alllevelexts,
-  *txtlistpath,*playmsnpath;
+  *txtlistpath,*playmsnpath,*pogpath;
  char *pigpaths[desc_number];
  int xres,yres;
  int numbuttons;

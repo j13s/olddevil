@@ -24,6 +24,7 @@
 #include "grfx.h"
 #include "options.h"
 #include "tag.h"
+#include "opt_txt.h"
 #include "do_tag.h"
 #include "do_mod.h"
 #include "do_light.h"
@@ -57,7 +58,7 @@ void dec_loadlevel(int ec)
   FREE(fname);
   }
  }
- 
+
 void dec_savelevel(int ec)
  {
  char *fname;
@@ -72,7 +73,8 @@ void dec_savelevel(int ec)
   {checkmem(fname=MALLOC(strlen(l->filename)+1)); strcpy(fname,l->filename);}
  if(fname!=NULL)
   {
-  if(!savelevel(fname,l,1,1,init.d_ver)) waitmsg(TXT_CANTSAVELVL,l->fullname);
+  if(!savelevel(fname,l,1,1,init.d_ver,ec!=ec_savewithfulllightinfo))
+   waitmsg(TXT_CANTSAVELVL,l->fullname);
   else 
    { printmsg(TXT_LEVELSAVED,l->fullname,fname);
      checkmem(l->filename=REALLOC(l->filename,strlen(fname)+1));
@@ -357,10 +359,20 @@ void dec_savewinpos(int ec)
  { 
  FILE *f;
  char *fname;
+ int i;
+ for(i=0;i<tlw_num;i++)
+  if(tl_win[i].win!=NULL) break;
+ if(i!=tlw_num) { printmsg(TXT_CLOSETXTWIN); return; }
  fname=getfilename(&init.txtlistpath,NULL,"WIN",TXT_SAVEWINPOS,1);
  if(fname==NULL) return;
  if((f=fopen(fname,"w"))==NULL || !w_savecfg(f)) 
   { printmsg(TXT_CANTSAVEWINPOS,fname); return; }
+ for(i=0;i<tlw_num;i++)
+  if(tl_win[i].oldxsize!=0)
+   fprintf(f," %d %d %d %d %d\n",tl_win[i].zoom.selected,
+    tl_win[i].oldxpos,tl_win[i].oldypos,tl_win[i].oldxsize,tl_win[i].oldysize);
+  else
+   fprintf(f," -1\n");
  fclose(f);
  printmsg(TXT_WINPOSSAVED,fname);
  }
@@ -369,11 +381,26 @@ void dec_loadwinpos(int ec)
  { 
  FILE *f;
  char *fname;
+ int i;
+ for(i=0;i<tlw_num;i++)
+  if(tl_win[i].win!=NULL) break;
+ if(i!=tlw_num) { printmsg(TXT_CLOSETXTWIN); return; }
  fname=getfilename(&init.txtlistpath,NULL,"WIN",TXT_LOADWINPOS,0);
  if(fname==NULL) return;
  if((f=fopen(fname,"r"))==NULL)
   { printmsg(TXT_CANTREADWINPOS,fname); return; }
  w_readcfg(f);
+ for(i=0;i<tlw_num;i++)
+  {
+  if(fscanf(f," %d",&tw_savedata[i].zoom)!=1)
+   { waitmsg(TXT_CANTREADWINPOS); return; }
+  if(tw_savedata[i].zoom>=0)
+   {
+   fscanf(f,"%d%d%d%d",&tw_savedata[i].xpos,&tw_savedata[i].ypos,
+    &tw_savedata[i].xsize,&tw_savedata[i].ysize);
+   tl_win[i].oldxsize=-1;
+   }
+  }
  fclose(f);
  printmsg(TXT_WINPOSREAD,fname);
  }
@@ -441,5 +468,6 @@ void (*do_event[ec_num_of_codes])(int ec)=
    dec_savewinpos,dec_loadwinpos,dec_reinitgrfx,dec_changeview,
    dec_render,dec_render,dec_render,dec_render,dec_tagflatsides,
    dec_usepnttag,dec_nextedge,dec_prevedge,dec_edgemode,dec_makestdside,
-   dec_setcornerlight };
+   dec_setcornerlight,dec_resetsideedge,dec_loadmacro,dec_savelevel,
+   dec_makeedgecoplanar };
 

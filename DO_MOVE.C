@@ -451,6 +451,7 @@ void dec_prevwall(int ec) { prevobject(tt_door); }
 void dec_nextwall(int ec) { nextobject(tt_door); }
 void dec_prevedge(int ec) { prevobject(tt_edge); }
 void dec_nextedge(int ec) { nextobject(tt_edge); }
+void dec_resetsideedge(int ec) { resetsideedge(); }
 
 void plotpntcubelist(struct list *lp,int hilight,int xor,int start)
  {
@@ -545,6 +546,7 @@ struct point *start_move_pnts(union move_params *params,
  struct point **ref_pnt,struct node **cube,int *wall)
  {
  struct point *opa;
+ l->levelillum=0;
  *pnt_list=params->p.pnt_list;
  *side_list=params->p.side_list;
  *cube_list=params->p.cube_list;
@@ -830,7 +832,7 @@ void redrawcubes(struct list *pntpl,struct list *cubepl)
   for(w=0;w<6;w++) if(n->d.n->d.c->walls[w]) for(c=0;c<4;c++)
    if(testtag(tt_edge,n->d.n,w,c) && (n->d.n!=view.pcurrcube ||
     w!=view.currwall || c!=view.curredge)) plotpnt(n->d.n,w,c,-3);
- plotpntcubelist(cubepl,256,0,1); 
+ plotpntcubelist(cubepl,view.draw_orig_lines ? 5 : 256,0,1); 
  plotpntcubelist(cubepl,MOUSEMOVE_HILIGHT,1,0);
  copytoscreen();
  }
@@ -1011,8 +1013,8 @@ void moveobj_mouse(int withtagged,int wx,int wy,struct node *nc,int wall)
       { lockedsides[c*6+i]=n->d.n->d.c->walls[i]->locked;
         n->d.n->d.c->walls[i]->locked=1; }
     }
-   params.p.wall=-1; moving_with_mouse(l->w,wx,wy,movepnt,rotatepnt,&p,
-    &params); 
+   params.p.wall=-1;
+   moving_with_mouse(l->w,wx,wy,movepnt,rotatepnt,&p,&params); 
    for(n=cubepl->head;n->next!=NULL;n=n->next)
     for(i=0;i<6;i++) recalcwall(n->d.n->d.c,i);
    killlist(cubepl); killlist(pntpl);
@@ -1101,6 +1103,8 @@ void moveyou_mouse(struct w_window *w,int wx,int wy)
  int xs,lr,ox,oy,sx,sy,i;
  struct point e0,er[3],x0,np,new_e0;
  float l,fx,fy;
+ unsigned long dt;
+ struct lightsource *ls;
  clock_t t1,t2;
  xs=view.whichdisplay ? w_xwininsize(w)/2 : w_xwininsize(w);
  lr=(wx>=xs);
@@ -1110,9 +1114,13 @@ void moveyou_mouse(struct w_window *w,int wx,int wy)
  ws_erasemouse();
  ws_mousewarp(ox,oy);
 /* do ws_getevent(&ws,1); while(ws.buttons&ws_bt_right); */
+ render_enablelights();
  t1=t2=clock();
  do
   {
+  if((dt=cont_plotlevel(&ls))>0 && view.blinkinglightson &&
+    view.warn_frameratetoosmall) break;
+  else dt=0;
   if((ws.kbstat&ws_ks_ctrl)==0) t1=clock();
   ws_getevent(&ws,0);
   if(ws.flags==ws_f_keypress)
@@ -1142,7 +1150,8 @@ void moveyou_mouse(struct w_window *w,int wx,int wy)
   else new_e0=view.e0;
   if((ws.kbstat&ws_ks_shift)!=0 && (ws.buttons&ws_bt_left)!=0)
    {
-   fx*=-2*M_PI; fy*=-2*M_PI;
+   fx*=-2*M_PI*((view.mouse_flipaxis&2)!=0 ? -1 : 1);
+   fy*=-2*M_PI*((view.mouse_flipaxis&1)!=0 ? -1 : 1);
    for(i=0;i<3;i++) np.x[i]=er[1].x[i]*fx+er[0].x[i]*fy;
    l=LENGTH(&np);
    if(l!=0)
@@ -1157,13 +1166,15 @@ void moveyou_mouse(struct w_window *w,int wx,int wy)
   else if((ws.buttons&ws_bt_left)==0)
    {
    if(fabs(fx)>fabs(fy)) fy=0.0; else fx=0.0;
-   fx*=-2*M_PI; fy*=-view.movefactor*20.0; 
+   fx*=-2*M_PI*((view.mouse_flipaxis&4)!=0 ? -1 : 1);
+   fy*=-view.movefactor*20.0; 
    for(i=0;i<3;i++) new_e0.x[i]+=fy*er[2].x[i];
    for(i=0;i<3;i++) turnsinglepnt(&er[2],cos(fx),sin(fx),&view.e[i]);
    } 
   else
    {
-   fx*=2*M_PI; fy*=2*M_PI;
+   fx*=2*M_PI*((view.mouse_flipaxis&2)!=0 ? -1 : 1);
+   fy*=2*M_PI*((view.mouse_flipaxis&1)!=0 ? -1 : 1);
    for(i=0;i<3;i++) np.x[i]=er[1].x[i]*fx+er[0].x[i]*fy;
    l=LENGTH(&np);
    if(l!=0)
@@ -1178,21 +1189,27 @@ void moveyou_mouse(struct w_window *w,int wx,int wy)
    }
   for(i=0;i<3;i++) normalize(&view.e[i]);
   move_user(&new_e0);
-  initcoordsystem(lr,&e0,er,&x0); plotlevel();
+  initcoordsystem(lr,&e0,er,&x0); 
   }
  while(!(ws.flags==ws_f_keypress || (ws.flags==ws_f_rbutton &&
   (ws.buttons&ws_bt_right)==0)));
+ render_disablelights(); plotlevel();
  ws_mousewarp(sx,sy);
  ws_displaymouse();
+ if(dt>0 && yesnomsg(TXT_FRAMERATETOOSMALL,
+  dt/65536.0*view.timescale,ls->cube->no,(int)ls->w,
+  ls->fl->delay/65536.0,view.timescale*dt/ls->fl->delay*2.0))
+  { view.timescale*=(float)dt/ls->fl->delay*2.0; drawopts(); }
  }
 
+extern float xviewphi,yviewphi;
 void dec_savepos(int ec)
  {
  int num_pos=ec-ec_savepos_0,i;
  struct list *pts;
  struct node *n;
  struct point d1,d2;
- float x,y,z,min_z,max_x,max_y,min_x,min_y,cotan_phi;
+ float x,y,z,min_z,max_x,max_y,min_x,min_y,scotansq;
  if(!l) { printmsg(TXT_NOLEVEL); return; }
  my_assert(num_pos>=0 && num_pos<NUM_SAVED_POS);
  l->saved_pos[num_pos].e0=view.e0;
@@ -1208,7 +1225,7 @@ void dec_savepos(int ec)
   else
    if(l->cur_corr) pts=&l->cur_corr->points;
    else { printmsg(TXT_NOCORR); return; }
-  for(n=pts->head,max_x=max_y=-DBL_MAX,min_x=min_y=min_z=DBL_MAX;
+  for(n=pts->head,max_x=max_y=-FLT_MAX,min_x=min_y=min_z=FLT_MAX;
    n->next!=NULL;n=n->next)
    {
    for(i=0;i<3;i++) d1.x[i]=n->d.p->x[i]-view.e0.x[i];
@@ -1223,13 +1240,13 @@ void dec_savepos(int ec)
   for(i=0;i<3;i++)
    view.e0.x[i]+=view.e[0].x[i]*(max_x+min_x)/2.0+
     view.e[1].x[i]*(max_y+min_y)/2.0;
-  cotan_phi=view.dist/0.5;
-  for(n=pts->head,min_z=DBL_MAX;n->next!=NULL;n=n->next)
+  scotansq=xviewphi<yviewphi ? xviewphi : yviewphi;
+  scotansq=scotansq*scotansq/(1.0-scotansq*scotansq);
+  for(n=pts->head,min_z=FLT_MAX;n->next!=NULL;n=n->next)
    {
    for(i=0;i<3;i++) d1.x[i]=n->d.p->x[i]-view.e0.x[i];
-   x=SCALAR(&d1,&view.e[2]);
-   for(i=0;i<3;i++) d2.x[i]=d1.x[i]-x*view.e[2].x[i];
-   z=x-LENGTH(&d2)*cotan_phi;
+   z=SCALAR(&d1,&view.e[2]); x=SCALAR(&d1,&d1);
+   z-=sqrt((x-z*z)*scotansq);
    if(z<min_z) min_z=z;
    }
   for(i=0;i<3;i++) view.e0.x[i]+=(num_pos==11 ? min_z : min_z*1.2)*

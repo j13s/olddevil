@@ -46,6 +46,7 @@ const char *tlw_tm_options[TLW_TM_NUM_OPTIONS]={ TXT_TLW_ALL,TXT_TLW_LEVEL,
  TXT_TLW_USER };
 const char *tlw_modes[2]={ TXT_TLW_TXTMODE,TXT_TLW_LISTMODE };
 const char *tlw_zoom[3]={ "/1","/2","/4" };
+struct txtwin_savedata tw_savedata[tlw_num];
  
 /* searches for the list tlw the next valid number. starts at offset
  in steps add. returns a tlw->maxnum if it reaches the end and a
@@ -146,7 +147,7 @@ void tl_drawmarktxt(struct w_button *b,int on)
     
 void tl_refreshtxts(struct txt_list_win *tlw)
  {
- int x,y,x2,y2,i;
+ int x,y,x2,y2,i,size;
  char texture[TXT_REALSIZE*TXT_REALSIZE];
  if(!tlw->b_texture) return;
  for(y=0,i=tlw->offset;y<tl_ynumtxt(tlw);y++)
@@ -154,12 +155,12 @@ void tl_refreshtxts(struct txt_list_win *tlw)
    {
    switch(tlw->zoom.selected)
     {
-    case 0:
+    case 0: size=64;
      memset(tlw->txt_buffer[y*tl_xnumtxt(tlw)+x],view.color[BLACK],64*64);
      if(i<tlw->maxnum)
-      readbitmap(tlw->txt_buffer[y*tl_xnumtxt(tlw)+x],NULL,tlw->t[i],0); 
+      readbitmap(tlw->txt_buffer[y*tl_xnumtxt(tlw)+x],NULL,tlw->t[i],0);
      break;
-    case 1:
+    case 1: size=32;
      if(i<tlw->maxnum)
       { memset(texture,view.color[BLACK],64*64);
         if(i<tlw->maxnum) readbitmap(texture,NULL,tlw->t[i],0);
@@ -170,7 +171,7 @@ void tl_refreshtxts(struct txt_list_win *tlw)
      else
       memset(tlw->txt_buffer[y*tl_xnumtxt(tlw)+x],view.color[BLACK],32*32);
      break;
-    case 2:
+    case 2: size=16;
      if(i<tlw->maxnum)
       { memset(texture,view.color[BLACK],64*64);
         readbitmap(texture,NULL,tlw->t[i],0);
@@ -181,7 +182,24 @@ void tl_refreshtxts(struct txt_list_win *tlw)
      else
       memset(tlw->txt_buffer[y*tl_xnumtxt(tlw)+x],view.color[BLACK],16*16);
      break;
-    default: my_assert(0);
+    default: size=64; my_assert(0);
+    }
+   if(i<tlw->maxnum && tlw->t[i]!=NULL)
+    {
+    for(x2=0;x2<ILLUM_GRIDSIZE*ILLUM_GRIDSIZE;x2++)
+     if(tlw->t[i]->my_light[x2]) break;
+    if(view.littlebulbson && x2<ILLUM_GRIDSIZE*ILLUM_GRIDSIZE)
+     {
+     for(x2=0;x2<BULBSIZE;x2++)
+      for(y2=0;y2<BULBSIZE;y2++)
+       tlw->txt_buffer[y*tl_xnumtxt(tlw)+x][y2*size+x2+size*(size-BULBSIZE)]=
+	pig.bulb[y2*BULBSIZE+x2];
+     if(tlw->t[i]->shoot_out_txt>=0 || tlw->t[i]->anim_seq>=0)
+      for(x2=0;x2<BULBSIZE;x2++)
+       for(y2=0;y2<BULBSIZE;y2++)
+	tlw->txt_buffer[y*tl_xnumtxt(tlw)+x][y2*size+x2+
+	 (size+1)*(size-BULBSIZE)]=pig.brokenbulb[y2*BULBSIZE+x2];
+     }
     }
    w_drawbutton(tlw->b_texture[y*tl_xnumtxt(tlw)+x]);
    tl_drawmarktxt(tlw->b_texture[y*tl_xnumtxt(tlw)+x],i<tlw->maxnum &&
@@ -678,11 +696,22 @@ void texture_list(struct infoitem *i,enum txttypes tt,int no)
  if(!tl_win[tlw_type].win)
   {
   if(tl_win[tlw_type].oldxsize<0)
-   { saved_zoom=tl_win[tlw_type].zoom.selected; tl_win[tlw_type].oldxsize=0; }
+   {
+   saved_zoom=tw_savedata[tlw_type].zoom;
+   tl_win[tlw_type].oldxsize=0;
+   }
+  else if(tl_win[tlw_type].oldxsize==0)
+   {
+   tw_savedata[tlw_type].xpos=tw_savedata[tlw_type].ypos=0;
+   tw_savedata[tlw_type].xsize=136;
+   tw_savedata[tlw_type].ysize=w_ymaxwinsize();
+   }
   if(tl_win[tlw_type].oldxsize==0)
    {
-   tl_wininit.xpos=0; tl_wininit.ypos=0; tl_wininit.xsize=136;
-   tl_wininit.ysize=w_ymaxwinsize();
+   tl_wininit.xpos=tw_savedata[tlw_type].xpos;
+   tl_wininit.ypos=tw_savedata[tlw_type].ypos;
+   tl_wininit.xsize=tw_savedata[tlw_type].xsize;
+   tl_wininit.ysize=tw_savedata[tlw_type].ysize;
    tl_win[tlw_type].i=i;
    init_texturehandling(tlw_type);
    }
@@ -1177,16 +1206,17 @@ void b_fitbitmap(struct w_button *b,int withtagged)
   for(c=0;c<4;c++)
    { view.pcurrwall->corners[c].x[0]=fb_data.c[c].x[0];
      view.pcurrwall->corners[c].x[1]=fb_data.c[c].x[1]; }
-  for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
-   if(n->d.n->d.c->walls[n->no%6])
-    {
-    for(c=0;c<4;c++)
-     { n->d.n->d.c->walls[n->no%6]->corners[c].x[0]=
-        view.pcurrwall->corners[c].x[0];
-       n->d.n->d.c->walls[n->no%6]->corners[c].x[1]=
-        view.pcurrwall->corners[c].x[1]; }
-    n->d.n->d.c->recalc_polygons[n->no%6]=1;
-    }
+  if(withtagged)
+   for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
+    if(n->d.n->d.c->walls[n->no%6])
+     {
+     for(c=0;c<4;c++)
+      { n->d.n->d.c->walls[n->no%6]->corners[c].x[0]=
+	 view.pcurrwall->corners[c].x[0];
+        n->d.n->d.c->walls[n->no%6]->corners[c].x[1]=
+         view.pcurrwall->corners[c].x[1]; }
+     n->d.n->d.c->recalc_polygons[n->no%6]=1;
+     }
   plotlevel(); drawopt(in_wall); drawopt(in_edge); 
   }
  else fb_initwin();

@@ -70,7 +70,7 @@ struct wall *insertwall(struct node *c,int wallnum,int txt1,int txt2,int dir)
  if(txt1>=0) w->texture1=txt1;
  if(txt2>=0) w->texture2=txt2;
  if(dir>=0) w->txt2_direction=dir;
- w->no=wallnum; w->locked=0; w->ls=NULL; w->fl=NULL;
+ w->no=wallnum; w->locked=0; w->ls=NULL; 
  for(j=0;j<4;j++)
   {
   w->tagged[j]=NULL;
@@ -86,7 +86,7 @@ struct wall *insertwall(struct node *c,int wallnum,int txt1,int txt2,int dir)
  return w;
  }
  
-struct node *insertsingledoor(struct node *c,int wallnum)
+struct node *insertsingledoor(struct node *c,struct node *pd,int wallnum)
  {
  struct door *d;
  struct node *n;
@@ -97,36 +97,36 @@ struct node *insertsingledoor(struct node *c,int wallnum)
  checkmem(d=MALLOC(sizeof(struct door)));
  if(c->d.c->nc[wallnum]!=NULL)
   {
-  if(view.pcurrdoor && view.pcurrdoor->d.d->w)
-   { checkmem(insertwall(c,wallnum,view.pcurrdoor->d.d->w->texture1,
-      view.pcurrdoor->d.d->w->texture2,
-      view.pcurrdoor->d.d->w->txt2_direction)); }
+  if(pd && pd->d.d->w)
+   { checkmem(insertwall(c,wallnum,pd->d.d->w->texture1,
+      pd->d.d->w->texture2,
+      pd->d.d->w->txt2_direction)); }
   else
    if(pig.anims[stdncdoor.animtxt]->pig->anim_t2)
     {checkmem(insertwall(c,wallnum,0,pig.anims[stdncdoor.animtxt]->rdlno,0));}
    else
     checkmem(insertwall(c,wallnum,pig.anims[stdncdoor.animtxt]->rdlno,0,0));
-  if(view.pcurrdoor && view.pcurrdoor->d.d->type1!=door1_switchwithwall)
-   *d=*view.pcurrdoor->d.d;
+  if(pd && pd->d.d->type1!=door1_switchwithwall)
+   *d=*pd->d.d;
   else *d=stdncdoor;
   }
  else
-  { if(view.pcurrdoor && view.pcurrdoor->d.d->type1==door1_switchwithwall)
-     { *d=*view.pcurrdoor->d.d; 
-       c->d.c->walls[wallnum]->texture2=view.pcurrdoor->d.d->w->texture2; }
+  { if(pd && pd->d.d->type1==door1_switchwithwall)
+     { *d=*pd->d.d; 
+       c->d.c->walls[wallnum]->texture2=pd->d.d->w->texture2; }
     else { *d=stdnonncdoor;c->d.c->walls[wallnum]->texture2=std_switch_t2; } }
  d->cubenum=c->no; d->wallnum=wallnum; d->sd=NULL;
  d->d=NULL; initlist(&d->sdoors);
  checkmem(n=addnode(&l->doors,-1,d));
- if(d->sdoor!=0xff && d->sdoor!=switch_exit && d->sdoor!=switch_secretexit)
+ if(d->switchtype!=switch_nothing && d->switchtype!=switch_exit &&
+  d->switchtype!=switch_secretexit && l->sdoors.size<254)
   {
-  my_assert(view.pcurrdoor!=NULL);
+  my_assert(pd!=NULL);
   checkmem(sd=MALLOC(sizeof(struct sdoor)));
-  *sd=*view.pcurrdoor->d.d->sd->d.sd; sd->d=n;
+  *sd=*pd->d.d->sd->d.sd; sd->d=n;
   checkmem(d->sd=addnode(&l->sdoors,-1,sd));
-  d->sdoor=d->sd->no; 
-  if(d->sd->no>254) 
-   { d->sdoor=0xff; FREE(d->sd); FREE(sd); d->sd=NULL; }
+  d->sdoor=d->sd->no;
+  setsdoortargets(sd);
   }
  else d->sdoor=0xff;
  if(!initdoor(n)) { killnode(&l->doors,n); my_assert(0); }
@@ -148,14 +148,15 @@ struct node *insertdoor(struct node *c,int wallnum)
  {
  struct node *n;
  int i,wall;
- checkmem(n=insertsingledoor(c,wallnum));
+ checkmem(n=insertsingledoor(c,view.pcurrdoor,wallnum));
  if(c->d.c->nc[wallnum])
   {
   for(i=0,wall=-1;i<6;i++)
    if(c->d.c->nc[wallnum]->d.c->nc[i]!=NULL)
     if(c->d.c->nc[wallnum]->d.c->nc[i]->no==c->no) {wall=i; break;}
   my_assert(wall!=-1);
-  checkmem(n->d.d->d=insertsingledoor(c->d.c->nc[wallnum],wall));
+  checkmem(n->d.d->d=insertsingledoor(c->d.c->nc[wallnum],
+   view.pcurrdoor ? view.pcurrdoor->d.d->d : NULL,wall));
   n->d.d->d->d.d->d=n;
   }
  else my_assert(init.d_ver>=d2_10_sw);
@@ -286,15 +287,8 @@ void deletesingledoor(struct node *n)
  n->d.d->c->d.c->d[n->d.d->wallnum]=NULL;
  if(n->d.d->c->d.c->nc[n->d.d->wallnum])
   {
-  if(n->d.d->c->d.c->walls[n->d.d->wallnum]->ls)
-   freenode(&l->lightsources,n->d.d->c->d.c->walls[n->d.d->wallnum]->ls,
-    freelightsource);
-  if(n->d.d->c->d.c->walls[n->d.d->wallnum]->fl)
-   freenode(&l->flickeringlights,n->d.d->c->d.c->walls[n->d.d->wallnum]->fl,
-    free);
   for(i=0;i<4;i++) untag(tt_edge,n->d.d->c,n->d.d->wallnum,i);
-  FREE(n->d.d->c->d.c->walls[n->d.d->wallnum]);
-  n->d.d->c->d.c->walls[n->d.d->wallnum]=NULL;
+  freewall(l,n->d.d->c->d.c,n->d.d->wallnum);
   if(view.pcurrwall==n->d.d->w) view.pcurrwall=NULL;
   if(view.pdefcube==n->d.d->c && view.defwall==n->d.d->wallnum)
    { view.pdeflevel=NULL; view.pdefcube=NULL; view.defwall=0; }
@@ -304,7 +298,7 @@ void deletesingledoor(struct node *n)
   { my_assert(init.d_ver>=d2_10_sw);
     n->d.d->w->texture2=0; /* delete the switch */ }
  if(n->d.d->sd) deletesdoor(n->d.d->sd);
- if(n->no==view.pcurrdoor->no) 
+ if(n==view.pcurrdoor) 
   { view.pcurrdoor=view.pcurrdoor->prev->prev ? view.pcurrdoor->prev :
      view.pcurrdoor->next;
     if(view.pcurrdoor->next==NULL) view.pcurrdoor=NULL; }
@@ -321,15 +315,25 @@ void deletedoor(struct node *n)
  if(d2!=NULL) deletesingledoor(d2);
  deletesingledoor(n);
  }
- 
+
+void deletelistpnt(struct list *pts,struct node *nlp)
+ {
+ untag(tt_pnt,nlp);
+ if(nlp==view.pcurrpnt)
+  view.pcurrpnt=nlp->prev->prev ? nlp->prev : nlp->next;
+ my_assert(nlp->next!=NULL);
+ freenode(pts,nlp,freelistpnt);
+ }
+
 /* deletes cube n. if cubes==NULL || pts==NULL the cube is deleted
  in the current level */
-void deletecube(struct list *cubes,struct list *pts,struct node *n)
+void deletecube(struct list *pcubes,struct list *ppts,struct node *n)
  {
  int k,m,w;
  struct cube *nc,*c;
  struct listpoint *lp;
  struct node *cn;
+ struct list *cubes=pcubes,*pts=ppts;
  my_assert(n!=NULL);
  c=n->d.c;
  if(cubes==NULL || pts==NULL)
@@ -348,7 +352,7 @@ void deletecube(struct list *cubes,struct list *pts,struct node *n)
       for(m=0;m<6;m++) 
        if(view.pcurrcube->d.c->nc[m]==n)
         { view.currwall=m; break; } }
-   my_assert(view.pcurrcube->next);
+   my_assert(view.pcurrcube->next && view.pcurrcube->prev);
    }
   if(n==view.pdefcube)
    { view.pdeflevel=NULL; view.pdefcube=NULL; view.defwall=0; }
@@ -363,6 +367,9 @@ void deletecube(struct list *cubes,struct list *pts,struct node *n)
   }
  for(k=0;k<6;k++)
   {
+  if(c->walls[k]!=NULL && c->walls[k]->ls!=NULL)
+   { my_assert(pcubes==NULL && ppts==NULL);
+   freenode(&l->lightsources,c->walls[k]->ls,freelightsource); }
   for(m=0;m<4;m++) untag(tt_edge,n,k,m);
   untag(tt_wall,n,k);
   if(c->nc[k]!=NULL)
@@ -380,14 +387,14 @@ void deletecube(struct list *cubes,struct list *pts,struct node *n)
   lp=c->p[k]->d.lp;
   for(cn=lp->c.head->next;cn!=NULL;cn=cn->next)
    if(cn->prev->d.n->no==n->no) freenode(&lp->c,cn->prev,NULL);
-  if(lp->c.size<=0) 
-   { untag(tt_pnt,c->p[k]); freenode(pts,c->p[k],freelistpnt); }
+  if(lp->c.size<=0) deletelistpnt(pts,c->p[k]);
   }
  if(c->cp!=NULL) freenode(&l->producers,c->cp,free);
  killsdoorlist(&c->sdoors,n->no);
  for(cn=c->things.head;cn->next!=NULL;cn=cn->next)
   cn->d.t->nc=NULL;
- freelist(&c->things,NULL); 
+ freelist(&c->things,NULL);
+ freelist(&c->fl_lights,NULL);
  freenode(cubes,n,freecube);
  }
 
@@ -476,25 +483,17 @@ int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
   return 0;
   }
  /* connection is correct: let's kill all old things */
- if(c2->walls[w2]->ls) 
-  freenode(&l->lightsources,c2->walls[w2]->ls,freelightsource);
- if(c2->walls[w2]->fl)
-  freenode(&l->flickeringlights,c2->walls[w2]->fl,free);
- if(c1->walls[w1]->ls) 
-  freenode(&l->lightsources,c1->walls[w1]->ls,freelightsource);
- if(c1->walls[w1]->fl)
-  freenode(&l->flickeringlights,c1->walls[w1]->fl,free);
  for(j=0;j<4;j++)
   { untag(tt_edge,nc1,w1,j); untag(tt_edge,nc2,w2,j); } 
- c2->nc[w2]=nc1; FREE(c2->walls[w2]); c2->walls[w2]=NULL;
- c1->nc[w1]=nc2; FREE(c1->walls[w1]); c1->walls[w1]=NULL;
+ c2->nc[w2]=nc1; freewall(pts==NULL ? l : NULL,c2,w2);
+ c1->nc[w1]=nc2; freewall(pts==NULL ? l : NULL,c1,w1);
  /* free old points and calculate new textures  */
  for(j=0;j<4;j++)
   if(pnts[j][0]->no!=pnts[j][1]->no)
    {
    if(view.pcurrpnt==pnts[j][0]) view.pcurrpnt=pnts[j][1];
    my_assert(pnts[j][0]->d.lp->c.size==0)
-   freenode(pts==NULL ? &l->pts : pts,pnts[j][0],free);
+   deletelistpnt(pts==NULL ? &l->pts : pts,pnts[j][0]);
    newcorners(pnts[j][1]);  
    }
  if((view.pdefcube==nc1 && view.defwall==w1) ||
@@ -617,7 +616,7 @@ int initcube(struct node *n)
  struct cube *c;
  my_assert(n!=NULL && l!=NULL);
  c=n->d.c;
- initlist(&c->sdoors); initlist(&c->things);
+ initlist(&c->sdoors); initlist(&c->things); initlist(&c->fl_lights);
  for(j=0;j<8;j++)
   {
   if((c->p[j]=findnode(&l->pts,(int)c->pts[j]))==NULL)
@@ -834,10 +833,11 @@ struct node *newcube(struct leveldata *ld)
  struct listpoint *lp;
  struct node *nnc,*nlp;
  int i,j;
+ struct leveldata *ol;
  checkmem(nc=MALLOC(sizeof(struct cube)));
  /* do the init stuff for the cube */
  nc->type=0; nc->prodnum=-1; nc->value=0; initlist(&nc->sdoors);
- nc->cp=NULL; nc->tagged=NULL; initlist(&nc->things);
+ nc->cp=NULL; nc->tagged=NULL; initlist(&nc->things); 
  for(j=0;j<6;j++) 
   { nc->nc[j]=NULL; nc->d[j]=NULL; nc->tagged_walls[j]=NULL;
     nc->nextcubes[j]=0xffff; nc->doors[j]=0xff; }
@@ -860,10 +860,31 @@ struct node *newcube(struct leveldata *ld)
      nc->walls[i]->p[j]=nc->p[wallpts[i][j]];
      nc->walls[i]->tagged[j]=NULL; }
   nc->walls[i]->no=i; nc->walls[i]->locked=0; nc->walls[i]->ls=NULL;
-  nc->walls[i]->fl=NULL;
   }
- initcube(nnc);
+ ol=l; l=ld; initcube(nnc); l=ol;
  return nnc;
+ }
+
+void delflickeringlight(struct lightsource *ls)
+ {
+ struct node *ne,*nfl;
+ if(ls->fl==NULL) return;
+ for(ne=ls->effects.head;ne->next!=NULL;ne=ne->next)
+  for(nfl=ne->d.lse->cube->d.c->fl_lights.head->next;nfl!=NULL;nfl=nfl->next)
+   if(nfl->prev->d.fl==ls->fl)
+    freenode(&ne->d.lse->cube->d.c->fl_lights,nfl->prev,NULL);
+ FREE(ls->fl); ls->fl=NULL;
+ }
+
+void freewall(struct leveldata *ld,struct cube *c,int w)
+ {
+ my_assert(c->walls[w]!=NULL && c->nc[w]!=NULL);
+ if(c->walls[w]->ls)
+  {
+  my_assert(ld!=NULL);
+  freenode(&ld->lightsources,c->walls[w]->ls,freelightsource);
+  }
+ FREE(c->walls[w]); c->walls[w]=NULL;
  }
 
 /* insert a cube at c,wallnum. If cubes and pts==NULL, insert the cube
@@ -884,7 +905,7 @@ struct node *insertcube(struct list *cubes,struct list *pts,struct node *c,
  checkmem(nc=MALLOC(sizeof(struct cube)));
  /* do the init stuff for the cube */
  nc->type=0; nc->prodnum=-1; nc->value=0; initlist(&nc->sdoors);
- nc->cp=NULL; nc->tagged=NULL; initlist(&nc->things);
+ nc->cp=NULL; nc->tagged=NULL; initlist(&nc->things); initlist(&nc->fl_lights);
  for(j=0;j<6;j++) 
   { nc->nc[j]=NULL; nc->d[j]=NULL; nc->tagged_walls[j]=NULL;
     nc->polygons[j*2]=nc->polygons[j*2+1]=NULL;
@@ -944,12 +965,11 @@ struct node *insertcube(struct list *cubes,struct list *pts,struct node *c,
      nc->walls[i]->p[j]=nc->p[wallpts[i][j]];
      nc->walls[i]->tagged[j]=NULL; }
   nc->walls[i]->no=i; nc->walls[i]->locked=0; nc->walls[i]->ls=NULL;
-  nc->walls[i]->fl=NULL;
   recalcwall(nc,i);  
   }
  /* and know kill the wall in the other cube */
  c->d.c->nc[wallnum]=nnc; nc->nc[oppwalls[wallnum]]=c;
- FREE(c->d.c->walls[wallnum]); c->d.c->walls[wallnum]=NULL;
+ freewall(pts==NULL && cubes==NULL ? l : NULL,c->d.c,wallnum);
  if(cubes==NULL && pts==NULL)
   {
   l->levelsaved=l->levelillum=0;

@@ -36,7 +36,8 @@ enum controltype { ct_none=0,ct_ai=1,ct_slew=5,ct_mine=9,ct_powerup=13,
 enum movementtype { mt_none=0,mt_physics=1,mt_spinning=3 };
 enum rendertype { rt_polyobj=1,rt_hostage=4,rt_powerup=5 };
 enum doortype1 { door1_blow=1,door1_normal=2,door1_onlytxt=3,
- door1_onlyswitch=4,door1_shootthrough=5,door1_switchwithwall=6 };
+ door1_onlyswitch=4,door1_shootthrough=5,door1_switchwithwall=6,
+ door1_cloaked=7 };
 enum doortype2 { door2_locked=8,door2_closeagain=0x10,door2_illusionoff=0x20,
  door2_robotswontpass=0x80 };
 /* switchtypes */

@@ -90,11 +90,11 @@ struct sdoor stdsdoor=
  { switch_opendoor,0,0,0x050000,-1,{0,0,0,0,0,0,0,0,0,0},
    {0,0,0,0,0,0,0,0,0,0} };
 struct door stdncdoor=
- { 0,0,-1,-1,door1_normal,door2_closeagain,0,0xff,4,1,0,0,0,NULL,NULL,
-   EMPTYLST,NULL,NULL,D_EMPTYPNT,NULL };
+ { 0,0,-1,-1,door1_normal,door2_closeagain,0,0xff,4,1,0,0,0,switch_nothing,
+   NULL,NULL,EMPTYLST,NULL,NULL,D_EMPTYPNT,NULL,0,NULL };
 struct door stdnonncdoor=
- { 0,0,-1,-1,door1_switchwithwall,0,0,0xff,0xff,-1,0,0,0,NULL,NULL,EMPTYLST,
-   NULL,NULL,D_EMPTYPNT,NULL };
+ { 0,0,-1,-1,door1_switchwithwall,0,0,0xff,0xff,-1,0,0,0,switch_nothing,NULL,
+   NULL,EMPTYLST,NULL,NULL,D_EMPTYPNT,NULL,0,NULL };
 struct point stdcubepts[8]={
  {{655360,655360,-655360}},{{655360,-655360,-655360}},
  {{-655360,-655360,-655360}},{{-655360,655360,-655360}},

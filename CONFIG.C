@@ -110,11 +110,13 @@ int savestatus(int playlevel)
   (int)view.illum_minvalue,fb_savedata.xpos,fb_savedata.ypos,
   fb_savedata.xsize,fb_savedata.ysize)<0) ERRORSAVECFG(f);
  for(i=0;i<tlw_num;i++)
-  if(fprintf(f,"%d ",tl_win[i].zoom.selected)<0) ERRORSAVECFG(f);
+  if(fprintf(f,"%d %d %d %d %d\n",tl_win[i].zoom.selected,
+   tl_win[i].oldxpos,tl_win[i].oldypos,tl_win[i].oldxsize<0 ? 0
+   : tl_win[i].oldxsize,tl_win[i].oldysize)<0) ERRORSAVECFG(f);
  fprintf(f,"\n");
  if(fprintf(f,
   "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d "\
-  "%d\n",
+  "%d %d %d %d %d %g %d %d\n",
   view.displayed_group,view.gridonoff,view.askone,view.asktagged,
   view.drawwhat|DW_ALLLINES,view.currmode,view.movemode,
   CUROBJNO(view.pdeflevel),CUROBJNO(view.pdefcube),view.defwall,
@@ -122,10 +124,17 @@ int savestatus(int playlevel)
   view.warn_thingoutofbounds,view.warn_gridrot,view.doubleclick,
   view.whichdisplay,view.render,corr_win1_xpos,corr_win1_ypos,
   corr_win2_xpos,corr_win2_ypos,view.gamma_corr,view.coord_axis,
-  view.flip_y_axis)<0) 
+  view.flip_y_axis,view.draw_orig_lines,view.littlebulbson,
+  view.mouse_flipaxis,view.blinkinglightson,(double)view.timescale,
+  view.warn_frameratetoosmall,view.warn_illuminate)<0) 
   ERRORSAVECFG(f);
- if(fprintf(f,"%s\n%s\n%s\n%s\n%s\n",init.levelpath,init.macropath,
-  init.missionpath,init.txtlistpath,init.lightname)<0) ERRORSAVECFG(f);
+ if(pig.current_pogname!=NULL)
+  { strcpy(fname,init.pogpath); strcat(fname,"/");
+    strcat(fname,pig.current_pogname); }
+ else strcpy(fname,"NoPogFile");
+ if(fprintf(f,"%s\n%s\n%s\n%s\n%s\n%s\n%s\n",init.levelpath,init.pogpath,
+  init.macropath,init.missionpath,init.txtlistpath,init.lightname,fname)<0)
+  ERRORSAVECFG(f);
  if(!playlevel)
   { for(n=view.levels.head,i=0,j=-1,k=-1;n->next!=NULL;n=n->next)
      if(n->d.lev->filename)
@@ -143,7 +152,7 @@ int savestatus(int playlevel)
     init.levelext);
    else sprintf(fname,"%s/"CFG_FNAME".%s",init.cfgpath,i++,init.levelext);
    i=n->d.lev->levelsaved;
-   if(!savelevel(fname,n->d.lev,playlevel>0 ? n->d.lev==l : -1,0,init.d_ver))
+   if(!savelevel(fname,n->d.lev,playlevel>0 ? n->d.lev==l : -1,0,init.d_ver,0))
     ERRORSAVECFG(f);
    n->d.lev->levelsaved=i;
    fprintf(f,"%s\n",fname);
@@ -276,16 +285,22 @@ void readstatus(void)
   !=12) ERRORREADCFG(f);
  for(i=0;i<tlw_num;i++)
   {
-  if(fscanf(f,"%d",&tl_win[i].zoom.selected)!=1) ERRORREADCFG(f);
-  tl_win[i].oldxsize=-1;
+  if(fscanf(f,"%d%d%d%d%d",&tw_savedata[i].zoom,
+   &tw_savedata[i].xpos,&tw_savedata[i].ypos,&tw_savedata[i].xsize,
+   &tw_savedata[i].ysize)!=5) ERRORREADCFG(f);
+  if(tw_savedata[i].xsize>0) tl_win[i].oldxsize=-1;
   }
- if(fscanf(f,"%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%hd%d%d",
+ if(fscanf(f,
+  "%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%hd%d%d%d%d%hd%hd%g%d%d",
   &view.displayed_group,&view.gridonoff,&view.askone,&view.asktagged,
   &view.drawwhat,&d,&e,&lno,&c,&view.defwall,&view.warn_convex,
   &view.warn_doublekeys,&view.warn_tworeactors,&view.warn_thingoutofbounds,
   &view.warn_gridrot,&view.doubleclick,&view.whichdisplay,&view.render,
   &corr_win1_xpos,&corr_win1_ypos,&corr_win2_xpos,&corr_win2_ypos,
-  &view.gamma_corr,&view.coord_axis,&view.flip_y_axis)!=25) 
+  &view.gamma_corr,&view.coord_axis,&view.flip_y_axis,
+  &view.draw_orig_lines,&view.littlebulbson,&view.mouse_flipaxis,
+  &view.blinkinglightson,&view.timescale,&view.warn_frameratetoosmall,
+  &view.warn_illuminate)!=32) 
   ERRORREADCFG(f);
  set_illum_brightness(new_brightness);
  view.currmode=d; view.movemode=e;
@@ -293,6 +308,9 @@ void readstatus(void)
  if(fscanf(f,"%255s",fname)!=1) ERRORREADCFG(f);
  FREE(init.levelpath); checkmem(init.levelpath=MALLOC(strlen(fname)+1)); 
  strcpy(init.levelpath,fname);
+ if(fscanf(f,"%255s",fname)!=1) ERRORREADCFG(f);
+ FREE(init.pogpath); checkmem(init.pogpath=MALLOC(strlen(fname)+1)); 
+ strcpy(init.pogpath,fname);
  if(fscanf(f,"%255s",fname)!=1) ERRORREADCFG(f);
  FREE(init.macropath); checkmem(init.macropath=MALLOC(strlen(fname)+1)); 
  strcpy(init.macropath,fname);
@@ -305,6 +323,9 @@ void readstatus(void)
  if(fscanf(f,"%255s",fname)!=1) ERRORREADCFG(f);
  FREE(init.lightname); checkmem(init.lightname=MALLOC(strlen(fname)+1)); 
  strcpy(init.lightname,fname);
+ if(fscanf(f,"%255s",fname)!=1) ERRORREADCFG(f);
+ if(strcmp(fname,"NoPogFile")!=0)
+  { printmsg(TXT_LOOKINGFORPOGFILE,fname); changepogfile(fname); }
  if(c>0 && lno>0)
   if((view.pdeflevel=findnode(&view.levels,lno))!=NULL)
    if((view.pdefcube=findnode(&view.pdeflevel->d.lev->cubes,c))==NULL)
@@ -732,23 +753,19 @@ int saveplaymsn(int savetoddir)
  if(fwrite(data,1,size,f)!=size)
   { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
  FREE(data);
- if(init.d_ver>=d2_12_reg && l!=NULL && l->pogfile!=NULL)
+ if(init.d_ver>=d2_12_reg && l!=NULL && pig.pogfile!=NULL)
   {
   if(fwrite("TMPDEVIL.POG",1,13,f)!=13)
    { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); return 0; }
-  fseek(l->pogfile,0,SEEK_END); size=ftell(l->pogfile);
-  rewind(l->pogfile);  
+  fseek(pig.pogfile,0,SEEK_END); size=ftell(pig.pogfile);
+  rewind(pig.pogfile);  
   if(fwrite(&size,4,1,f)!=1)
    { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); return 0; }
   checkmem(data=MALLOC(size));
-  if(fread(data,1,size,l->pogfile)!=size)
+  if(fread(data,1,size,pig.pogfile)!=size)
    { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
   if(fwrite(data,1,size,f)!=size)
    { printmsg(TXT_CANTSAVEPLAYHOG,fname); fclose(f); FREE(data); return 0; }
-  strcpy(sfname,init.cfgpath); strcat(sfname,"/"); strcat(sfname,CFG_CURNAME);
-  strcat(sfname,".POG");
-  if((sf=fopen(sfname,"wb"))!=NULL)
-   { fwrite(data,1,size,sf); fclose(sf); }
   FREE(data);
   }
  fclose(f);

@@ -27,6 +27,7 @@
 #include "do_event.h"
 #include "do_move.h"
 #include "options.h"
+#include "do_light.h"
 #include "opt_txt.h"
 #include "readlvl.h"
 #include "readtxt.h"
@@ -38,7 +39,7 @@
 
 extern int init_test;
 
-void closegrph(void) { w_closewins(); }
+void closegrph(void) { w_closewins(); releasetimer(); }
 
 /* Routines for button window: */
 void b_changemode(struct w_button *b)
@@ -94,9 +95,42 @@ void b_changepigfile(struct w_button *b)
  checkmem(l->pigname=MALLOC(strlen(b->d.ls->options[b->d.ls->selected])+5));
  strcpy(l->pigname,b->d.ls->options[b->d.ls->selected]);
  strcat(l->pigname,".256");
- newpigfile(l->pigname,l->pogfile);
+ newpigfile(l->pigname,pig.pogfile);
  }
- 
+
+struct w_button *b_movemode,*b_currmode,*b_movebts[6],*b_pigfile,*b_pogfile;
+
+void changepogfile(char *pogfilename)
+ {
+ char const *pogname;
+ FILE *pf=NULL;
+ if(!pogfilename || (pf=fopen(pogfilename,"rb"))==NULL)
+  pogname=NULL; 
+ else
+  {
+  if((pogname=strrchr(pogfilename,'/'))!=NULL) pogname++;
+  else pogname=pogfilename;
+  }
+ if(pig.current_pogname)
+  { FREE(pig.current_pogname); pig.current_pogname=NULL; }
+ if(pogname)
+  {
+  checkmem(pig.current_pogname=MALLOC(strlen(pogname)+1));
+  strcpy(pig.current_pogname,pogname);
+  }
+ if(pogfilename) FREE(pogfilename);
+ newpigfile(l ? l->pigname : pig.default_pigname,pf);
+ }
+
+void b_changepogfile(struct w_button *b)
+ {
+ char *pogfilename;
+ pogfilename=getfilename(&init.pogpath,pig.current_pogname,"POG",
+  "Select pogfile",0);
+ if(!pogfilename && !yesnomsg(TXT_DEFAULTPOGFILE)) return;
+ changepogfile(pogfilename);
+ }
+
 int mbls[6][110]=
  { { 0,9,-8,1,0, 0,8,-9,0,-1, 0,-8,10,-4,-2, 0,-8,10,6,0, 0,-4,-2,6,0,
      0,5,10,10,5, 0,10,5,10,-5, 0,10,-5,5,-10, 0,5,-10,-5,-10, 
@@ -114,13 +148,12 @@ int mbls[6][110]=
    { 0,-2,1,-10,1, 0,-2,-1,-10,-1, 0,10,0,-2,5, 0,10,0,-2,-5, 0,-2,5,-2,-5 }};
 const char *movemodes[mt_number]={ TXT_MOVEYOU,TXT_MOVEOBJ,TXT_MOVECURRENT,
 				   TXT_MOVETXT };
-struct w_button *b_movemode,*b_currmode,*b_movebts[6],*b_pigfile;
 unsigned char *movebuttondata[6];
 int movebuttondsize[6];
 void drawallbuttons(struct w_window *w)
  {
  static struct w_b_choose modebutton,modifybutton,pigfile;
- static struct w_b_press movebutton[6];
+ static struct w_b_press movebutton[6],pogfile;
  struct w_button *b1,*b2,*b3;
  struct ws_bitmap *bm;
  int i,j,k,bxsize,bysize,y;
@@ -168,8 +201,18 @@ void drawallbuttons(struct w_window *w)
  checkmem(view.levelbutton=w_addstdbutton(w,w_b_choose,0,y,bxsize*3,-1,
   TXT_LEVEL,view.b_levels,1)); y+=view.levelbutton->ysize;
  if(init.d_ver>=d2_10_reg)
-  { checkmem(b3=b_pigfile=w_addstdbutton(w,w_b_choose,0,y,bxsize*3,-1,
-     TXT_LEVELPIGFILE,&pigfile,1)); y+=b3->ysize; }
+  {
+  checkmem(b3=b_pigfile=w_addstdbutton(w,w_b_choose,0,y,bxsize*3,-1,
+   TXT_LEVELPIGFILE,&pigfile,1)); y+=b3->ysize;
+  if(init.d_ver>=d2_12_reg)
+   {
+   pogfile.delay=0; pogfile.repeat=-1;
+   pogfile.l_pressed_routine=pogfile.r_pressed_routine=NULL;
+   pogfile.l_routine=pogfile.r_routine=b_changepogfile;
+   checkmem(b_pogfile=w_addstdbutton(w,w_b_press,0,y,bxsize*3,-1,
+    TXT_POGFILE,&pogfile,1)); y+=b_pogfile->ysize;
+   }
+  }
  bysize=(w_ywininsize(w)-y)/2;
  /* move button menu */
  for(j=5;j<22;j++)
@@ -269,6 +312,8 @@ void initpalette(void)
                                                    for doors, wall line 1 */
  view.color[HILIGHTCOLORS+4]=w_makecolor(255,255,0); /* wall line 2 */
  view.color[HILIGHTCOLORS+5]=w_makecolor(90,180,120); /* tagged&current */
+ view.color[HILIGHTCOLORS+6]=w_makecolor(255,100,100); 
+ view.color[HILIGHTCOLORS+7]=w_makecolor(100,100,255); 
  view.color[DOORCOLORS]=w_makecolor(255,100,100); /* blow door */
  view.color[DOORCOLORS+1]=w_makecolor(255,255,255); /* no key door */
  view.color[DOORCOLORS+2]=w_makecolor(100,150,255); /* blue key */
@@ -280,13 +325,30 @@ void initpalette(void)
 void newpalette(unsigned char *palette)
  {
  int i,j,nc;
- long colortable[2];
+ long colortable[4];
+ FILE *f;
  if(init_test&2) 
   { fprintf(errf,"New palette:\n");
     for(i=0;i<256;i++)
      fprintf(errf," %3d: %3d %3d %3d\n",i,palette[i*3],palette[i*3+1],
       palette[i*3+2]); }
  w_newpalette(palette);
+ my_assert((f=fopen(pig.bulbname,"rb"))!=NULL &&
+  fread(pig.bulb,1,BULBSIZE*BULBSIZE,f)==BULBSIZE*BULBSIZE);
+ fclose(f);
+ my_assert((f=fopen(pig.brokenbulbname,"rb"))!=NULL &&
+  fread(pig.brokenbulb,1,BULBSIZE*BULBSIZE,f)==BULBSIZE*BULBSIZE);
+ fclose(f);
+ colortable[0]=0;
+ colortable[1]=w_makecolor(100,200,255);
+ colortable[2]=w_makecolor(255,255,0);
+ for(i=0;i<BULBSIZE*BULBSIZE;i++) pig.bulb[i]=colortable[(int)pig.bulb[i]];
+ colortable[0]=0;
+ colortable[1]=w_makecolor(75,75,75);
+ colortable[2]=w_makecolor(100,200,255);
+ colortable[3]=w_makecolor(255,255,255);
+ for(i=0;i<BULBSIZE*BULBSIZE;i++)
+  pig.brokenbulb[i]=colortable[(int)pig.brokenbulb[i]];
  nc=w_makecolor(255,255,255);
  for(i=0;i<6;i++)
   if(b_movebts[i])
@@ -319,6 +381,7 @@ void initgrph(int showtitle)
  char *pigname;
  struct ws_event ws;
  struct ws_bitmap *cursor;
+ inittimer();
 #if defined(GNU_C) && defined(GO32)
  if(showtitle && ws_initgrfx(640,480,256,init.fontname) && titlescreen())
   ws_getevent(&ws,1);
@@ -356,9 +419,13 @@ void initgrph(int showtitle)
  button_win.xpos=w_xmaxwinsize()-button_win.xsize-10;
  button_win.ypos=w_ymaxwinsize()-button_win.ysize-10;
  if(init.d_ver>=d2_10_reg) 
-  { button_win.ypos-=20; button_win.ysize+=20; }
+  {
+  button_win.ypos-=20; button_win.ysize+=20;
+  if(init.d_ver>=d2_12_reg)
+   button_win.ypos-=16; button_win.ysize+=16;
+  }
  checkmem(view.movewindow=w_openwindow(&button_win));
  drawallbuttons(view.movewindow);
  for(i=0;i<=in_internal;i++) makeoptwindow(i);
- init_txtgrfx();
+ init_txtgrfx(); read_lightsources();
  }

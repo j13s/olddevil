@@ -26,6 +26,7 @@
 #include "tag.h"
 #include "macros.h"
 #include "readlvl.h"
+#include "do_light.h"
 #include "do_event.h"
 #include "do_opts.h"
 
@@ -202,9 +203,35 @@ void b_selectmacro(struct w_button *b)
    if(!strcmp(n->d.lev->fullname,b->d.ls->options[b->d.ls->selected]))
     { view.pcurrmacro=n->d.lev; break; }
  if(!view.pcurrmacro) b->d.ls->selected=0;
- drawopt(in_cube);
+ drawopt(in_cube); plotlevel();
  }
- 
+
+struct node *adjust_light_nc=NULL;
+int adjust_light_wall=-1;
+
+void b_adjustlight(struct w_button *b,int save)
+ {
+ if(b->d.s->on)
+  {
+  if(adjust_light_nc!=NULL)
+   { waitmsg(TXT_DOUBLEADJLIGHT,adjust_light_nc->no,adjust_light_wall);
+     b->d.s->on=0; w_drawbutton(b); return; }
+  if(view.pcurrwall==NULL || view.pcurrwall->ls==NULL) return;
+  adjust_light_nc=view.pcurrcube; adjust_light_wall=view.currwall;
+  start_adjustlight(view.pcurrcube->d.c->walls[view.currwall]);
+  }
+ else
+  {
+  if(adjust_light_nc==NULL) return;
+  if(!save && !yesnomsg(TXT_CANCELADJLIGHT)) return;
+  end_adjustlight(adjust_light_nc->d.c->walls[adjust_light_wall],save);
+  adjust_light_nc=NULL;
+  }
+ plotlevel(); drawopts();
+ }
+void b_l_adjustlight(struct w_button *b) { b_adjustlight(b,1); }
+void b_r_adjustlight(struct w_button *b) { b_adjustlight(b,0); }
+
 void b_refreshtagno(enum infos what)
  {
  if(what>=tt_number) return;
@@ -221,7 +248,7 @@ struct w_b_press b_next = { 25,5,b_nextobj,NULL,b_nextobj,b_lastobj };
 int init_prev_no_next(enum infos what)
  {
  struct w_b_string *b_no,*b_tagcount;
- struct w_b_switch *b_tag,*b_default,*b_locked;
+ struct w_b_switch *b_tag,*b_default,*b_locked,*b_adjustlight;
  struct w_b_press *b_ins,*b_del;
  int y;
  checkmem(b_no=MALLOC(sizeof(struct w_b_string)));
@@ -289,7 +316,8 @@ int init_prev_no_next(enum infos what)
   case in_cube:
    checkmem(view.b_macros=MALLOC(sizeof(struct w_b_choose)));
    view.b_macros->num_options=1;
-   view.b_macros->options=view.b_levels->options;
+   checkmem(view.b_macros->options=MALLOC(sizeof(char *)));
+   view.b_macros->options[0]=TXT_NONE;
    view.b_macros->selected=0;
    view.b_macros->select_lroutine=view.b_macros->select_rroutine=
     b_selectmacro;
@@ -297,7 +325,7 @@ int init_prev_no_next(enum infos what)
     0,b_optwins[what][5]->ypos+b_optwins[what][5]->ysize,
     w_xwininsize(optionwins[what]),-1,TXT_MACRO,view.b_macros,0));
    y=b_optwins[what][6]->ypos+b_optwins[what][6]->ysize;
-   b_optwins[what][8]=NULL; 
+   b_optwins[what][9]=NULL; b_optwins[what][8]=NULL; 
    break;   
   case in_wall:
    checkmem(b_default=MALLOC(sizeof(struct w_b_switch)));
@@ -308,19 +336,31 @@ int init_prev_no_next(enum infos what)
    b_locked->on=0;
    b_locked->l_routine=b_l_lockwall;
    b_locked->r_routine=b_r_lockwall;
+   checkmem(b_adjustlight=MALLOC(sizeof(struct w_b_switch)));
+   b_adjustlight->on=0;
+   b_adjustlight->l_routine=b_l_adjustlight;
+   b_adjustlight->r_routine=b_r_adjustlight;
    checkmem(b_optwins[what][6]=w_addstdbutton(optionwins[what],w_b_switch,
     0,b_optwins[what][5]->ypos+b_optwins[what][5]->ysize,
     w_xwininsize(optionwins[what])/2,-1,TXT_DEFAULT,b_default,0));
-   b_optwins[what][6]->data=(void *)what;
    checkmem(b_optwins[what][8]=w_addstdbutton(optionwins[what],w_b_switch,
     w_xwininsize(optionwins[what])/2,b_optwins[what][5]->ypos+
     b_optwins[what][5]->ysize,(w_xwininsize(optionwins[what])+1)/2,-1,
     TXT_LOCKED,b_locked,0));
    b_optwins[what][6]->data=b_optwins[what][8]->data=(void *)what;
-   y=b_optwins[what][6]->ypos+b_optwins[what][6]->ysize;  
+   if(init.d_ver>=d2_10_sw)
+    {
+    checkmem(b_optwins[what][9]=w_addstdbutton(optionwins[what],w_b_switch,
+     0,b_optwins[what][6]->ypos+b_optwins[what][6]->ysize,
+     w_xwininsize(optionwins[what]),-1,TXT_ADJUSTLIGHT,b_adjustlight,0));
+    y=b_optwins[what][9]->ypos+b_optwins[what][9]->ysize;
+    }
+   else
+    { y=b_optwins[what][8]->ypos+b_optwins[what][8]->ysize;
+    b_optwins[what][9]=NULL; }
    break;
   default:
-   b_optwins[what][6]=NULL; b_optwins[what][8]=NULL;
+   b_optwins[what][6]=NULL; b_optwins[what][8]=NULL; b_optwins[what][9]=NULL;
    y=b_optwins[what][5]->ypos+b_optwins[what][5]->ysize; 
   }
  return y;
@@ -330,3 +370,6 @@ void nextobject(enum tagtypes tt)
  { wi_changeobject((struct w_button *)b_optwins[tt][2]->data,-2); }
 void prevobject(enum tagtypes tt)
  { wi_changeobject((struct w_button *)b_optwins[tt][0]->data,-3); }
+void resetsideedge(void)
+ { wi_changeobject((struct w_button *)b_optwins[tt_wall][0]->data,-4);
+   wi_changeobject((struct w_button *)b_optwins[tt_edge][0]->data,-4); }

@@ -451,10 +451,16 @@ struct node *recalc_track(struct corridor *c,struct track *st,
 int recalc_corridor(struct corridor *c)
  {
  struct node *tn,*cn=c->elements.head,*kn;
+ struct point d;
+ int i;
  my_assert(c->tracking.size>1); /* at least two points */
  for(tn=c->tracking.head->next;tn->next!=NULL;tn=tn->next)
+  {
+  for(i=0;i<3;i++) d.x[i]=tn->d.ct->x.x[i]-tn->prev->d.ct->x.x[i];
+  if(LENGTH(&d)<3*c->depth) return 0;
   if((cn=recalc_track(c,tn->prev->d.ct,tn->d.ct,cn))==NULL) 
    return 0;
+  }
  for(kn=cn->next->next;kn!=NULL;kn=kn->next) kill_corr_elem(c,kn->prev);
  return 1;
  }
@@ -566,6 +572,7 @@ void make_start_cubes(struct corridor *c,struct node *cube,int wall,
  int i,j,nbwall;
  struct point t;
  float f;
+ struct wall w;
  my_assert(cube!=NULL && wall>=0 && wall<6);
  if(cube->d.c->nc[wall]!=NULL || cube->d.c->walls[wall]==NULL ||
   !testtag(tt_wall,cube,wall)) return;
@@ -577,8 +584,12 @@ void make_start_cubes(struct corridor *c,struct node *cube,int wall,
  my_assert(c->front_wall=REALLOC(c->front_wall,(++c->num_cubes)*sizeof(int)));
  c->front_wall[c->num_cubes-1]=wall;
  untag(tt_wall,cube,wall); tag(tt_cube,cube);
+ w=*cube->d.c->walls[wall];
  checkmem(n=insertcube(NULL,NULL,cube,wall,c->depth));
  for(i=0;i<4;i++) insertpnt(n,wallpts[oppwalls[wall]][i]);
+ cube->d.c->walls[wall]->texture1=w.texture1;
+ cube->d.c->walls[wall]->texture2=w.texture2;
+ for(i=0;i<4;i++) cube->d.c->walls[wall]->corners[i]=w.corners[i];
  change_cube_list(n,&l->cubes,&l->pts,&c->cubes,&c->points);  
  for(i=0;i<4;i++)
   if(cube->d.c->nc[nb_sides[wall][i]] &&
@@ -988,4 +999,37 @@ void dec_makecorridor(int ec)
   init_ce_relpnts(c,n->d.ce,st->coords);
  init_corr_window(c,l->fullname); recalc_corridor(c);    
  l->cur_corr=c; c->ld=l; plotlevel();
+ }
+
+void dec_makeedgecoplanar(int ec)
+ {
+ struct node *n;
+ struct point a,r,s,d,*p[4];
+ float fr,fs;
+ int i,j;
+ if(!l) { printmsg(TXT_NOLEVEL); return; }
+ for(n=l->tagged[tt_edge].head->next;n!=NULL;n=n->next)
+  {
+  for(i=0;i<4;i++)
+   if(i!=(n->prev->no%24)%4 && testtag(tt_edge,n->prev->d.n,
+    (n->prev->no%24)/4,i))
+    break;
+  if(i==4)
+   { /* only one edge is tagged on this side. move it into the plane of the
+        three others. */
+   for(j=0;j<4;j++)
+    p[j]=n->prev->d.n->d.c->p[
+     wallpts[(n->prev->no%24)/4][(((n->prev->no%24)%4)+j)&3]]->d.p;
+   a=*p[2];
+   for(j=0;j<3;j++)
+    { r.x[j]=p[3]->x[j]-a.x[j]; s.x[j]=p[1]->x[j]-a.x[j];
+      d.x[j]=p[0]->x[j]-a.x[j]; }
+   normalize(&r); normalize(&s);
+   fr=SCALAR(&r,&d); fs=SCALAR(&s,&d);
+   for(j=0;j<3;j++) p[0]->x[j]=fr*r.x[j]+fs*s.x[j]+a.x[j];
+   untag(tt_edge,n->prev->d.n,(n->no%24)/4,(n->no%24)%4);
+   recalcwall(n->prev->d.n->d.c,(n->no%24)/4);
+   }
+  }
+ plotlevel(); drawopts();
  }

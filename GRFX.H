@@ -7,4 +7,5 @@ void initdescmap(void);
 void changemovemode(enum movetypes mm);
 void changecurrmode(enum tagtypes tt);
 void changepigfile(char *palname);
+void changepogfile(char *pogfilename);
 void newpalette(unsigned char *palette);

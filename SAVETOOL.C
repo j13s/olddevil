@@ -40,7 +40,7 @@ struct wall *readwall(FILE *lf,int no)
  w->texture1&=0x3fff;
  if(fread(&w->corners[0],sizeof(struct corner),4,lf)!=4)
   { FREE(w); return NULL; }
- w->locked=0; w->ls=NULL; w->fl=NULL;
+ w->locked=0; w->ls=NULL; 
  if(init_test&2)
   {
   fprintf(errf,"Read wall: %hx %hx /",w->texture1,w->texture2);
@@ -706,7 +706,8 @@ int D1_REG_saveproducer(FILE *f,struct node *n,va_list args)
  }
  
 int saveflickeringlight(FILE *f,struct node *n,va_list args)
- { n->d.fl->cube=n->d.fl->c->no;
+ { my_assert(n->d.fl->ls!=NULL);
+   n->d.fl->cube=n->d.fl->ls->d.ls->cube->no;
    return (fwrite(n->d.fl,getsize(ds_flickeringlight,NULL),1,f)==1); }
    
 int savedata(FILE *f,struct node *d,va_list args)
@@ -726,4 +727,70 @@ int savelist(FILE *f,struct list *l,int (*saveproc)(FILE *,struct node *,
  return (n->next==NULL);
  }
 
- 
+int readasciicube(struct leveldata *ld,FILE *f)
+ {
+ int segnr,sidenr,i,j,t1,t2,uvl[6][4][3],child[6],slight;
+ struct point pnts[8];
+ struct cube *c;
+ struct node *n;
+ struct listpoint *lp;
+ if(fscanf(f," segment %d",&segnr)!=1 || segnr!=ld->cubes.size) return 0;
+ for(sidenr=0;sidenr<6;sidenr++)
+  {
+  if(fscanf(f," side %d",&i)!=1 || i!=sidenr) return 0;
+  if(fscanf(f," tmap_num %d tmap_num2 %d",&t1,&t2)!=2) return 0;
+  for(i=0;i<4;i++)
+   if(fscanf(f," uvls %d %d %d",&uvl[sidenr][i][0],
+    &uvl[sidenr][i][1],&uvl[sidenr][i][2])!=3)
+    return 0;
+  }
+ if(fscanf(f," children %d %d %d %d %d %d",&child[0],&child[1],&child[2],
+  &child[3],&child[4],&child[5])!=6) return 0;
+ for(i=0;i<8;i++)
+  if(fscanf(f," vms_vector %d %g %g %g",&j,&pnts[i].x[0],&pnts[i].x[1],
+   &pnts[i].x[2])!=4 || j!=i) return 0;
+ if(fscanf(f," static_light %d",&slight)!=1) return 0;
+ checkmem(c=MALLOC(sizeof(struct cube)));
+ for(i=0;i<8;i++)
+  {
+  for(n=ld->pts.head;n->next!=NULL;n=n->next)
+   if(n->d.p->x[0]==pnts[i].x[0] && n->d.p->x[1]==pnts[i].x[1] &&
+    n->d.p->x[2]==pnts[i].x[2]) break;
+  if(n->next==NULL)
+   {
+   checkmem(lp=MALLOC(sizeof(struct listpoint)));
+   checkmem(n=addnode(&ld->pts,-1,lp));
+   lp->tagged=NULL; initlist(&lp->c);
+   lp->p=pnts[i];
+   }
+  c->pts[i]=n->no;
+  }
+ for(i=0;i<6;i++)
+  {
+  c->nextcubes[i]=child[i];
+  c->doors[i]=0xff;
+  if(c->nextcubes[i]==0xffff)
+   {
+   checkmem(c->walls[i]=MALLOC(sizeof(struct wall)));
+   c->walls[i]->texture1=t1&0x3fff;
+   c->walls[i]->texture2=t2&0x3fff;
+   c->walls[i]->txt2_direction=(t2>>14)&0x3;
+   for(j=0;j<4;j++)
+    {
+    c->walls[i]->corners[j].x[0]=uvl[i][j][0];
+    c->walls[i]->corners[j].x[1]=uvl[i][j][1];
+    c->walls[i]->corners[j].light=uvl[i][j][2];
+    }
+   c->walls[i]->no=i; c->walls[i]->locked=0; c->walls[i]->ls=NULL; 
+   }
+  else c->walls[i]=NULL;
+  }
+ c->light=slight; c->high_light=0;
+ c->prodnum=-1; c->value=0; c->flags=0; c->type=cube_normal; 
+ for(j=0;j<8;j++) c->p[j]=NULL;
+ for(j=0;j<6;j++) 
+  { c->nc[j]=NULL; c->d[j]=NULL; c->tagged_walls[j]=NULL; }
+ c->cp=NULL;
+ checkmem(addnode(&ld->cubes,-1,c));
+ return 1;
+ }

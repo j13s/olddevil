@@ -54,11 +54,46 @@ void getcubecoords(struct cube *c,int wall,int pnt,struct point *naxis,
  normalize(&naxis[1]); 
  VECTOR(&naxis[2],&naxis[0],&naxis[1])
  }
- 
+
+void copy_lightsource(struct leveldata *insertinto,struct node **cubes,
+ int cubessize,struct lightsource *sls,int checktagged)
+ {
+ struct lightsource *ls;
+ struct ls_effect *lse;
+ struct node *sn,*nls;
+ checkmem(ls=MALLOC(sizeof(struct lightsource)));
+ my_assert(sls->cube!=NULL && sls->cube->no>=0 &&
+  sls->cube->no<cubessize && cubes[sls->cube->no]!=NULL);
+ ls->cube=cubes[sls->cube->no];
+ ls->w=sls->w; ls->fl=NULL;
+ my_assert(ls->cube!=NULL && ls->cube->d.c->walls[(int)ls->w]!=NULL);
+ initlist(&ls->effects);
+ checkmem(nls=addnode(&insertinto->lightsources,-1,ls));
+ ls->cube->d.c->walls[(int)ls->w]->ls=nls;
+ if(sls->fl!=NULL)
+  {
+  checkmem(ls->fl=MALLOC(sizeof(struct flickering_light)));
+  *ls->fl=*sls->fl; ls->fl->ls=nls; 
+  }
+ for(sn=sls->effects.head;sn->next!=NULL;sn=sn->next)
+  if(!checktagged || sn->d.lse->cube->d.c->tagged)
+   {
+   checkmem(lse=MALLOC(sizeof(struct ls_effect)));
+   *lse=*sn->d.lse;
+   my_assert(sn->d.lse->cube->no>=0 && sn->d.lse->cube->no<cubessize &&
+    cubes[sn->d.lse->cube->no]!=NULL);
+   lse->cube=cubes[sn->d.lse->cube->no];
+   checkmem(addnode(&ls->effects,-1,lse));
+   if(ls->fl!=NULL)
+    checkmem(addnode(&lse->cube->d.c->fl_lights,-1,ls->fl));
+   }
+ }
+
 /* copies all in l tagged cubes with doors and all in tl
    tagged things to a macro */
-struct leveldata *buildmacro(struct list *l,struct list *tl)
+struct leveldata *buildmacro(struct leveldata *ld)
  {
+ struct list *l=&ld->tagged[tt_cube],*tl=&ld->tagged[tt_thing];
  struct node *n,*tn,*sn,*nn;
  struct leveldata *m;
  struct cube *c;
@@ -67,8 +102,11 @@ struct leveldata *buildmacro(struct list *l,struct list *tl)
  struct door *d;
  struct sdoor *sd;
  struct thing *t;
- struct flickering_light *fl;
+ struct node **cubes;
  int i,j;
+ sortlist(&ld->cubes,0);
+ checkmem(cubes=MALLOC(sizeof(struct node *)*ld->cubes.size));
+ for(i=0;i<ld->cubes.size;i++) cubes[i]=NULL;
  checkmem(m=emptylevel());
  /* first make lists */
  for(tn=l->head;tn->next!=NULL;tn=tn->next)
@@ -76,6 +114,8 @@ struct leveldata *buildmacro(struct list *l,struct list *tl)
   n=tn->d.n;
   checkmem(c=MALLOC(sizeof(struct cube)));
   checkmem(nn=addnode(&m->cubes,n->no,c));
+  my_assert(n->no>=0 && n->no<ld->cubes.size);
+  cubes[n->no]=nn;
   *c=*n->d.c;
   c->tagged=NULL; initlist(&c->things);
   for(j=0;j<6;j++) c->tagged_walls[j]=NULL;
@@ -111,12 +151,7 @@ struct leveldata *buildmacro(struct list *l,struct list *tl)
     for(i=0;i<4;i++) 
      { c->walls[j]->p[i]=c->p[wallpts[j][i]];
        c->walls[j]->tagged[i]=NULL; }
-    c->walls[j]->ls=NULL; 
-    if(c->walls[j]->fl)
-     { checkmem(fl=MALLOC(sizeof(struct flickering_light)));
-       *fl=*c->walls[j]->fl->d.fl; fl->c=nn;
-       checkmem(c->walls[j]->fl=addnode(&m->flickeringlights,
-        c->walls[j]->fl->no,fl)); }
+    c->walls[j]->ls=NULL;
     }
    if(n->d.c->d[j]!=NULL)
     {
@@ -160,7 +195,11 @@ struct leveldata *buildmacro(struct list *l,struct list *tl)
          freenode(&m->sdoors,n->d.c->d[j]->d.d->sd,free);
         freenode(&m->doors,n->d.c->d[j],free); n->d.c->d[j]=NULL; 
         n->d.c->walls[j]->texture2=0; }
-     if(n->d.c->walls[j]==NULL) n->d.c->walls[j]=insertwall(n,j,-1,-1,-1);
+     if(n->d.c->walls[j]==NULL)
+      {
+      n->d.c->walls[j]=insertwall(n,j,-1,-1,-1);
+      for(i=0;i<4;i++) n->d.c->walls[j]->corners[i].light=view.illum_minvalue;
+      }
      n->d.c->nc[j]=NULL;
      }
     }
@@ -177,7 +216,7 @@ struct leveldata *buildmacro(struct list *l,struct list *tl)
  sortlist(&m->cubes,0); /* so we get no higher numbers than size */
  sortlist(&m->things,0); sortlist(&m->doors,0); sortlist(&m->pts,0); 
  sortlist(&m->sdoors,0); sortlist(&m->producers,0);
- sortlist(&m->flickeringlights,0);
+ sortlist(&m->lightsources,0);
  /* making the numbers */
  for(n=m->cubes.head;n->next!=NULL;n=n->next)
   {
@@ -206,8 +245,6 @@ struct leveldata *buildmacro(struct list *l,struct list *tl)
     n->d.sd->cubes[j]=n->d.sd->target[j]->no; 
    }
   }
- for(n=m->flickeringlights.head;n->next!=NULL;n=n->next)
-  n->d.fl->cube=n->d.fl->c->no;
  checkmem(m->fullname=MALLOC(strlen(TXT_DEFAULTMACRONAME)+1));
  sprintf(m->fullname,TXT_DEFAULTMACRONAME,view.b_levels->num_options);
  m->filename=NULL; 
@@ -215,12 +252,17 @@ struct leveldata *buildmacro(struct list *l,struct list *tl)
  m->exitwall=view.currwall;
  m->currwall=m->curredge=0;
  initlevel(m);
+ /* copy the lightsources */
+ for(tn=ld->lightsources.head;tn->next!=NULL;tn=tn->next)
+  if(tn->d.ls->cube->d.c->tagged!=NULL)
+   copy_lightsource(m,cubes,ld->cubes.size,tn->d.ls,1);
  m->levelsaved=0;
  for(i=0;i<3;i++)
   {
   m->e0.x[i]=view.e0.x[i];
   for(j=0;j<3;j++) m->e[j].x[i]=view.e[j].x[i];
   }
+ FREE(cubes);
  return m;
  }
  
@@ -233,12 +275,12 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
  struct thing *t;
  int i,j;
  struct cube *c;
- struct node *n;
+ struct node *n,**cubes;
  my_assert(m!=NULL && l!=NULL);
  if(view.pcurrcube->d.c->nc[view.currwall]!=NULL)
   { printmsg(TXT_CUBETAGGEDON); return 0; }
  if(view.pcurrwall==NULL) { printmsg(TXT_NOCURRSIDE); return 0; }
- if(m->exitcube==NULL || m->exitcube->d.c->walls[m->exitwall]==NULL)
+ if(m->exitcube==NULL || m->exitcube->d.c->nc[m->exitwall]!=NULL)
   { printmsg(TXT_NOCONNECTSIDE,m->fullname); return 0; }
  if(((l->cubes.size<=MAX_DESCENT_CUBES && 
   l->cubes.size+view.pcurrmacro->cubes.size>MAX_DESCENT_CUBES) || 
@@ -272,12 +314,12 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
     transformation matrix */
  sortlist(&m->cubes,0); sortlist(&m->pts,0); sortlist(&m->doors,0);
  sortlist(&m->things,0); sortlist(&m->producers,0); sortlist(&m->sdoors,0);
- sortlist(&m->flickeringlights,0);
+ sortlist(&m->lightsources,0);
  sortlist(&l->cubes,m->cubes.size); sortlist(&l->pts,m->pts.size);
  sortlist(&l->things,m->things.size); sortlist(&l->doors,m->doors.size);
  sortlist(&l->sdoors,m->sdoors.size); 
  sortlist(&l->producers,m->producers.size);
- sortlist(&l->flickeringlights,m->flickeringlights.size);
+ sortlist(&l->lightsources,m->lightsources.size);
  /* inserting the points */
  for(n=m->pts.head;n->next!=NULL;n=n->next)
   {
@@ -319,10 +361,6 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
  for(n=m->doors.head;n->next!=NULL;n=n->next) n->d.d->tagged=NULL;
  checkmem(copylist(&l->sdoors,&m->sdoors,sizeof(struct sdoor)));
  checkmem(copylist(&l->producers,&m->producers,sizeof(struct producer)));
- for(n=m->flickeringlights.head;n->next!=NULL;n=n->next)
-  n->d.fl->cube=n->d.fl->c->no;
- checkmem(copylist(&l->flickeringlights,&m->flickeringlights,
-  sizeof(struct flickering_light)));
  /* now insert all cubes */
  for(n=m->cubes.tail;n->prev!=NULL;n=n->prev)
   {
@@ -338,7 +376,7 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
    if(n->d.c->walls[j]!=NULL)
     {
     checkmem(c->walls[j]=MALLOC(sizeof(struct wall)));
-    *c->walls[j]=*n->d.c->walls[j]; c->walls[j]->fl=NULL;
+    *c->walls[j]=*n->d.c->walls[j]; c->walls[j]->ls=NULL;
     }
    }
   checkmem(addheadnode(&l->cubes,n->no,c));
@@ -366,8 +404,12 @@ int insertmacro(struct leveldata *m,int connectnow,float scaling)
   if(!initdoor(n))
    { n=n->next; freenode(&l->doors,n->prev,freedoor); }
   }
- for(n=l->flickeringlights.head;n->no<m->flickeringlights.size;n=n->next)
-  n->d.fl->cube=n->d.fl->c->no;
+ /* copy the lightsources */
+ checkmem(cubes=MALLOC(sizeof(struct node *)*m->cubes.size));
+ for(i=0,n=l->cubes.head;i<m->cubes.size;n=n->next,i++)
+  { my_assert(n->next!=NULL); cubes[i]=n; }
+ for(n=m->lightsources.head;n->next!=NULL;n=n->next)
+  copy_lightsource(l,cubes,m->cubes.size,n->d.ls,0);
  /* now connect the current cube with the cube 0 of the macro */
  if(connectnow)
   if(!connectcubes(NULL,view.pcurrcube,view.currwall,l->cubes.head,

@@ -2,6 +2,7 @@
     Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de) 
     Further info see .c-files. */
 
+void dec_makeedgecoplanar(int ec);
 void dec_enlargeshrink(int ec);
 void dec_setexit(int ec);
 void dec_calctxts(int ec);

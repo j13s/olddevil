@@ -213,3 +213,8 @@ void w_changewintitle(struct w_window *w,char *s)
 
 int w_inrefresh(struct w_window *w)
  { return ((struct wi_window *)w)->in_refresh; }
+
+void w_changetitlebartext(char const *s)
+ {
+ 
+ }

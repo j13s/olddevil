@@ -57,10 +57,11 @@ void dec_makemacro(int ec)
  untag(tt_cube,view.pcurrcube); /* currcube must be head */
  checkmem(view.pcurrcube->d.c->tagged=  
   addheadnode(&l->tagged[tt_cube],view.pcurrcube->no,view.pcurrcube));
- view.pcurrmacro=buildmacro(&l->tagged[tt_cube],&l->tagged[tt_thing]);
+ view.pcurrmacro=buildmacro(l);
  if(view.pcurrmacro!=NULL)
   { printmsg(TXT_MACROMADE); newlevelwin(view.pcurrmacro,1); }
  else waitmsg(TXT_CANTMAKEMACRO);
+ plotlevel();
  }
  
 void dec_savemacro(int ec) 
@@ -70,7 +71,7 @@ void dec_savemacro(int ec)
  if((fname=getfilename(&init.macropath,view.pcurrmacro->filename,
   init.levelext,TXT_SAVEMACRO,1))!=NULL)
   {
-  if(!savelevel(fname,view.pcurrmacro,0,1,init.d_ver))
+  if(!savelevel(fname,view.pcurrmacro,0,1,init.d_ver,0))
    waitmsg(TXT_CANTSAVEMACRO,view.pcurrmacro->fullname);
   else printmsg(TXT_MACROSAVED,view.pcurrmacro->fullname,fname);
   FREE(fname);
@@ -80,10 +81,12 @@ void dec_savemacro(int ec)
 void dec_loadmacro(int ec) 
  {
  char *fname;
- if((fname=getfilename(&init.macropath,NULL,init.levelext,TXT_LOADMACRO,0))!=
+ if((fname=getfilename(&init.macropath,NULL,
+  ec==ec_readdbbfile ? "BLK" : init.levelext,TXT_LOADMACRO,0))!=
   NULL)
   {
-  if((view.pcurrmacro=readlevel(fname))==NULL) 
+  if((view.pcurrmacro=ec==ec_readdbbfile ? readdbbfile(fname) :
+   readlevel(fname))==NULL) 
    waitmsg(TXT_CANTOPENMACRO,fname);
   else 
    { printmsg(TXT_MACROLOADED,view.pcurrmacro->fullname);
@@ -289,8 +292,8 @@ void dec_delete(int ec)
    else if(view.pcurrthing && l->things.size>1)
     { n=view.pcurrthing->prev->prev ? view.pcurrthing->prev : 
        view.pcurrthing->next;
-      tn=view.pcurrthing;
-      if(tn->d.t->cube)
+      tn=view.pcurrthing; untag(tt_thing,tn);
+      if(tn->d.t->nc)
        for(n2=tn->d.t->nc->d.c->things.head->next;n2!=NULL;n2=n2->next)
         if(n2->prev->d.t==tn->d.t) 
 	 freenode(&tn->d.t->nc->d.c->things,n2->prev,NULL);
@@ -429,6 +432,7 @@ void dec_makestdside(int ec)
    if(!l) { printmsg(TXT_NOLEVEL); return; }
    if(l->tagged[tt_wall].size<1) 
     { printmsg(TXT_NOTHINGTAGGED,init.bnames[tt_wall]); return; }
+   l->levelsaved=0;
    for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
     makesidestdshape(n->d.n->d.c,n->no%6); 
    plotlevel(); drawopt(in_pnt); drawopt(in_wall); drawopt(in_edge); }

@@ -28,3 +28,4 @@ int savepoint(FILE *f,struct node *p,va_list args);
 int readlist(FILE *f,struct list *l,void *(*readdata)(FILE *),int num);
 int savelist(FILE *f,struct list *l,
 int (*saveproc)(FILE *,struct node *,va_list args),int withnum,...);
+int readasciicube(struct leveldata *ld,FILE *f);

@@ -24,6 +24,7 @@
 #include "initio.h"
 #include "tag.h"
 #include "config.h"
+#include "plottxt.h"
 #include "version.h"
 #include "do_event.h"
 #include "askcfg.h"
@@ -59,7 +60,7 @@ void my_exit(void)
     fprintf(errf,"Severe bug. Trying to save current work...");
     savestatus(-1);
     fprintf(errf,"Done. Maybe you are a lucky guy.\n"); }
- ws_textmode(); 
+ ws_textmode(); releasetimer();
  printf("Severe bug. Please have a look in the devil.err and try to\n");
  printf("reconstruct how this happened and mail your bug report to the\n");
  printf("Descent Designer Mailing List (see http://www.warpcore.org)\n");

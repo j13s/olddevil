@@ -11,4 +11,10 @@ void psys_plotline(int o_x1,int o_y1,int o_x2,
 void psys_cleararea(int x,int y,int xsize,int ysize);
 void psys_copytoscreen(int x,int y,int xpos,int ypos,int xsize,int ysize);
 void psys_initdrawbuffer(void);
+void psys_inittimer(void);
+void psys_releasetimer(void);
+unsigned long psys_gettime(void);
+#define TIMER_DIGITS_POW_2 10
+
+
 

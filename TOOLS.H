@@ -9,7 +9,8 @@ unsigned char *getdata(enum datastructs it,struct node *n,...);
 int getno(struct infoitem *i,void *no,struct node *n,...);
 int setno(struct infoitem *i,void *no,struct node *n,...);
 size_t getsize(enum datastructs it,struct thing *t);
-void makesecretstart(struct leveldata *ld,struct node *secretwall);
+void makesecretstart(struct leveldata *ld,struct node *secretwall,
+ struct node *cube);
 struct thing *changething(struct thing *t,struct thing *clone,int newtype,
  struct cube *c);
 void set_illum_brightness(float new_value); 
@@ -33,6 +34,7 @@ void make_o_marker(struct point *offset,struct point *coords,float size,
 int checkpntcube(struct node *nc,struct point *p);
 struct node *findpntcube(struct list *cubelist,struct point *p);
 enum sdoortypes getsdoortype(struct sdoor *sd);
+void setsdoortargets(struct sdoor *sd);
 int qs_compstrs(const void *s1,const void *s2);
 int compstrs(const char *s1,const char *s2);
 int isbinary(int x);

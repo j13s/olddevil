@@ -153,11 +153,11 @@ void light_entered(struct w_button *b,int withtagged)
  my_assert(getno(i,&no,NULL)) 
  if(sscanf(b->d.str->str,"%g",&dno)==1)
   {
-  if(dno>100) dno=100; else if(dno<0) dno=0;
+  if(dno>200) dno=200; else if(dno<0) dno=0;
   no=(unsigned short)(dno*327.67);
   }
- if(no>32767) no=32767;
- sprintf(b->d.str->str,"%3.0f%%",no/327.67);
+ if(no>MAX_LIGHT) no=MAX_LIGHT;
+ sprintf(b->d.str->str,"%3.2f%%",no/327.67);
  if(withtagged<2) changedata(i,withtagged,&no);
  else tagfilter(i,withtagged-2,&no);
  }
@@ -184,6 +184,10 @@ void left_degrees_entered(struct w_button *b)
  { float_entered(b,MWT(b,0),M_PI/180.0,"%6.2f",0,-360.0,360.0); }
 void right_degrees_entered(struct w_button *b) 
  { float_entered(b,MWT(b,1),M_PI/180.0,"%6.2f",0,-360.0,360.0); }
+void left_dlight_entered(struct w_button *b) 
+ { float_entered(b,MWT(b,0),0.32,"%6.2f",1,0.0,100.0); }
+void right_dlight_entered(struct w_button *b) 
+ { float_entered(b,MWT(b,1),0.32,"%6.2f",1,0.0,100.0); }
 void left_float_entered(struct w_button *b) 
  { float_entered(b,MWT(b,0),1.0,"%6.2f",0,-1e10,1e10); }
 void right_float_entered(struct w_button *b) 
@@ -218,7 +222,7 @@ void fl_printmask(char *s,unsigned long mask)
  int i,j,k; 
  for(i=0;i<32;i++) s[i]=(mask&(1<<i))!=0 ? '1' : '0';
  /* check for patterns */
- for(i=1;i<=16;i++)
+ for(i=1;i<=16;i<<=1)
   {
   for(j=i,k=0;j<32;j++,k++)
    if(s[k]!=s[j]) break;
@@ -352,17 +356,20 @@ int makeoptbuttons(struct w_window *w,int num,struct infoitem *is,int y)
     checkmem(i->b=w_addstdbutton(w,w_b_tag,0,y,w_xwininsize(w),-1,i->txt,
      b_tagged,0));
     break;
-   case it_light: case it_cubelight: case it_sidelight: 
-    activate=i->type==it_light ? getno(i,&no,NULL) : 
+   case it_light: case it_cubelight: case it_sidelight: case it_deltalight:
+    activate=i->type==it_light||i->type==it_deltalight ? getno(i,&no,NULL) : 
      (i->type==it_cubelight ? getavgcubelight(&no) : getavgsidelight(&no));
     checkmem(b_string=MALLOC(sizeof(struct w_b_string)));
     b_string->max_length=8;
     checkmem(b_string->str=MALLOC(sizeof(char)*(b_string->max_length+1)));
-    sprintf(b_string->str,"%6.2f%%",no/327.67);
+    sprintf(b_string->str,"%6.2f%%",i->type==it_deltalight ? no/0.32 :
+     no/327.67);
     b_string->allowed_char=isfloat;
     b_string->l_char_entered=b_string->r_char_entered=NULL;
-    b_string->l_string_entered=left_light_entered;
-    b_string->r_string_entered=right_light_entered;
+    b_string->l_string_entered=i->type==it_deltalight ? left_dlight_entered :
+     left_light_entered;
+    b_string->r_string_entered=i->type==it_deltalight ? right_dlight_entered :
+     right_light_entered;
     checkmem(i->b=w_addstdbutton(w,w_b_string,0,y,w_xwininsize(w),-1,i->txt,
      b_string,0));
     break;
@@ -395,7 +402,7 @@ int makeoptbuttons(struct w_window *w,int num,struct infoitem *is,int y)
     checkmem(i->b=w_addstdbutton(w,w_b_string,0,y,w_xwininsize(w),-1,i->txt,
      b_string,0));
     break;
-   case it_degree: case it_float:
+   case it_degree: case it_float: 
     activate=getno(i,&dno,NULL); 
     checkmem(b_string=MALLOC(sizeof(struct w_b_string)));
     b_string->max_length=6;
@@ -612,6 +619,10 @@ void drawoptbuttons(struct infoitem *i)
   case it_int: 
    if((activate=getno(i,&sno,NULL))!=0) sprintf(i->b->d.str->str,"%ld",sno);
    break;
+  case it_deltalight: 
+   if((activate=getno(i,&no,NULL))!=0)
+    sprintf(i->b->d.str->str,"%6.2f%%",no/0.32);
+   break;
   case it_fl_mask: 
    if((activate=getno(i,&no,NULL))!=0)
     { i->b->d.str->offset=0; fl_printmask(i->b->d.str->str,no); }
@@ -707,7 +718,7 @@ void undrawoptbuttons(struct infoitem *i)
  
 void drawopt(enum infos what)
  {
- int i,act;
+ int i,j,k,act;
  my_assert(what<in_number);
  if(optionwins[what]!=NULL && !optionwins[what]->shrunk)
   {
@@ -722,9 +733,29 @@ void drawopt(enum infos what)
     case in_cube: 
      act=l->cubes.size; 
      if(act && view.pcurrcube) 
-      { i=view.pcurrcube->no;
-        b_optwins[what][3]->d.s->on=testtag(what,view.pcurrcube);
-        b_refreshtagno(what); }
+      {
+      i=view.pcurrcube->no;
+      b_optwins[what][3]->d.s->on=testtag(what,view.pcurrcube);
+      my_assert(view.b_levels->num_options>1);
+      b_optwins[what][6]->d.ls->num_options=view.b_levels->num_options-1;
+      if(b_optwins[what][6]->d.ls->selected>=
+       b_optwins[what][6]->d.ls->num_options)
+       { b_optwins[what][6]->d.ls->selected=0; view.pcurrmacro=NULL; }
+      checkmem(b_optwins[what][6]->d.ls->options=
+       REALLOC(b_optwins[what][6]->d.ls->options,
+	sizeof(char *)*(view.b_levels->num_options-1)));
+      b_optwins[what][6]->d.ls->options[0]=TXT_NONE;
+      b_optwins[what][6]->d.ls->selected=0;
+      for(j=1,k=1;j<view.b_levels->num_options;j++)
+       if(view.b_levels->selected!=j)
+	{
+	if(view.pcurrmacro &&
+	 strcmp(view.b_levels->options[j],view.pcurrmacro->fullname)==0)
+	 b_optwins[what][6]->d.ls->selected=k;
+	b_optwins[what][6]->d.ls->options[k++]=view.b_levels->options[j];
+	}
+      b_refreshtagno(what);
+      }
      break;
     case in_wall: 
      act=l->cubes.size; 
@@ -741,6 +772,9 @@ void drawopt(enum infos what)
        b_optwins[what][8]->d.s->on=
         view.pcurrcube->d.c->walls[view.currwall]!=NULL &&
         view.pcurrcube->d.c->walls[view.currwall]->locked;
+      if(b_optwins[what][9])
+       b_optwins[what][9]->d.s->on=
+	adjust_light_nc==view.pcurrcube && adjust_light_wall==view.currwall;
       }
      break;
     case in_edge:     
@@ -788,9 +822,17 @@ void drawopt(enum infos what)
    if((what==in_door || what==in_thing) && l!=NULL)
     if(b_optwins[what][4]) w_activatebutton(b_optwins[what][4]);
    if(what==in_wall && act)
+    {
     if(view.pcurrcube->d.c->walls[view.currwall]==NULL)
-     { if(b_optwins[what][6]) w_deactivatebutton(b_optwins[what][6]);
-     if(b_optwins[what][8]) w_deactivatebutton(b_optwins[what][8]); }
+     {
+     if(b_optwins[what][6]) w_deactivatebutton(b_optwins[what][6]);
+     if(b_optwins[what][8]) w_deactivatebutton(b_optwins[what][8]);
+     }
+    if(b_optwins[what][9])
+     if(view.pcurrcube->d.c->walls[view.currwall]==NULL ||
+      view.pcurrcube->d.c->walls[view.currwall]->ls==NULL)
+      w_deactivatebutton(b_optwins[what][9]);
+    }
    for(i=0;i<NUM_OPTBUTTONS;i++)
     if(b_optwins[what][i]) w_drawbutton(b_optwins[what][i]);
    }

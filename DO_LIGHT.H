@@ -6,4 +6,7 @@ void dec_mineillum(int ec);
 void dec_setcornerlight(int ec);
 void dec_setinnercubelight(int ec);
 void dec_setlsfile(int ec);
-void createturnoff(struct lightsource *ls);
+int read_lightsources(void);
+void end_adjustlight(struct wall *w,int save);
+void start_adjustlight(struct wall *w);
+

@@ -32,13 +32,14 @@ char *makepath(const char *path,const char *fname)
  return lp;
  }
 
-void makesecretstart(struct leveldata *ld,struct node *secretwall)
+void makesecretstart(struct leveldata *ld,struct node *secretwall,
+ struct node *cube)
  {
  int i;
  struct node *n;
  my_assert(secretwall!=NULL);
- my_assert(n=insertthing(secretwall->d.d->c,NULL));
- n->d.t=changething(n->d.t,NULL,tt1_secretstart,secretwall->d.d->c->d.c);
+ my_assert(n=insertthing(cube,NULL));
+ n->d.t=changething(n->d.t,NULL,tt1_secretstart,cube->d.c);
  for(i=0;i<9;i++) n->d.t->orientation[i]=ld->secret_orient[i];
  setthingpts(n->d.t); setthingcube(n->d.t); ld->secretstart=n; 
  }
@@ -413,8 +414,9 @@ unsigned char *vl_getdata(enum datastructs it,struct node *n,va_list args)
   case ds_flickeringlight:
    if(n==NULL) { n=view.pcurrcube; a=view.currwall; }
    else a=va_arg(args,int);
-   if(n!=NULL && n->d.c->walls[a]!=NULL && n->d.c->walls[a]->fl!=NULL)
-    data=n->d.c->walls[a]->fl->d.fl;
+   if(n!=NULL && n->d.c->walls[a]!=NULL && n->d.c->walls[a]->ls!=NULL &&
+    n->d.c->walls[a]->ls->d.ls->fl!=NULL)
+    data=n->d.c->walls[a]->ls->d.ls->fl;
    break;
   default:
    fprintf(errf,"getdata: value of info not known: %d (max %d)\n",it,
@@ -515,7 +517,25 @@ enum sdoortypes getsdoortype(struct sdoor *sd)
    return 0;
   }
  }
- 
+
+void setsdoortargets(struct sdoor *sd)
+ {
+ int i;
+ switch(getsdoortype(sd))
+  {
+  case sdtype_none: sd->num=0; break;
+  case sdtype_cube: case sdtype_side:
+   for(i=0;i<sd->num;i++) sd->cubes[i]=sd->target[i]->no;
+   break;
+  case sdtype_door:
+   for(i=0;i<sd->num;i++)
+    { sd->cubes[i]=sd->target[i]->d.d->c->no;
+    sd->walls[i]=sd->target[i]->d.d->wallnum; }
+   break;
+  }
+ for(i=sd->num;i<10;i++) { sd->cubes[i]=0xffff; sd->walls[i]=0; }
+ }
+
 void freecube(void *n)
  {
  struct cube *c=n;
@@ -545,7 +565,22 @@ void freelistpnt(void *n)
 void freelightsource(void *n)
  {
  struct lightsource *ls=n;
- freelist(&ls->effects,free);
+ struct node *nlse;
+ int w,c;
+ long overflow;
+ if(ls->fl) delflickeringlight(ls);
+ for(nlse=ls->effects.head->next;nlse!=NULL;nlse=nlse->next)
+  {
+  for(w=0;w<6;w++) if(nlse->prev->d.lse->cube->d.c->walls[w])
+   for(c=0;c<4;c++)
+    {
+    overflow=nlse->prev->d.lse->cube->d.c->walls[w]->corners[c].light-
+     nlse->prev->d.lse->add_light[w*4+c];
+    nlse->prev->d.lse->cube->d.c->walls[w]->corners[c].light=
+     overflow<view.illum_minvalue ? view.illum_minvalue : overflow;
+    }
+  freenode(&ls->effects,nlse->prev,free);
+  }
  FREE(ls);
  }
 

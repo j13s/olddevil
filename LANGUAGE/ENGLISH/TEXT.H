@@ -20,6 +20,10 @@
  "Descent will use the start with the lower number."
 #define TXT_NOSECRETDOORFORSTART "No secret exit for secret start."
 /* readlvl.c */
+#define TXT_LEAVEADJLIGHTMODE "Please turn out adjust-light-mode for\n"\
+ "cube %d side %d before you save the level."
+#define TXT_WRONGBLKHEAD "File %s has not the correct header:\n"\
+ "\"%s\"!=\"DMB_BLOCK_FILE\""
 #define TXT_NOCUBEFORFL "Can't find cube %d for flickering light %d."
 #define TXT_CORRINWORK "The wizard is active in this level.\n"\
  "Can't close the level, you must first deactivate the wizard."
@@ -89,6 +93,8 @@
 #define TXT_ERROAENODOOR "No door to open-at-end in cube %d,%d."
 #define TXT_LEVELREAD "Level %s\nfrom file %s is read."
 /* grfx.h */
+#define TXT_DEFAULTPOGFILE "Use the default textures?"
+#define TXT_POGFILE "Change pogfile"
 #define TXT_INFO "Info"
 #define TXT_MOVEYOU "Move you"
 #define TXT_MOVEOBJ "Move object"
@@ -115,6 +121,8 @@
 #define TXT_NOSWITCHABLEWALL "You can only switch walls with two sides."
 #define TXT_WALLTYPENEEDSNB "This walltype needs a connected side."
 /* do_event.c */
+#define TXT_CLOSETXTWIN "Please close the texture window\n"\
+ "before you save/load your window positions."
 #define TXT_SAVEWINPOS "Save window pos"
 #define TXT_LOADWINPOS "Load window pos"
 #define TXT_CANTSAVEWINPOS "Can't save window positions to file %s"
@@ -161,7 +169,7 @@
 #define TXT_NOMACROHEAD "Can't read group head for group %s."
 #define TXT_NOMACROFILE "%s is no old group."
 #define TXT_ERRREADINGMACRO "Error reading group %s."
-#define TXT_NOCONNECTSIDE "In group %s is no connect side defined."
+#define TXT_NOCONNECTSIDE "No connection side is defined in group %s."
 /* insert.c */
 #define TXT_CONNCUBEITSELF "Can't connect cube %d with itself."
 #define TXT_CONNWALLINWAY "Can't connect side %d,%d with side %d,%d.\n"\
@@ -254,6 +262,10 @@
  "%d tagged objects?"
 #define TXT_CANTINSERTTHING "Can't insert thing???"
 /* do_opts.c */
+#define TXT_DOUBLEADJLIGHT "Another light (cube %d, side %d) is modified\n"\
+ "in the moment."
+#define TXT_CANCELADJLIGHT "Do you really don't want to save the lights?"
+#define TXT_ADJUSTLIGHT "Adjust light"
 #define TXT_LIGHTEFFECTS "Light from side"
 #define TXT_DOORNOTDEFWALL "Can't use a wall as a default side."
 #define TXT_EMPTYNOTDEFWALL "Can't use a empty side as a default side."
@@ -264,7 +276,7 @@
 #define TXT_INSERT "Insert"
 #define TXT_DELETE "Delete"
 #define TXT_NONE "None"
-#define TXT_MACRO "Insert:"
+#define TXT_MACRO "Group:"
 #define TXT_DEFAULT "Default"
 #define TXT_LOCKED "Locked"
 /* askcfg.c */
@@ -439,3 +451,10 @@
 #define TXT_READINGPOGFILE "Reading additional textures..."
 #define TXT_LOOKINGFORPOGFILE "Searching for pogfile %s..."
 #define TXT_POGERRORINHEADER "Can't read header from pogfile."
+/* plottxt.h */
+#define TXT_FRAMERATETOOSMALL \
+ "Warning: Your computer needs %g s to draw the level.\n"\
+ "One of the displayed lightsources (cube %d side %d) changes\n"\
+ "the light each %g s. Therefore the flickering of this lightsource\n"\
+ "will not be displayed correctly. I suggest you to stretch the timescale\n"\
+ "with the factor %g to avoid this problem. Should I do this now?"

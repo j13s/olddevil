@@ -33,6 +33,7 @@ enum evcodes {
  ec_reinitgrfx,ec_changeview,ec_render_0,ec_render_1,ec_render_2,
  ec_render_3,ec_tagflatsides,ec_usepnttag,ec_nextedge,
  ec_prevedge,ec_edgemode,ec_makestdside,ec_mineillumsmooth,
- ec_num_of_codes };
+ ec_resetsideedge,ec_readdbbfile,ec_savewithfulllightinfo,
+ ec_makeedgecoplanar,ec_num_of_codes };
 extern void (*do_event[ec_num_of_codes])(int ec);
 

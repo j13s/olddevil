@@ -23,8 +23,11 @@
 #include "insert.h"
 #include "plot.h"
 #include "click.h"
+#include "do_opts.h"
 #include "options.h"
 #include "tag.h"
+#include "grfx.h"
+#include "plottxt.h"
 #include "do_move.h"
 #include "do_mod.h"
 #include "do_light.h"
@@ -307,7 +310,61 @@ int D1_REG_readlvldata(FILE *lf,struct leveldata *ld,int version)
  if(init.d_ver>=d2_10_sw) convert_textures(ld);
  return 1; 
  }
- 
+
+void makelightsources(struct leveldata *ld,struct turnoff *to,int tonum,
+ struct changedlight *cl,int clnum,struct flickering_light *fl,int flnum)
+ {
+ int nto,ncl,i;
+ struct lightsource *ls;
+ struct ls_effect *lse,**cubelse;
+ struct flickering_light *nfl;
+ struct node **cubes,*n;
+ if(!to || !cl) return;
+ checkmem(cubelse=MALLOC(sizeof(struct ls_effect *)*ld->cubes.size));
+ checkmem(cubes=MALLOC(sizeof(struct node *)*ld->cubes.size));
+ for(n=ld->cubes.head,i=0;n->next!=NULL && i<ld->cubes.size;n=n->next,i++)
+  { cubes[i]=n; cubelse[i]=NULL; }
+ for(nto=0;nto<tonum;nto++)
+  {
+  if(to[nto].cube>=ld->cubes.size || to[nto].side>=6 ||
+   cubes[to[nto].cube]->d.c->walls[to[nto].side]==NULL) continue;
+  checkmem(ls=MALLOC(sizeof(struct lightsource)));
+  ls->cube=cubes[to[nto].cube];
+  ls->w=to[nto].side; initlist(&ls->effects); ls->fl=NULL;
+  checkmem(ls->cube->d.c->walls[(int)ls->w]->ls=addnode(&ld->lightsources,-1,
+   ls));
+  for(ncl=to[nto].offset;ncl<to[nto].offset+to[nto].num_changed && ncl<clnum;
+      ncl++)
+   {
+   if(cl[ncl].cube>=ld->cubes.size || cl[ncl].side>=6) continue;
+   if((lse=cubelse[cl[ncl].cube])==NULL)
+    {
+    checkmem(cubelse[cl[ncl].cube]=lse=MALLOC(sizeof(struct ls_effect)));
+    checkmem(addnode(&ls->effects,-1,lse));
+    lse->cube=cubes[cl[ncl].cube];
+    memset(lse->smoothed,0,sizeof(unsigned char)*24);
+    memset(lse->add_light,0,sizeof(unsigned char)*24);
+    }
+   for(i=0;i<4;i++) lse->add_light[cl[ncl].side*4+i]=cl[ncl].sub[i]<<10;
+   }
+  for(ncl=to[nto].offset;ncl<to[nto].offset+to[nto].num_changed && ncl<clnum;
+      ncl++)
+   if(cl[ncl].cube<ld->cubes.size) cubelse[cl[ncl].cube]=NULL;
+  }
+ if(fl!=NULL) for(i=0;i<flnum;i++)
+  {
+  if(fl[i].cube<0 || fl[i].cube>=ld->cubes.size ||
+   cubes[fl[i].cube]->d.c->walls[fl[i].wall]==NULL ||
+   cubes[fl[i].cube]->d.c->walls[fl[i].wall]->ls==NULL) continue;
+  checkmem(cubes[fl[i].cube]->d.c->walls[fl[i].wall]->ls->d.ls->fl=nfl=
+   MALLOC(sizeof(struct flickering_light)));
+  *nfl=fl[i];
+  nfl->ls=cubes[fl[i].cube]->d.c->walls[fl[i].wall]->ls;
+  nfl->calculated=0; nfl->state=1;
+  }
+ FREE(cubes); FREE(cubelse);
+ }
+
 int D2_REG_readlvldata(FILE *lf,struct leveldata *ld,int version)
  {
  int i,j;
@@ -317,6 +374,9 @@ int D2_REG_readlvldata(FILE *lf,struct leveldata *ld,int version)
  struct D2_minedata md;
  struct D2_gamedata gd;
  char buffer[31];
+ struct turnoff *turnoffs,*to;
+ struct changedlight *changedlights,*cl;
+ struct flickering_light *fl_lights=NULL,*fl;
  if(fread(&lfh.minedata_offset,sizeof(unsigned long),2,lf)!=2)
   { fclose(lf); return 0; }
  if(version==LEVVER_D2_12_REG)
@@ -335,13 +395,23 @@ int D2_REG_readlvldata(FILE *lf,struct leveldata *ld,int version)
   if(fread(&lfh.flickering_lights,sizeof(unsigned long),1,lf)!=1)
    { fclose(lf); return 0; }
   if(lfh.flickering_lights>0)
-   if(!readlist(lf,&ld->flickeringlights,readflickeringlight,
-    lfh.flickering_lights)) { fclose(lf); return 0; }
+   {
+   checkmem(fl_lights=MALLOC(sizeof(struct flickering_light)*
+    lfh.flickering_lights));
+   for(j=0;j<lfh.flickering_lights;j++)
+    if((fl=readflickeringlight(lf))!=NULL) { fl_lights[j]=*fl; FREE(fl); }
+    else { FREE(fl_lights); fclose(lf); return 0; }
+   }
   }
  else lfh.flickering_lights=0;
  if(fread(&lfh.secret_cubenum,sizeof(unsigned long),10,lf)!=10)
   { fclose(lf); return 0; }
- for(j=0;j<9;j++) ld->secret_orient[j]=lfh.secret_orient[j];
+ for(j=0;j<3;j++)
+  {
+  ld->secret_orient[j]=lfh.secret_orient[j];
+  ld->secret_orient[j+3]=lfh.secret_orient[j+6];
+  ld->secret_orient[j+6]=lfh.secret_orient[j+3];
+  }
  if(fseek(lf,lfh.minedata_offset,SEEK_SET))
   { fclose(lf); return 0; }
  if(fread(&md,sizeof(struct D2_minedata),1,lf)!=1)
@@ -395,12 +465,31 @@ int D2_REG_readlvldata(FILE *lf,struct leveldata *ld,int version)
  if(!readlist(lf,&ld->producers,D2_REG_readproducer,gd.numproducer)) 
   { killallproducers(ld); return 1; }
  fseek(lf,gd.posturnoff,SEEK_SET);
- if(!readlist(lf,&ld->turnoff,readturnoff,gd.numturnoff))
-  { freelist(&ld->turnoff,free); return 1; }
- if(!readlist(lf,&ld->changedlights,readchangedlight,gd.numchangedlight))
-  { freelist(&ld->changedlights,free); freelist(&ld->turnoff,free);return 1; }
+ if(gd.numturnoff>0)
+  {
+  checkmem(turnoffs=MALLOC(sizeof(struct turnoff)*gd.numturnoff));
+  for(j=0;j<gd.numturnoff;j++)
+   if((to=readturnoff(lf))!=NULL) { turnoffs[j]=*to; FREE(to); }
+   else { FREE(turnoffs); return 1; }
+  }
+ else turnoffs=NULL;
+ if(gd.numchangedlight>0)
+  {
+  checkmem(changedlights=MALLOC(sizeof(struct changedlight)*
+   gd.numchangedlight));
+  for(j=0;j<gd.numchangedlight;j++)
+   if((cl=readchangedlight(lf))!=NULL) { changedlights[j]=*cl; FREE(cl); }
+   else { FREE(changedlights); FREE(turnoffs); return 1; }
+  }
+ else changedlights=NULL;
  fclose(lf);
- ld->levelillum=(ld->turnoff.size>0);
+ ld->levelillum=(gd.numturnoff>0);
+ if(turnoffs!=NULL)
+  makelightsources(ld,turnoffs,gd.numturnoff,changedlights,
+   gd.numchangedlight,fl_lights,lfh.flickering_lights);
+ if(turnoffs!=NULL) FREE(turnoffs);
+ if(changedlights!=NULL) FREE(changedlights);
+ if(fl_lights!=NULL) FREE(fl_lights);
  return 1; 
  }
  
@@ -433,9 +522,36 @@ int readlvldata(char *filename,struct leveldata *ld)
  return 0;
  }
  
+int readasciilevel(char *filename,struct leveldata *ld)
+ {
+ FILE *lf;
+ char buffer[256];
+ char const *palname;
+ struct node *n;
+ int i;
+ if(filename==NULL || ld==NULL) return 0;
+ if(ld->filename) FREE(ld->filename);
+ ld->filename=NULL;
+ checkmem(ld->fullname=MALLOC(strlen("ASCII level")+1));
+ strcpy(ld->fullname,"ASCII level");
+ palname=init.d_ver>=d2_10_sw ? "groupa.256" : "descent.256";
+ checkmem(ld->pigname=MALLOC(strlen(palname)+1));
+ strcpy(ld->pigname,palname);
+ if((lf=fopen(filename,"r"))==NULL) return 0;
+ if(fscanf(lf," %255s",buffer)==NULL || strcmp(buffer,"DMB_BLOCK_FILE")!=0)
+  { waitmsg(TXT_WRONGBLKHEAD,filename,buffer); return 0; }
+ while(readasciicube(ld,lf));
+ fclose(lf);
+ for(n=ld->cubes.head;n->next!=NULL;n=n->next)
+  for(i=0;i<6;i++)
+   if(n->d.c->nextcubes[i]>ld->cubes.size) n->d.c->nextcubes[i]=0xffff;
+ initlevel(ld);
+ return 1;
+ }
+ 
 int initlevel(struct leveldata *ld)
  {
- struct node *n;
+ struct node *n,*n2;
  int i,found_start;
  struct thing *t;
  struct leveldata *oldl;
@@ -462,24 +578,14 @@ int initlevel(struct leveldata *ld)
    if(ld->secretcube==NULL) /* D1 level */
     ld->secretcube=n->d.sd->d->d.d->c;
    my_assert(ld->secretcube!=NULL);
-   makesecretstart(ld,n->d.sd->d);
-   }
-  for(n=ld->flickeringlights.head->next;n!=NULL;n=n->next)
-   {
-   if((n->prev->d.fl->c=findnode(&ld->cubes,n->prev->d.fl->cube))==NULL)
-    {
-    waitmsg(TXT_NOCUBEFORFL,(int)n->prev->d.fl->cube,
-     n->prev->no);
-    continue;
-    }
-   if(n->prev->d.fl->c->d.c->walls[n->prev->d.fl->wall]==NULL)
-    { /* waitmsg(TXT_NOTXTFORFL,n->no); 
-      some original levels have this... */
-      freenode(&ld->flickeringlights,n->prev,free);
-      continue; }
-   n->prev->d.fl->c->d.c->walls[n->prev->d.fl->wall]->fl=n->prev;
+   makesecretstart(ld,n->d.sd->d,ld->secretcube);
    }
   }
+ if(init.d_ver>=d2_11_reg)
+  for(n=ld->lightsources.head;n->next!=NULL;n=n->next)
+   if(n->d.ls->fl!=NULL)
+    for(n2=n->d.ls->effects.head;n2->next!=NULL;n2=n2->next)
+     checkmem(addnode(&n2->d.lse->cube->d.c->fl_lights,-1,n->d.ls->fl));
  for(i=0;i<(ld->edoors ? ld->edoors->num : 0);i++)
   {
   if((n=findnode(&ld->cubes,ld->edoors->cubes[i]))==NULL)
@@ -548,6 +654,7 @@ void in_changecurrentlevel(struct leveldata *ld)
   l->pcurrpnt=view.pcurrpnt;
   l->curredge=view.curredge; l->currwall=view.currwall;
   l->e0=view.e0; for(i=0;i<3;i++) l->e[i]=view.e[i];
+  render_resetlights(l);
   }
  if(ld!=NULL)
   {
@@ -576,7 +683,7 @@ void b_plotlevel(struct w_window *w,void *d)
  in_changecurrentlevel(ld);
  }
 void b_closelevel(struct w_window *w,void *d)
- { closelevel(d,1); }
+ { closelevel(d,1); plotlevel(); }
 void b_clicklevel(struct w_window *w,void *d,struct w_event *we)
  { 
  struct leveldata *ld=d;
@@ -598,8 +705,8 @@ struct leveldata *emptylevel(void)
  initlist(&ld->cubes); initlist(&ld->things);
  initlist(&ld->doors); initlist(&ld->pts);
  initlist(&ld->sdoors); initlist(&ld->producers);
- initlist(&ld->lines); initlist(&ld->turnoff); initlist(&ld->changedlights);
- initlist(&ld->lightsources); initlist(&ld->flickeringlights);
+ initlist(&ld->lines); 
+ initlist(&ld->lightsources);
  checkmem(ld->edoors=MALLOC(sizeof(struct edoor)));
  ld->edoors->num=0;
  for(i=0;i<10;i++) { ld->edoors->cubes[i]=ld->edoors->walls[i]=0; }
@@ -608,7 +715,7 @@ struct leveldata *emptylevel(void)
   { checkmem(ld->pigname=MALLOC(strlen(l->pigname)+1));
     strcpy(ld->pigname,l->pigname); }
  else ld->pigname=NULL;
- ld->pogfile=NULL; ld->w=NULL; ld->exitcube=NULL; ld->exitwall=0;
+ ld->w=NULL; ld->exitcube=NULL; ld->exitwall=0;
  ld->reactor_time=0x1e; ld->reactor_strength=0xffffffff;
  ld->levelsaved=1; ld->levelillum=0; ld->secretcube=ld->secretstart=NULL; 
  for(i=0;i<9;i++) ld->secret_orient[i]=stdorientation[i];
@@ -630,28 +737,42 @@ struct leveldata *emptylevel(void)
     ld->saved_pos[i].max_vis=view.maxvisibility; }
  return ld;
  }
- 
-struct w_window plot_win={ 0,0,0,0,0,0,0,0,NULL,0,NULL,
- wb_drag|wb_size|wb_close|wb_shrink,wr_routine,NULL,b_plotlevel,
- b_closelevel,b_clicklevel };
+
+struct leveldata *readdbbfile(char *filename)
+ {
+ struct leveldata *ld;
+ checkmem(ld=emptylevel());
+ if(!readasciilevel(filename,ld) || !initlevel(ld)) 
+  { closelevel(ld,0); return NULL; }
+ return ld;
+ }
+
 struct leveldata *readlevel(char *filename)
  {
  struct leveldata *ld;
- char *pogfilename;
+ char *pogfilename,*realfilename;
  checkmem(ld=emptylevel());
  if(!readlvldata(filename,ld) || !initlevel(ld)) 
   { closelevel(ld,0); return NULL; }
- if(init.d_ver>=d2_12_reg)
+ if(init.d_ver>=d2_12_reg && !pig.pogfile)
   {
-  checkmem(pogfilename=MALLOC(strlen(filename)+1));
-  strcpy(pogfilename,filename);
+  realfilename=strrchr(filename,'/');
+  if(!realfilename) realfilename=filename;
+  checkmem(pogfilename=MALLOC(strlen(init.pogpath)+strlen(realfilename)+2));
+  strcpy(pogfilename,init.pogpath);
+  strcat(pogfilename,"/");
+  strcat(pogfilename,realfilename);
   strcpy(&pogfilename[strlen(pogfilename)-3],"POG");
   printmsg(TXT_LOOKINGFORPOGFILE,pogfilename);
-  ld->pogfile=fopen(pogfilename,"rb"); FREE(pogfilename);
+  changepogfile(pogfilename); FREE(pogfilename);
   }
- else ld->pogfile=NULL;
  return ld;
  }
+
+struct w_window plot_win={ 0,0,0,0,0,0,0,0,NULL,0,NULL,
+ wb_drag|wb_size|wb_close|wb_shrink,wr_routine,NULL,b_plotlevel,
+ b_closelevel,b_clicklevel };
+
 void newlevelwin(struct leveldata *ld,int shrunk)
  {
  char buffer[256];
@@ -668,8 +789,6 @@ void newlevelwin(struct leveldata *ld,int shrunk)
  view.b_levels->options[view.b_levels->num_options-1]=ld->fullname;
  qsort(&view.b_levels->options[1],view.b_levels->num_options-1,sizeof(char *),
   qs_compstrs);
- view.b_macros->options=view.b_levels->options;
- view.b_macros->num_options=view.b_levels->num_options;
  plot_win.title=buffer; plot_win.data=ld;
  plot_win.maxxsize=plot_win.maxysize=-1;
  if(ld->whichdisplay)
@@ -711,6 +830,7 @@ void changecurrentlevel(struct leveldata *ld)
  view.drawwhat|=DW_ALLLINES;
  in_changecurrentlevel(ld);
  w_curwin(ld==NULL ? NULL : ld->w);
+ if(ld==view.pcurrmacro) view.pcurrmacro=NULL;
  if(ld!=NULL)
   {
   w_wintofront(ld->w);
@@ -722,8 +842,7 @@ void changecurrentlevel(struct leveldata *ld)
  w_refreshstart(view.movewindow);
  w_drawbutton(view.levelbutton);
  w_refreshend(view.movewindow);
- newpigfile(ld!=NULL ? ld->pigname : pig.default_pigname,
-  ld!=NULL ? ld->pogfile : NULL);
+ newpigfile(ld!=NULL ? ld->pigname : pig.default_pigname,pig.pogfile);
  drawopts(); 
  }
  
@@ -739,7 +858,9 @@ int closelevel(struct leveldata *ld,int warn)
   return 0;
  if(view.pdeflevel && view.pdeflevel->d.lev==ld) 
   { view.pdeflevel=NULL; view.pdefcube=NULL; view.defwall=0; }
- if(ld->fullname!=NULL)
+ if(view.pcurrmacro==ld)
+  { view.b_macros->selected=0; view.pcurrmacro=NULL; }
+ if(ld->fullname!=NULL && ld->w!=NULL)
   {
   for(i=1;i<view.b_levels->num_options;i++)
    if(!strcmp(view.b_levels->options[i],ld->fullname)) break;
@@ -749,13 +870,11 @@ int closelevel(struct leveldata *ld,int warn)
    view.b_levels->options[i-1]=view.b_levels->options[i];
   checkmem(view.b_levels->options=REALLOC(view.b_levels->options,
    sizeof(char *)*(--view.b_levels->num_options+1)));
-  view.b_macros->options=view.b_levels->options;
-  view.b_macros->num_options=view.b_levels->num_options;
   if(ld==l) changecurrentlevel(NULL);
   if(ld->n) killnode(&view.levels,ld->n);
   }
- if(ld->pogfile) fclose(ld->pogfile);
  for(i=0;i<tt_number;i++) freelist(&ld->tagged[i],free);
+ freelist(&ld->lightsources,freelightsource);
  freelist(&ld->lines,free);
  freelist(&ld->pts,free);
  freelist(&ld->cubes,freecube);
@@ -764,11 +883,16 @@ int closelevel(struct leveldata *ld,int warn)
  freelist(&ld->sdoors,free);
  freelist(&ld->producers,free);
  FREE(ld->edoors); FREE(ld->fullname); FREE(ld->filename); FREE(ld->pigname);
- w_closewindow(ld->w); ld->w=NULL; drawopt(in_cube);
- /* clear the complete texture cache.  */
- for(i=0;i<pig.num_pigtxts;i++)
-  if(pig.pig_txts[i].data!=NULL) 
-   { FREE(pig.pig_txts[i].data); pig.pig_txts[i].data=NULL; }
+ if(ld->w)
+  {
+  w_closewindow(ld->w);
+  ld->w=NULL;
+  drawopt(in_cube);
+  /* clear the complete texture cache.  */
+  for(i=0;i<pig.num_pigtxts;i++)
+   if(pig.pig_txts[i].data!=NULL) 
+    { FREE(pig.pig_txts[i].data); pig.pig_txts[i].data=NULL; }
+  }
  return 1;
  }
  
@@ -809,7 +933,7 @@ int makedoors(struct leveldata *ld)
     default: my_assert(0);
     }
   else ok=0;
-  if(!ok) { FREE(n->prev->d.sd); killnode(&ld->sdoors,n->prev); }
+  if(!ok) deletesdoor(n->prev);
   }
  for(n=ld->producers.head;n->next!=NULL;n=n->next)
   n->d.cp->cubenum=n->d.cp->c->no; 
@@ -817,7 +941,8 @@ int makedoors(struct leveldata *ld)
  }
  
 /* make level ready for save. if this is not possible, return 0 */
-int checklvl(struct leveldata *ld,int testlevel)
+int checklvl(struct leveldata *ld,int testlevel,struct list *turnoffs,
+ struct list *changedlights)
  {
  struct node *n,*nsd,*c,*starts[12],*keys[3],*flags[2],*reactor=NULL;
  void *data;
@@ -825,8 +950,7 @@ int checklvl(struct leveldata *ld,int testlevel)
  sortlist(&ld->cubes,0); /* so we get no higher numbers than size */
  sortlist(&ld->things,0); sortlist(&ld->doors,0);
  sortlist(&ld->pts,0); sortlist(&ld->producers,0); sortlist(&ld->sdoors,0);
- sortlist(&ld->turnoff,0); sortlist(&ld->changedlights,0);
- sortlist(&ld->flickeringlights,0);
+ sortlist(&ld->lightsources,0);
  for(n=ld->cubes.head,i=0,no=0;n->next!=NULL;n=n->next) 
   { if(n->d.c->cp!=NULL) 
      { n->d.c->value=no++;
@@ -838,6 +962,11 @@ int checklvl(struct leveldata *ld,int testlevel)
        n->d.c->cp->next->prev=n->d.c->cp; }
     if(n->d.c->type!=0) i++; }
  if(testlevel<0) return 1;
+ if(adjust_light_nc!=NULL)
+  {
+  printmsg(TXT_LEAVEADJLIGHTMODE,adjust_light_nc->no,adjust_light_wall);
+  return 0;
+  }
  if(ld->cubes.size>MAX_DESCENT_CUBES && !yesnomsg(TXT_TOOMANYCUBES,
   ld->cubes.size,MAX_DESCENT_CUBES)) return 0;
  if(ld->pts.size>MAX_DESCENT_VERTICES && !yesnomsg(TXT_TOOMANYPTS,
@@ -854,11 +983,11 @@ int checklvl(struct leveldata *ld,int testlevel)
   return 0;
  if(init.d_ver>=d2_10_sw)
   {
-  if(ld->turnoff.size>MAX_DESCENT_TURNOFFS && !yesnomsg(TXT_TOOMANYTURNOFFS,
-   ld->turnoff.size,MAX_DESCENT_TURNOFFS))
+  if(turnoffs->size>MAX_DESCENT_TURNOFFS && !yesnomsg(TXT_TOOMANYTURNOFFS,
+   turnoffs->size,MAX_DESCENT_TURNOFFS))
    return 0;
-  if(ld->changedlights.size>MAX_DESCENT_CHANGEDLIGHTS &&
-   !yesnomsg(TXT_TOOMANYCHANGEDLIGHTS,ld->changedlights.size,
+  if(changedlights->size>MAX_DESCENT_CHANGEDLIGHTS &&
+   !yesnomsg(TXT_TOOMANYCHANGEDLIGHTS,changedlights->size,
    MAX_DESCENT_CHANGEDLIGHTS))
    return 0;
   }
@@ -966,17 +1095,6 @@ int checklvl(struct leveldata *ld,int testlevel)
   return 0;
  if(n->next==NULL && secret>=0 && !yesnomsg(TXT_NOSECRETEXIT,secret))
   return 0;
- /* check if this level should be new illuminated */
- if(ld->turnoff.size>0 && !ld->levelillum)
-  if(yesnomsg(TXT_NEWILLUM)) 
-   { tagall(tt_cube); dec_mineillum(0); }
-  else 
-   { 
-   freelist(&ld->turnoff,free); freelist(&ld->changedlights,free);
-   if(init.d_ver>=d2_10_sw)
-    for(n=l->lightsources.head;n->next!=NULL;n=n->next)
-     createturnoff(n->d.ls);
-   }
  /* empty pnts shouldn't exist but if reading level is not completed... */
  for(n=ld->pts.head->next;n!=NULL;n=n->next) /* search for not-used pnts. */
   if(n->prev->d.lp->c.size==0) 
@@ -1054,7 +1172,64 @@ int D1_REG_savelevel(FILE *f,struct leveldata *ld)
 
 #include "pofdata.h" 
 
-int D2_REG_savelevel(FILE *f,struct leveldata *ld)
+void createturnoff(struct leveldata *ld,struct lightsource *ls,
+ struct list *turnoffs,struct list *changedlights,int notall)
+ {
+ struct turnoff *to;
+ struct changedlight *lc;
+ struct node *n;
+ int i,j;
+ i=ls->cube->d.c->walls[(int)ls->w]->texture1;
+ j=ls->cube->d.c->walls[(int)ls->w]->texture2;
+ if(notall && (i<0 || i>=pig.num_rdltxts || j<0 || j>=pig.num_rdltxts || 
+  (pig.rdl_txts[i].shoot_out_txt<0 && pig.rdl_txts[j].shoot_out_txt<0
+   && pig.rdl_txts[i].anim_seq<0 && pig.rdl_txts[j].anim_seq<0)))
+  {
+  /* is the light a flickering light ? */
+  j=ls->fl!=NULL ? 1 : 0;
+  /* now check if the light is turned out by a switch */
+  for(n=ld->sdoors.head,j=0;n->next!=NULL && !j;n=n->next)
+   if(n->d.sd->type==switch_turnofflight || n->d.sd->type==switch_turnonlight)
+    for(i=0;i<n->d.sd->num && !j;i++)
+     if(n->d.sd->target[i]==ls->cube && (int)n->d.sd->walls[i]==ls->w) j=1;
+  if(!j) return;
+  }
+ checkmem(to=MALLOC(sizeof(struct turnoff)));
+ to->cube=ls->cube->no; to->side=ls->w;
+ sortlist(&ls->effects,0);
+ to->offset=changedlights->size;
+ checkmem(addnode(turnoffs,-1,to));
+ for(n=ls->effects.head;n->next!=NULL;n=n->next)
+  {
+  for(i=0;i<6;i++)
+   if((n->d.lse->add_light[i*4]>>10)+(n->d.lse->add_light[i*4+1]>>10)+
+    (n->d.lse->add_light[i*4+2]>>10)+(n->d.lse->add_light[i*4+3]>>10)>0)
+    {
+    checkmem(lc=MALLOC(sizeof(struct changedlight)));
+    lc->cube=n->d.lse->cube->no; lc->side=i;
+    lc->stuff=0; 
+    for(j=0;j<4;j++) lc->sub[j]=n->d.lse->add_light[i*4+j]>>10;
+    checkmem(addnode(changedlights,-1,lc));
+    }
+  }
+ to->num_changed=changedlights->size-to->offset;
+ }
+ 
+void makelights(struct leveldata *ld,struct list *turnoffs,
+ struct list *changedlights,struct list *fl_lights,int notall)
+ {
+ struct node *ntc;
+ /* OK, now create the fl_lights and the turnoffs */
+ for(ntc=ld->lightsources.head;ntc->next!=NULL;ntc=ntc->next)
+  {
+  if(init.d_ver>=d2_10_sw) createturnoff(ld,ntc->d.ls,turnoffs,
+   changedlights,notall);
+  if(ntc->d.ls->fl) checkmem(addnode(fl_lights,-1,ntc->d.ls->fl));
+  }
+ }
+
+int D2_REG_savelevel(FILE *f,struct leveldata *ld,struct list *turnoffs,
+ struct list *changedlights,struct list *fl_lights)
  {
  struct D2_gamedata gd=D2_stdgamedata;
  struct D2_minedata md;
@@ -1063,7 +1238,7 @@ int D2_REG_savelevel(FILE *f,struct leveldata *ld)
  if(init.d_ver<d2_11_reg) 
   { 
   lh.fh.version=LEVVER_D2_10_REG;
-  if(ld->flickeringlights.size>0 && 
+  if(fl_lights->size>0 &&
    !yesnomsg("WARNING: If you save this level for Descent 2 V1.0,\n"\
     "you will loose all data about flickering lights. Continue?")) return 0;
   }
@@ -1079,15 +1254,20 @@ int D2_REG_savelevel(FILE *f,struct leveldata *ld)
   { fclose(f); return 0; }
  if(lh.fh.version>=LEVVER_D2_11_REG)
   {
-  lh.flickering_lights=ld->flickeringlights.size;
+  lh.flickering_lights=fl_lights->size;
   if(fwrite(&lh.flickering_lights,sizeof(unsigned long),1,f)!=1)
    { fclose(f); return 0; }
   if(lh.flickering_lights>0)
-   if(!savelist(f,&ld->flickeringlights,saveflickeringlight,0))
+   if(!savelist(f,fl_lights,saveflickeringlight,0))
     { fclose(f); return 0; }   
   }
  lh.secret_cubenum=ld->secretcube==NULL ? 0 : ld->secretcube->no;
- for(i=0;i<9;i++) lh.secret_orient[i]=ld->secret_orient[i];
+ for(i=0;i<3;i++)
+  {
+  lh.secret_orient[i]=ld->secret_orient[i];
+  lh.secret_orient[i+3]=ld->secret_orient[i+6];
+  lh.secret_orient[i+6]=ld->secret_orient[i+3];
+  }
  if(fwrite(&lh.secret_cubenum,sizeof(unsigned long),10,f)!=10)
   { fclose(f); return 0; }
  lh.minedata_offset=ftell(f);
@@ -1104,7 +1284,7 @@ int D2_REG_savelevel(FILE *f,struct leveldata *ld)
  if(ld->secretstart) unlistnode(&ld->things,ld->secretstart);
  gd.numthings=ld->things.size; gd.numdoors=ld->doors.size;
  gd.numsdoors=ld->sdoors.size; gd.numproducer=ld->producers.size;
- gd.numturnoff=ld->turnoff.size; gd.numchangedlight=ld->changedlights.size;
+ gd.numturnoff=turnoffs->size; gd.numchangedlight=changedlights->size;
  gd.numedoors=1;
  if(sizeplayer==0)
   { sizeplayer=D2_stdgamedata.sizeplayer;
@@ -1151,10 +1331,10 @@ int D2_REG_savelevel(FILE *f,struct leveldata *ld)
  if(!savelist(f,&ld->producers,savedata,0,ds_producer))
   { fclose(f); return 0; }
  gd.posturnoff=ftell(f);
- if(!savelist(f,&ld->turnoff,savedata,0,ds_turnoff))
+ if(!savelist(f,turnoffs,savedata,0,ds_turnoff))
   { fclose(f); return 0; }
  gd.poschangedlight=ftell(f);
- if(!savelist(f,&ld->changedlights,savedata,0,ds_changedlight))
+ if(!savelist(f,changedlights,savedata,0,ds_changedlight))
   { fclose(f); return 0; }
  fseek(f,lh.gamedata_offset,SEEK_SET);
  if(fwrite(&gd,sizeof(struct D2_gamedata),1,f)!=1)
@@ -1167,16 +1347,30 @@ int D2_REG_savelevel(FILE *f,struct leveldata *ld)
  }
 
 int savelevel(char *fname,struct leveldata *ld,int testlevel,int changename,
- int descent_version)
+ int descent_version,int notalllightinfo)
  {
  FILE *f;
  int ret;
- if(ld==NULL || fname==NULL || !checklvl(ld,testlevel)) return 0;
+ struct list turnoffs,changedlights,fl_lights;
+ if(ld==NULL || fname==NULL) return 0;
+ initlist(&turnoffs); initlist(&changedlights); initlist(&fl_lights);
+ if(descent_version>=d2_10_sw)
+  {
+  /* check if this level should be new illuminated */
+  if(testlevel>0 && ld->lightsources.size>0 && !ld->levelillum)
+   if(view.warn_illuminate && yesnomsg(TXT_NEWILLUM)) 
+    { tagall(tt_cube); dec_mineillum(0); }
+  if(ld->levelillum>0) makelights(ld,&turnoffs,&changedlights,&fl_lights,
+   notalllightinfo);
+  }
+ if(!checklvl(ld,testlevel,&turnoffs,&changedlights)) return 0;
  if((f=fopen(fname,"wb"))==NULL) return 0;
  switch(descent_version)
   {
   case d2_10_reg: case d2_11_reg: case d2_12_reg:
-   ret=D2_REG_savelevel(f,ld); break;
+   ret=D2_REG_savelevel(f,ld,&turnoffs,&changedlights,&fl_lights);
+   freelist(&turnoffs,free); freelist(&changedlights,free);
+   freelist(&fl_lights,NULL); break;
   case d1_10_reg: case d1_14_reg: ret=D1_REG_savelevel(f,ld); break;
   default: return 0;
   }

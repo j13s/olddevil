@@ -1,5 +1,6 @@
 /*  plotsys.c - texture mapping, system dependent routines
-    THIS IS NOT THE CODE USED IN V2.2i. I HAVE NOT TESTED THIS CODE.
+    THIS IS NOT THE CODE USED IN V2.2i (or later).
+    I HAVE NOT TESTED THIS CODE.
     I think it should be working but I'm not sure. Maybe the uvl-coords
     are not shifted the right way. If you want to have a source code
     which is working, use the source for V2.2h. You may use the psysfast.o
@@ -9,6 +10,7 @@
     (some routines were coded in assembler and such things...), so you may
     want to optimize this routines by yourself... */
 #include "structs.h"
+#include <allegro.h>
 #include "plotdata.h"
 #include "plotsys.h"
 
@@ -457,3 +459,20 @@ void psys_plotline(int o_x1,int o_y1,int o_x2,
  else if(dy>0) LINE(dy,++,end) else LINE(-dy,--,-end)  
  }
  
+volatile unsigned long timer_count=0;
+void inc_timer(void) { timer_count++; }
+END_OF_FUNCTION(inc_timer);
+
+void psys_inittimer(void)
+ {
+   allegro_init();
+   install_timer();
+   LOCK_VARIABLE(timer_count);
+   LOCK_FUNCTION(inc_timer);
+   install_int(inc_timer, 1);
+ }
+
+unsigned long psys_gettime(void)
+ { return timer_count/1000.0*(1<<TIMER_DIGITS_POW_2); }
+
+void psys_releasetimer(void) { allegro_exit(); }

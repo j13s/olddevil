@@ -170,9 +170,14 @@ int askconfigdata(int *d_ver,char *devilpath,char *d1path,char *d2path,
  int start=0;
  do
   {
-  printf("\n\n");
+  printf("\n");
   printf("Welcome to Devil "VERSION", the Descent 1 and Descent 2 Editor.\n");
-  printf("-----------------------------------------------------------\n\n");
+  printf("-----------------------------------------------------------\n");
+  printf("If you will use Devil, please do me a favor and\n");
+  printf("send me an E-Mail (if possible) with the subject\n");
+  printf("'devil user count'. I just want to know how many people\n");
+  printf("are using Devil. Thanks, Achim (ubdb@rz.uni-karlsruhe.de)\n");
+  printf("-----------------------------------------------------------\n");
   printf("A. Change Devil path: \"%s\"\n",devilpath);
   printf("B. Change Descent 1 path (commercial version): \"%s\"\n",d1path);
   printf("C. Change Descent 2 path (commercial version): \"%s\"\n",d2path);
@@ -223,7 +228,7 @@ int askconfigdata(int *d_ver,char *devilpath,char *d1path,char *d2path,
  }
  
 /* for a list of keycodes see file do_event.c, function dec_help. */
-#define NUM_HOTKEYS 98
+#define NUM_HOTKEYS 105
 struct hotkey { int kbstat,key,event; const char *txt; } 
 hotkeys[NUM_HOTKEYS]={ 
 { 0x01, 27, 59, "fast quit" },
@@ -255,8 +260,8 @@ hotkeys[NUM_HOTKEYS]={
 { 0x00,594,  6, "insert" },
 { 0x00, 43, 13, "enlarge object" },
 { 0x00, 45, 14, "shrink object" },
-{ 0x00,109,  3, "make macro" },
-{ 0x01, 77, 16, "set connected side/exit" },
+{ 0x00,109,  3, "make group" },
+{ 0x01, 77, 16, "set connection side/exit" },
 { 0x00,103, 61, "grid on/off" },
 { 0x04, 99, 53, "mode: cube" },
 { 0x04,115, 54, "mode: side" },
@@ -278,6 +283,13 @@ hotkeys[NUM_HOTKEYS]={
 { 0x00,116, 69, "next thing" },
 { 0x01, 87, 70, "previous wall" },
 { 0x00,119, 71, "next wall" },
+{ 0x00, 48,129, "set side&edge to 0" },
+{ 0x05, 88, 34, "align to neg. x-axis" },
+{ 0x04,120, 31, "align to pos. x-axis" },
+{ 0x05, 89, 35, "align to neg. y-axis" },
+{ 0x04,121, 32, "align to pos. y-axis" },
+{ 0x05, 90, 36, "align to neg. z-axis" },
+{ 0x04,122, 33, "align to pos. z-axis" },
 { 0x01, 42, 76, "increase rotation angle" },
 { 0x01, 47, 77, "decrease rotation angle" },
 { 0x00, 42, 74, "increase movefactor" },

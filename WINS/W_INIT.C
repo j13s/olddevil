@@ -73,7 +73,7 @@ int w_initwins(int xres,int yres,int colors,const char *fontname)
  notes.xres=xres; notes.yres=yres; notes.colors=colors;
  notes.winspace.xp=notes.winspace.yp=0;
  notes.winspace.xs=xres; notes.winspace.ys=yres; 
- notes.cur_win=NULL; notes.cur_but=NULL;
+ notes.cur_win=NULL; notes.cur_but=NULL; notes.titlebar_text=NULL;
  if((errf=fopen("devil.err","w"))==NULL) errf=stdout;
  if(!ws_initgrfx(xres,yres,colors,fontname)) return 0;
  ws_setcolor(0,0,0,0); 
@@ -107,7 +107,7 @@ int w_initwins(int xres,int yres,int colors,const char *fontname)
  ws_resetmousecolors();
  return 1;
  }
- 
+
 void drawmenubar(void)
  {
  struct node *n;
@@ -117,9 +117,13 @@ void drawmenubar(void)
   notes.colindex[cv_buttonlt],notes.colindex[cv_buttonrb],
   notes.colindex[cv_buttonin]);
  for(n=notes.menu.head;n->next!=NULL;n=n->next) wi_drawmenutxt(n->d.w_m,0);
- if(notes.cur_win!=NULL && notes.cur_win->w.title!=NULL)  
+ if((notes.cur_win!=NULL && notes.cur_win->w.title!=NULL) ||
+  notes.titlebar_text!=NULL)  
   {
-  sprintf(buffer,"%s",notes.cur_win->w.title);
+  if(notes.titlebar_text)
+   { strcpy(buffer,notes.titlebar_text); strcat(buffer,"  / "); }
+  else buffer[0]=0;
+  strcat(buffer,notes.cur_win->w.title);
   ws_drawtext(notes.xres-ws_pixstrlen(buffer)-shapes.titlebar_height/4,2,
    ws_pixstrlen(buffer),buffer,notes.colindex[cv_textbg],
    notes.colindex[cv_buttonin]);
@@ -128,6 +132,14 @@ void drawmenubar(void)
   }
  }
  
+void set_titlebar_text(char const *txt)
+ {
+ if(notes.titlebar_text) FREE(notes.titlebar_text);
+ checkmem(notes.titlebar_text=MALLOC(strlen(txt)+1));
+ strcpy(notes.titlebar_text,txt);
+ drawmenubar();
+ }
+
 void w_newpalette(unsigned char *palette)
  {
  int i;

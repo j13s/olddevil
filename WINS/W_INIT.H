@@ -35,3 +35,4 @@ int w_savecfg(FILE *f);
 void w_readcfg(FILE *f);
 void w_initkbstatcursor(char *data,int w,int h,int xo,int yo,
  long *colortable,enum kbstattypes kbstat,enum kbstattypes bitmask);
+void set_titlebar_text(char const *txt);

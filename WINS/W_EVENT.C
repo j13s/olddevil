@@ -49,7 +49,12 @@ struct wi_button *wi_checkforbutton(struct wi_window *wi,int x,int y)
  
 void w_killcurrentmessage(void)
  { if(msg_win) { w_closewindow(msg_win); msg_win=NULL; } }
- 
+
+void (*handleuser_permrout)(void)=NULL;
+
+void w_setpermanentroutine(void (*permrout)(void))
+ { handleuser_permrout=permrout; }
+
 /* Wait for the user doing something and call the corresponding procedures.
    This routine quits when one of the buttons in the endbuttons array is hit
    or when a key with the flag 'exit' is pressed.
@@ -75,6 +80,7 @@ int w_handleuser(int num_endbuts,struct w_button **endbuttons,int num_wins,
  if(wins) w_butwin(wins[0]);
  do
   {
+  if(handleuser_permrout) handleuser_permrout();
   event=ws_getevent(&ws,0);
   for(i=0;i<notes.num_kbstatcursors;i++)
    if((ws.kbstat&notes.kbstatcursors[i].bitmask)==

@@ -28,6 +28,7 @@
 #include "grfx.h"
 #include "readtxt.h"
 #include "tag.h"
+#include "macros.h"
 #include "plotdata.h"
 #include "plotsys.h"
 #include "plottxt.h"
@@ -345,9 +346,22 @@ void in_plotcube(int w,struct node *n,int hilight,int withdoors,int xor,
  int withalllines,int withlockedsides)
  {
  struct pixel spix,epix;
- int j,next;
+ int j,next,testdist;
  struct cube *c=n->d.c;
  struct node *sdn;
+ testdist=(hilight==0);
+ if((hilight==0||hilight==-1) && c->type!=cube_normal)
+  {
+  withalllines=1;
+  switch(c->type)
+   {
+   case cube_fuel: hilight=5; break;
+   case cube_reactor: hilight=4; break;
+   case cube_producer: hilight=2; break;
+   case cube_blueflag: hilight=8; break;
+   case cube_redflag: hilight=7; break;
+   }
+  }
  if(hilight==1 && testtag(tt_cube,n)) hilight=6;
  if(withdoors)
   for(sdn=c->sdoors.head;sdn->next!=NULL;sdn=sdn->next)
@@ -372,16 +386,16 @@ void in_plotcube(int w,struct node *n,int hilight,int withdoors,int xor,
   {
   if((next&(1<<j))!=0 && 
    getscreencoords(w,c->p[j]->d.p,c->p[j==3?0:j+1]->d.p,&spix,&epix,
-    hilight==0))
+    testdist))
    plotline(spix.x,spix.y,epix.x,epix.y,
     WCOLORNUM((spix.d+epix.d)/2,hilight),xor);
   if((next&(0x10<<j))!=0 &&
    getscreencoords(w,c->p[j+4]->d.p,c->p[j==3?4:j+5]->d.p,&spix,&epix,
-    hilight==0))
+    testdist))
    plotline(spix.x,spix.y,epix.x,epix.y,
     WCOLORNUM((spix.d+epix.d)/2,hilight),xor);
   if((next&(0x100<<j))!=0 &&
-   getscreencoords(w,c->p[j]->d.p,c->p[j+4]->d.p,&spix,&epix,hilight==0))
+   getscreencoords(w,c->p[j]->d.p,c->p[j+4]->d.p,&spix,&epix,testdist))
    plotline(spix.x,spix.y,epix.x,epix.y,
     WCOLORNUM((spix.d+epix.d)/2,hilight),xor);
   }
@@ -487,7 +501,55 @@ void plottagwall(struct cube *c,int wno,int hilight,int xor)
     { makeview(1); in_plottagwall(1,c,wno,hilight,xor); } }
 
 struct node *oldpcurrcube,*oldpcurrthing,*oldpcurrdoor,*oldpcurrpnt;
-int oldcurrwall,oldcurredge;
+int oldcurrwall,oldcurredge,killoldmacro;
+
+void in_plotfirstmacrocube(int w)
+ {
+ struct point naxis[3],*offset,*eoffset,eaxis[3],hp1,hp2,*op[8];
+ static struct point np[8];
+ static int marker[6];
+ int i,j;
+ if(killoldmacro)
+  {
+  struct cube c;
+  struct node n,pnode[8];
+  n.d.c=&c;
+  for(j=0;j<8;j++)
+   { c.p[j]=&pnode[j]; pnode[j].d.p=&np[j]; }
+  in_plotcube(w,&n,2,0,1,1,0);
+  for(j=0;j<6;j++)
+   if(marker[j]) in_plottagwall(w,&c,j,2,1);
+  killoldmacro=0;
+  }
+ if(view.pcurrmacro==NULL || view.pcurrmacro->exitcube==NULL ||
+  view.pcurrmacro->exitwall<0 ||
+  view.pcurrmacro->exitcube->d.c->nc[view.pcurrmacro->exitwall]!=NULL
+  || view.pcurrcube->d.c->nc[view.currwall]!=NULL) return;
+ offset=view.pcurrcube->d.c->p[wallpts[view.currwall][view.curredge]]->d.p;
+ eoffset=view.pcurrmacro->exitcube->d.c->p[
+  wallpts[view.pcurrmacro->exitwall][0]]->d.p;
+ getcubecoords(view.pcurrmacro->exitcube->d.c,view.pcurrmacro->exitwall,0,
+  eaxis,0);
+ getcubecoords(view.pcurrcube->d.c,view.currwall,view.curredge,naxis,1);
+ for(j=0;j<8;j++)
+  {
+  for(i=0;i<3;i++)
+   hp1.x[i]=view.pcurrmacro->exitcube->d.c->p[j]->d.p->x[i]-eoffset->x[i];
+  INVMATRIXMULT(&hp2,eaxis,&hp1);
+  MATRIXMULT(&np[j],naxis,&hp2);
+  /* and move them */
+  for(i=0;i<3;i++) np[j].x[i]+=offset->x[i];
+  fittogrid(&np[j]);
+  op[j]=view.pcurrmacro->exitcube->d.c->p[j]->d.p;
+  view.pcurrmacro->exitcube->d.c->p[j]->d.p=&np[j];
+  }
+ in_plotcube(w,view.pcurrmacro->exitcube,2,0,1,1,0);
+ for(j=0;j<6;j++)
+  if((marker[j]=(view.pcurrmacro->exitcube->d.c->nc[j]!=NULL))!=0)
+   in_plottagwall(w,view.pcurrmacro->exitcube->d.c,j,2,1);
+ for(j=0;j<8;j++) view.pcurrmacro->exitcube->d.c->p[j]->d.p=op[j];
+ killoldmacro=1;
+ }
 
 void in_plotcurrent(int w)
  {
@@ -516,6 +578,9 @@ void in_plotcurrent(int w)
  in_plotwall(w,view.pcurrcube->d.c,view.currwall,2,0);
  in_plotpnt(w,view.pcurrcube,view.currwall,view.curredge,
   testtag(tt_edge,view.pcurrcube,view.currwall,view.curredge) ? 6 : -1);
+ if((view.drawwhat&DW_GROUPPREVIEW)!=0 && view.pcurrmacro!=NULL &&
+  view.pcurrmacro!=l)
+  in_plotfirstmacrocube(w);
  }
 
 void plotcurrent(void)
@@ -574,16 +639,19 @@ void plotpnt(struct node *n,int w,int c,int hilight)
    if(view.whichdisplay) { makeview(1); in_plotpnt(1,n,w,c,hilight); } }
    
 /* plot current level l. */
-void plotlevel(void)
+void plotlevel(void) { struct lightsource *ls; cont_plotlevel(&ls); }
+unsigned long cont_plotlevel(struct lightsource **ls)
  {
  struct node *n;
  int lr,i;
- if(l==NULL || l->w==NULL || l->w->shrunk) return;
+ struct point d;
+ long dt=-1;
+ if(l==NULL || l->w==NULL || l->w->shrunk) return 0;
  w_refreshstart(l->w); 
  /* kill oldpicture */
  clearlevelwin();
  oldpcurrcube=oldpcurrthing=oldpcurrdoor=oldpcurrpnt=NULL;
- oldcurrwall=oldcurredge=-1;
+ oldcurrwall=oldcurredge=-1; killoldmacro=0;
  for(lr=0;lr<=l->whichdisplay;lr++)
   {
   makeview(lr);
@@ -593,18 +661,24 @@ void plotlevel(void)
      plotline(w_xwininsize(l->w)/2-1,0,w_xwininsize(l->w)/2-1,
       w_ywininsize(l->w)-1,view.color[WHITE],0); }
   if(!l->whichdisplay && view.render>1 && l->inside)
-   render_level(lr,l->rendercube!=NULL ? l->rendercube :
+   dt=render_level(lr,l,l->rendercube!=NULL ? l->rendercube :
     view.pcurrcube,view.drawwhat,0); 
   else
    {
    if((view.drawwhat&DW_CUBES)!=0 || (!l->inside && view.render>1))
     if((view.drawwhat&DW_ALLLINES)==0)
      for(n=l->lines.head;n->next!=NULL;n=n->next)
-      in_plot3dline(lr,n->d.l->s->d.p,n->d.l->e->d.p,n->d.l->color,0,1);
+      {
+      for(i=0;i<3;i++)
+       d.x[i]=(n->d.l->s->d.p->x[i]+n->d.l->e->d.p->x[i])/2.0-x0.x[i];
+      in_plot3dline(lr,n->d.l->s->d.p,n->d.l->e->d.p,
+       WCOLORNUM(LENGTH(&d),n->d.l->color),0,1);
+      }
     else
      { for(n=l->cubes.head;n->next!=NULL;n=n->next)
         if(n->d.c->tagged==NULL) in_plotcube(lr,n,0,0,0,0,1); }
-   if(view.render>=1) render_level(lr,view.pcurrcube,0,view.render==1?1:0);
+   if(view.render>=1)
+    dt=render_level(lr,l,view.pcurrcube,0,view.render==1?1:0);
    if((view.drawwhat&DW_THINGS)!=0)
     for(n=l->things.head;n->next!=NULL;n=n->next)
      if(!n->d.t->tagged) in_plotthing(lr,n->d.t,0);
@@ -641,6 +715,15 @@ void plotlevel(void)
  oldpcurrcube=view.pcurrcube; oldpcurrpnt=view.pcurrpnt;
  oldcurredge=view.curredge; oldcurrwall=view.currwall;
  w_refreshend(l->w);
+ for(n=l->lightsources.head,*ls=NULL;n->next!=NULL;n=n->next)
+  if(n->d.ls->fl && n->d.ls->fl->calculated)
+   {
+   n->d.ls->fl->calculated=0;
+   if(dt>=0 && dt>n->d.ls->fl->delay && (*ls==NULL ||
+    n->d.ls->fl->delay>(*ls)->fl->delay))
+    *ls=n->d.ls;
+   }
+ return *ls==NULL ? 0 : dt;
  }
  
 /* #include "plotfill.c" */
@@ -656,7 +739,7 @@ void addline(struct node *c,int s,int e)
   if(n->d.l->s->no==sp->no && n->d.l->e->no==ep->no) return; 
  checkmem(li=malloc(sizeof(struct line)));
  addnode(&l->lines,c->no,li); 
- li->s=sp; li->e=ep; li->color=-1;
+ li->s=sp; li->e=ep; li->color=0;
  }
  
 void initdescmap(void)
@@ -757,11 +840,11 @@ void dec_frames(int ec)
  checkmem(scr=ws_savebitmap(NULL,0,0,init.xres,init.yres));
  ws_drawfilledbox(0,0,init.xres,init.yres,0,0);
  makeview(-1); 
- render_level(0,view.pcurrcube,0,0); 
+ render_level(0,l,view.pcurrcube,0,0); 
  psys_copytoscreen(0,0,0,0,init.xres,init.yres); 
  n1=n2=0; t1=clock();
  while((clock()-t1)<CLOCKS_PER_SEC*10) 
-  { render_level(0,view.pcurrcube,0,0); n1++; }
+  { render_level(0,l,view.pcurrcube,0,0); n1++; }
 /* t1=clock();
  while((clock()-t1)<CLOCKS_PER_SEC*10) 
   { render_level(0,view.pcurrcube,0,0); 

@@ -20,6 +20,8 @@
 #include "userio.h"
 #include "tools.h"
 #include "macros.h"
+#include "insert.h"
+#include "readlvl.h"
 #include "do_event.h"
 #include "initio.h"
 
@@ -200,7 +202,7 @@ void initeditor(const char *fn,int c)
   { printf(TXT_CANTOPENINI TXT_UNZIPWITHD,fn); exit(2); }
  printf(TXT_READINI);
  my_assert(findmarker(f,"INITDATA",&init_test));
- iniread(f,"dddpppdgggggggggdggggggggggggggggdddddddddddddddddssssssssssss",
+ iniread(f,"dddpppdgggggggggdggggggggggggggggdddddddddddddddddsssssssssssssss",
   &view.movemode,&view.currmode,&view.whichdisplay,&view.e0,&view.e[0],
   &view.e[1],&view.doubleclick,&view.distcenter,&view.dist,&view.distscala,
   &view.movefactor,&view.pmovefactor,&view.movescala,&view.rotangle,
@@ -215,15 +217,18 @@ void initeditor(const char *fn,int c)
   &view.askone,&view.asktagged,&view.warn_convex,&view.warn_doublekeys,
   &view.warn_tworeactors,&view.warn_thingoutofbounds,&view.warn_gridrot,
   &txtoffsets[0],&txtoffsets[1],&txtoffsets[2],&txtoffsets[3],
-  &init.waittime,&init.macropath,&init.levelpath,
+  &init.waittime,&init.macropath,&init.levelpath,&init.pogpath,
   &init.txtlistpath,&init.cfgpath,&init.fontname,&palname,
   &init.cfgname,&init.lightname,&init.convtablename,&init.lastname,
-  &init.batchfilename,&init.menuname);
+  &init.batchfilename,&init.menuname,&pig.bulbname,&pig.brokenbulbname);
  view.illum_minvalue=n; view.render=0; view.gamma_corr=7<<9;
+ view.blinkinglightson=0; view.timescale=1.0; view.warn_frameratetoosmall=1;
+ view.warn_illuminate=1;
  addcfgpath(&init.cfgname); addcfgpath(&init.lastname); 
  addcfgpath(&init.menuname); addcfgpath(&init.fontname); 
  addcfgpath(&init.batchfilename); addcfgpath(&init.lightname);
  addcfgpath(&init.convtablename);
+ addcfgpath(&pig.bulbname); addcfgpath(&pig.brokenbulbname);
  init.xres=640; init.yres=480; view.drawwhat=DW_DEFAULT;
  if(init_test&1) printf("Init output on: %d.\n",init_test);
  normalize(&view.e[0]); 
@@ -245,6 +250,5 @@ void initeditor(const char *fn,int c)
  view.defwall=0; view.pdefcube=NULL; view.pdeflevel=NULL;
  view.pcurrmacro=NULL; pig.current_pigname=NULL;
  pig.default_pigname=NULL; pig.pig_txts=NULL;
- pig.num_pigtxts=0;
+ pig.num_pigtxts=0; view.littlebulbson=1;
  }
-
