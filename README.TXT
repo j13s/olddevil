@@ -14,7 +14,7 @@
             (thanks to Catalin-Andrei Stefanescu for the ASCII art)
 					
                 This is the README.TXT for version V2.10
-         For further info refer to readme20.txt and docs/userman.doc
+         For further info refer to whatsnew.txt and docs/userman.doc
 		
                 Mail address: ubdb@rz.uni-karlsruhe.de
        Home page: http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html 
@@ -27,9 +27,6 @@ by Csaba Biegel; see 'COPYING.CB'. The CWSDPMI is copyright by
 Charles W Sandmann, see 'CWSDPMI.DOC'. You get GNU-C with source-code on
 nearly every ftp-site (for example ftp.uni-stuttgart.de).
 
-!! Distribution with commercial or shareware programs is allowed but requires
-!! notification of the author by mail or acknowledged email.
-
 Devil is sponsored by the german magazine "PC PLAYER". They are
 paying me some money to encourage further development of Devil :-)).
 In return they asked me to be allowed to show up in the new
@@ -39,7 +36,7 @@ PC PLAYER can be reached by E-Mail at Devil@pcplayer.mhs.compuserve.com
 
 ATTENTION:
 There is a Devil Mailing list. Have a look at
- http://www.sky.net/~sclouse
+ http://www.thirdwave.net/~sclouse
 to subscribe.
 I'm subscribed in this list, too, so please mail any questions about how to 
 use Devil to this list and not directly to me. I WON'T ANSWER ANY MAILS
@@ -64,22 +61,10 @@ of mails like "I don't know how it works, please help me."...:-(
       [2c] Including the level in Descent/Compiling your own HOG-files.
       [2d] Extracting the original levels.
       [2e] Restoring the original Descent.
-      [2f] Copying macros.
 
   [3] BUGS AND OTHER WELL KNOWN FEATURES
       [3a] How many bugs I've to expect ?
       [3b] Report a bug.
-
-  [4] FURTHER PLANS
-      [4a] Next weeks.
-      [4b] Next months.
-      [4c] Never.
-      
-  [5] ONE OR TWO WORDS TO THE SOURCECODE
-      [5a] Why is Devil.INI so long?
-      [5b] Sourcecode itself.
-      [5c] Extending Devil.
-      [5d] Recompiling Devil.
 
   [A] UPDATES
   
@@ -125,22 +110,13 @@ of mails like "I don't know how it works, please help me."...:-(
   in the mailing list for help.
   
   If you get no message and Devil just quits after you started it, it is
-  possible that Devil couldn't initialize the graphics mode. Then have a
-  look at the Devil.BAT file. There are some drivers mentioned. Perhaps you
-  can find one with a name which is similar to your card. Then change the line
-    set grx20drv=vesa
-  into
-    set grx20drv=<drivername>
-  Of course you must replace <drivername> with the name of the driver
-  (i.e. cl5426)
+  possible that Devil couldn't initialize the graphics mode. 
+  Then start Devil with "devil /config" and change the graphics driver
+  and/or the resolution (You can test the graphics in the same menu).
   You can try to load a resident VESA-bios, too.
-  
-  It is also possible that your graphics card cannot handle the resolution
-  which is currently set in the Devil.ini file.
 
  [1e] Devil crashes after the screen has appeared.
-  Perhaps your level-file is corrupted. Try starting Devil with
-   Devil /new
+  Perhaps your level-file is corrupted. Try starting Devil with "devil /new"
 
  [1f] Virus Warnings with D.EXE.
   If you scan D.exe with a heuristic virus scanner it will detect something
@@ -177,10 +153,6 @@ of mails like "I don't know how it works, please help me."...:-(
  [2d] Extracting the original levels.
   Also done with the Mission Manager.
 
- [2e] Copying macros.
-  If your friend has build some macros you want to include, just copy
-  them in your macros directory and start Devil.
-
 [3] BUGS AND OTHER WELL KNOWN FEATURES
  
  [3a] How many bugs I've to expect ?
@@ -195,69 +167,16 @@ of mails like "I don't know how it works, please help me."...:-(
   some repair for yourself.
   
  [3b] Report a bug.
-  Report a bug to: ubdb@rz.uni-karlsruhe.de
-  Please, please make a description what you have done when Devil has
-  crashed and mail the level you are working on with your bug report.
+  Report a bug to the Mailing List. If it is new, I will mail you, so
+  you can mail me a description what you have done when Devil has
+  crashed and the level you are working on.
   Remember: I must be able to reproduce the bug to fix it!
 
-[4] Further plans
-
- [4a] Next weeks 
-  Making seven cubes out of one.
-  Texture mapping for one side.
-  Special Devil ASCII file format.
-  
- [4b] Next months
-  Some corridor generators.
-  A cube move mode.
-  An Undo feature (perhaps this goes together with some sort of programming
-   language)
-  A setup program for Devil.INI, so you can change keys and menus and so on. 
-  
- [4c] Never
-  A bitmap editor.
-  An editor for sounds or decoding the soundfile (because of lack of
-   knowledge).
-  
-[5] ONE OR TWO WORDS TO THE SOURCECODE
-
- [5a] Why is Devil.INI so long?
-  I've tried to keep as much data as possible out of the real sourcecode,
-  especially the data which refers to the keys, the menustructure and
-  the Descent data, so you can edit or complete it without compiling
-  Devil once again. I will release a setup program for adding something
-  to Devil.INI in a few years :-) but if you're a tough guy, you can try to
-  understand and modify it with a normal editor (there are some comments in
-  it).
-  
- [5b] Sourcecode itself.
-  If you're trying to understand the sourcecode I must give you one hint:
-  The WALLS are named DOORS in the sourcecode and the SIDES are called
-  WALLS. It's bit confusing, but has historical reasons (I first thought
-  the WALLS are only DOORS). I suppose you'll be astonished at the do_event.c
-  file especially the function array do_event. I've done it this way and
-  not with a switch() because I think in this way it's easier to extend.
-  Just put your procedure name at the end of this array, an corresponding
-  entry in the enum evcodes in do_event.h, and the number of this
-  evcode as an entry in Devil.INI/MENU.INI.
-  
- [5c] Extending Devil.  
-  In my opinion, the best way to extend Devil is to send me your sourcecode
-  (of course). I will put a node in the credits etc.
-  
- [5d] Recompiling Devil.
-  If you want to recompile Devil on another compiler, just have a look at
-  the w_system.c/w_system.h files. They contain all non-ANSI-C-routines Devil
-  needs. The rest of Devil is strict ANSI-C. The only non-ANSI-C
-  convention is that an 'int' is 4 bytes long.
-  Please send me an E-Mail if you recompile Devil on another compiler so
-  I can always give you the newest source-code.
-  
 [A] UPDATES
  The latest release is always available at
   http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html (my site)
   http://www.interplay.com/website/Devil.html (official US site)
-  http://www.sky.net/~sclouse (faster updated than Interplay)
+  http://www.thirdwave.net/~sclouse (faster updated than Interplay)
   US: The Integrated Connection BBS: 317-921-8619
   UK: The Shed BBS: 
   Australia: Southern Acces BBS: 61-53-428357
@@ -441,10 +360,13 @@ of mails like "I don't know how it works, please help me."...:-(
        - loading&handling several levels        
        - mine illuminating
        - Mission Manager
- 2.10 (not yet completed)
+ 2.10 (not yet completed, but nearly)
        - Descent 2 support
        - Texture List
        - Configuration utility
+ 2.20a - Corridor generator
+       - Double view/Moving with mouse
+      
        
 Have a good time, build many levels, bomb all enemies and send me an email
 

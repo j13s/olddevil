@@ -1,0 +1,44 @@
+Hi.
+
+This is a short remark to well experienced Devil users.
+For further documentation look at the file readme.txt and the file
+docs/userman.doc. There's a complete german documentation for V2.1
+in the file docs/german.doc (in Word for Windows 6.0 format which
+is not very useful). It would be fine if someone could translate it to 
+English. If you want to do it, please contact me, because I'm currently 
+updating this manual to V2.2 (and please use plain ASCII text format).
+
+This is the full version of Devil V2.1h.
+Please, please e-mail all bugs you encounter to the Mailing List. 
+
+FOR DESCENT 2 MODE, DEVIL NEEDS THE MEDIUM (48MB) INSTALLATION. Sorry about
+this, but I can't access the data from the CD, it is packed (I think).
+I will see if I can change this with the next version.
+
+Fixed problems/changes (V2.1g->V2.1h):
+-reading D1 producers.
+-conversion table is now working in a good way (thanks to Jon Barnhart and
+ Ed Newton)
+-fixed a bad bug with creating macros with switches switching doors
+-fixed the trouble with more than one switch in D1 mode.
+-fixed trouble with loading DesEdit levels 
+
+A BIG thanks to all guys at the mailing list and all others for bug reporting
+and making suggestions.
+
+This is still a prerelease, so be careful and make backups of your levels. 
+
+If you have any questions, please mail them NOT to me directly but to the NEW
+Devil Mailing List (see readme.txt) -- thanks to Stephen P. Clouse who
+worries about it. I am subscribed in the new mailing list, too, so I will
+receive everything you send to it (and a lot of other people will receive it,
+too, and can answer your questions).
+
+Have a good time,
+Achim
+
+PS: 
+Currently there are two Devil versions available: This one and
+V2.2a. V2.2a might be full of bugs because it is full of
+new features...
+

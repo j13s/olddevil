@@ -14,8 +14,14 @@ config\d /NOTITLE
 if not errorlevel 1 goto loop
 :done
 if not errorlevel 2 goto ok
+if not exist devil.err goto nodeverr
 echo Devil ended with an error. Here's the file devil.err:
 type devil.err |more
+goto errclean
+:nodeverr
+echo If you can't start Devil, check your choice for the grfx card.
+echo To do that, start Devil with "devil /config".
+:errclean
 if exist config\last.cfg del >nul config\last.cfg
 :ok
 if not exist %MISSIONPATH%\tmpdevil.msn goto no_d1_files
