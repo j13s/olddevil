@@ -13,7 +13,7 @@
       \_________________\____________\__________/____________/______________/
             (thanks to Catalin-Andrei Stefanescu for the ASCII art)
 					
-                This is the README.TXT for version V2.10b
+                This is the README.TXT for version V2.10
          For further info refer to readme20.txt and docs/userman.doc
 		
                 Mail address: ubdb@rz.uni-karlsruhe.de
@@ -38,7 +38,7 @@ title screen. There is no other obligation. Devil IS STILL FREEWARE!
 PC PLAYER can be reached by E-Mail at Devil@pcplayer.mhs.compuserve.com
 
 ATTENTION:
-There is a Devil Mailing list. Have a look at 
+There is a Devil Mailing list. Have a look at
  http://www.sky.net/~sclouse
 to subscribe.
 I'm subscribed in this list, too, so please mail any questions about how to 
@@ -248,7 +248,7 @@ of mails like "I don't know how it works, please help me."...:-(
  The latest release is always available at
   http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html (my site)
   http://www.interplay.com/website/Devil.html (official US site)
-  http://www.sky.net/~sclouse/Descent.html (faster updated than Interplay)
+  http://www.sky.net/~sclouse (faster updated than Interplay)
   US: The Integrated Connection BBS: 317-921-8619
   UK: The Shed BBS: 
   Australia: Southern Acces BBS: 61-53-428357
