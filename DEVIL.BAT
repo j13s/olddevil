@@ -1,1 +1,0 @@
-@command /E:1024 /C config\run.bat %1 %2 %3

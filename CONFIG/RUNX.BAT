@@ -3,7 +3,7 @@ if exist config\cfg.bat call config\cfg.bat
 rem This is for fast key moving
 mode CON: Rate=28 Delay=1
 set devilerror=0
-config\d %1 %2 %3
+config\dx %1 %2 %3
 if errorlevel 1 goto done
 :loop
 %DESCENTDRIVE%:
@@ -11,21 +11,22 @@ cd %DESCENTPATH%
 call %DESCENTSTART%
 %DEVILDRIVE%:
 cd %DEVILPATH%
-config\d /NOTITLE
+config\dx /NOTITLE
 if not errorlevel 1 goto loop
 :done
 if not errorlevel 2 goto ok
 set devilerror=1
 if not exist devil.err goto nodeverr
+echo This is the modified version of Devil.
 echo Devil ended with an error. Here's the file devil.err:
 type devil.err |more
 if not errorlevel 3 goto errclean
 goto ok
 :nodeverr
-echo If you can't start Devil, check your choice for the grfx card.
-echo To do that, start Devil with "devil /config".
+echo If you can't start Devilx, check your choice for the grfx card.
+echo To do that, start Devil with "devilx /config".
 :errclean
-if exist config\last.cfg del >nul config\last.cfg
+rem if exist config\last.cfg del >nul config\last.cfg
 :ok
 if not exist %MISSIONPATH%\tmpdevil.msn goto no_d1_files
 del %MISSIONPATH%\tmpdevil.msn >nul

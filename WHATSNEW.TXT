@@ -1,3 +1,8 @@
+-------------------------------------------------------------------------------
+NOTE: THIS DOCUMENT DOES NOT CONTAIN THE CHANGES FROM V2.2l TO V2.2lc1. THAT
+      INFORMATION CAN BE GET BY READING README.X
+-------------------------------------------------------------------------------
+
 Hi.
 
 This is a short remark to well experienced Devil users.
