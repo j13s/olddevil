@@ -3,11 +3,11 @@ Hi.
 This is a short remark to well experienced Devil users.
 For further documentation look at the file readme.txt and the file
 docs/userman.doc. There's a complete german documentation for V2.1
-in the file docs/german.doc. It would be fine if someone could translate
-it to English. If you want to do it, please contact me, because I'm 
-currently updating this manual to V2.2.
+in the file docs/german.doc. I've found someone who will translate
+the manual to English. If you want to help him (the complete manual
+are >50 pages), please send him a E-Mail (robinm@za.eds.com)
 
-This is the full version of Devil V2.2e.
+This is the full version of Devil V2.2g.
 
 Please, please e-mail all bugs you encounter to the Mailing List. 
 And please use the word "bug" somewhere in your header because all
@@ -17,6 +17,90 @@ automatically.
 FOR DESCENT 2 MODE, DEVIL NEEDS THE MEDIUM (48MB) INSTALLATION. Sorry about
 this, but I can't access the data from the CD, it is packed (I think).
 
+V2.2f-->V2.2g:
+Changed features:
+-Texture moving with Alt+mouse is now somewhat more intuitive.
+-In Fit Bitmap you have now three features with the double click with the
+ left mouse button: without any key resets the coordinates to the
+ coordinates of the current side, with shift recalculates the coordinates
+ so they fit to the side, with alt sets the coordinates to standard 
+ coordinates.
+-The saving of the current work if Devil crashes should work now
+ for Floating Point Exceptions, too.
+
+Fixed bugs:
+-New level is working now and inserting things as well. This was the
+ most stupid bug I've ever produced. I've added this bug by hand to test
+ the save current work feature for crashs and forgot to remove it again. 8->
+ (Bradley Schneider et al.)
+-Goto pos: Reinits the grfx now, so the correct cube is rendered if render
+ mode is on (myself)
+-Fixed: Corridor window moving down a few pixels each time it is opened.
+ (myself)
+-The backup levels if Devil crashes are not deleted in the batch file anymore.
+ (stupid, isn't it?) (myself) 
+-If the backup levels are saved, Devil asks no stupid questions anymore 
+ (myself).
+-Now the correct edges are tagged if you leave/reenter Devil (myself)
+-Edges/Points are removed from the screen properly if you move something
+ (myself)
+-The cube for the things is now initialized correct, so you'll see things
+ in rendermode from the start (myself)
+ 
+V2.2e-->V2.2f:
+--------------
+New/changed functions:
+-The two sides in a connection can be clicked seperately.
+-Devil tried to save your current work in progress if it exits with
+ an assert error (doesn't work with segmentation faults).
+-Fit bitmap is back. The alt+mouse thing still works (or works now, see
+ below) but the old 'Fit Bitmap' is back, too. Some things have changed:
+ Press left (or right, this is arbitrary if no 'Fit Bitmap'-window
+ is open) mousebutton on the texture in the side window. A new window
+ appears. You can move the texture in this window with the right mouse
+ button (same as if you press left+alt+right mouse button in the
+ level window). You can move single points with the left button.
+ With a double click with the left button you can reset the coords to
+ the old coords, with a double click with left button+shift you can reset
+ the coords to the standard-coords (which is one texture).
+ If you want to save your changes to the current wall, press the left mouse
+ button on the texture button in the side window again (if you press
+ the right one, the coords will be saved to all tagged sides).
+ Keys are not supported (yet).
+ 
+Fixed bugs:
+-Maybe the S3 modes are working again...
+-Fixed asserting errors when inserting new things (Charles Davis & Bradley
+ Schneider)
+-Fixed the problem with moving the corridor (was a new one, the old
+ one was fixed; this one was related to untagging edges on non-existent
+ sides). Probably the problem with deleting the corridor was the same one.
+ (Bradley Schneider & Zefrer)
+-Rearranged the colors for the tagged&current objects. They are now drawn
+ in mixture between green&blue (unfortunately a real 0,255,255 is not
+ availble in the Descent palette). Furthermore the current point&edge
+ are green now. (Luke Schneider)
+-After "New level" the current point is now correctly initialized (myself)
+-Fixed problems with "Split cube" twice in a new level. Surprisingly this
+ was no problem with splitting cubes or connecting cubes but a problem
+ in the initialization of a new level (needed three hours to find this
+ &%$!"&% bug). (Bradley Schneider)
+-Deleting a cube should now work always. (Bradley Schneider)
+-The problem with tagging pnts should not appear again. I'm not sure here
+ but I suppose the pointer to current point wasn't valid anymore, and the
+ two problems mentioned may be related to this. (Bradley Schneider)
+-Moving pnts/things is possible again. My pointer to the functions were
+ messed up because of the new edge mode. Sorry. (Bradley Schneider)
+-The reactor time is in seconds for Insane. The other levels are as follows:
+  Trainee *3.0, Rookie *2.5, Hotshot *2.0, Ace *1.5, Insane *1.0 
+ (thanks to Brian Aamot&all the others for this list)
+-Deleting tagged cubes works for me...maybe this was the same problem as
+ the one with deleting one cube. (Bradley Schneider)
+-Moving the texture with the alt key works now as it should (no jumps
+ after moving the texture with shift+alt). (Axis Experience)
+-Fixed problems with entering point coordinates directly (John Ratcliff &
+ Owen P Evans)
+ 
 V2.2d-->V2.2e:
 --------------
 

@@ -362,7 +362,8 @@ of mails like "I don't know how it works, please help me."...:-(
        - Configuration utility
  2.20a - Corridor generator
        - Double view/Moving/Clicking with mouse
-       - Texture mapping
+ 2.20c - Texture mapping
+ 2.20f - Edge mode
       
        
 Have a good time, build many levels, bomb all enemies and send me an email
