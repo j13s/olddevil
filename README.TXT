@@ -36,8 +36,8 @@ PC PLAYER can be reached by E-Mail at Devil@pcplayer.mhs.compuserve.com
 
 ATTENTION:
 There is a Devil Mailing list. Have a look at
- http://www.thirdwave.net/~sclouse
-to subscribe.
+ http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html
+for informations.
 I'm subscribed in this list, too, so please mail any questions about how to 
 use Devil to this list and not directly to me. I WON'T ANSWER ANY MAILS
 EXCEPT FOR (USEFUL) BUG REPORTS!!! This is not very friendly but I get a lot 
@@ -174,12 +174,8 @@ of mails like "I don't know how it works, please help me."...:-(
 
 [A] UPDATES
  The latest release is always available at
-  http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html (my site)
-  http://www.interplay.com/website/Devil.html (official US site)
-  http://www.thirdwave.net/~sclouse (faster updated than Interplay)
-  US: The Integrated Connection BBS: 317-921-8619
-  UK: The Shed BBS: 
-  Australia: Southern Acces BBS: 61-53-428357
+  http://wwwrzstud.rz.uni-karlsruhe.de/~ubdb/index.html
+ and all the mirrors mentioned there.
   
  0.95b - first release, a bit chaotic, COPYING files missing (in some cases),
 	 wrong DOC file.
@@ -365,7 +361,8 @@ of mails like "I don't know how it works, please help me."...:-(
        - Texture List
        - Configuration utility
  2.20a - Corridor generator
-       - Double view/Moving with mouse
+       - Double view/Moving/Clicking with mouse
+       - Texture mapping
       
        
 Have a good time, build many levels, bomb all enemies and send me an email

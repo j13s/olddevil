@@ -3,123 +3,164 @@ Hi.
 This is a short remark to well experienced Devil users.
 For further documentation look at the file readme.txt and the file
 docs/userman.doc. There's a complete german documentation for V2.1
-in the file docs/german.doc (in Word for Windows 6.0 format which
-is not very useful). It would be fine if someone could translate it to 
-English. If you want to do it, please contact me, because I'm currently 
-updating this manual to V2.2 (and please use plain ASCII text format).
+in the file docs/german.doc. It would be fine if someone could translate
+it to English. If you want to do it, please contact me, because I'm 
+currently updating this manual to V2.2.
 
-This is the full version of Devil V2.2b. If you prefer more bugfree
+This is the full version of Devil V2.2d. If you prefer more bugfree
 versions use the V2.1? releases.
+
+Sorry that this version is released that late but I just haven't had enough
+time to do the necessary work on this version :-(.
+
 Please, please e-mail all bugs you encounter to the Mailing List. 
+And please use the word "bug" somewhere in your header because all
+the mails with this header will be sorted out from my mailing program
+automatically.
 
 FOR DESCENT 2 MODE, DEVIL NEEDS THE MEDIUM (48MB) INSTALLATION. Sorry about
 this, but I can't access the data from the CD, it is packed (I think).
-I will see if I can change this with the next version.
 
-New features (V2.1g->V2.2b):
--Double view: If you start Devil you'll see two views from the
- same level. They're looking at the same point (the hotspot) which lies in 
- Internal/CenterDist before the left/right view.
- If the left view is looking at the front of a thing at this point
- (and the bottom of the thing is parallel to the x-axis of the left
- view) the right view is looking at the left side of this object.
- With these two views it is possible to move/turn objects along/around
- all three axis with the mouse.
- You can change between single/double view in the Internal menu.
--Moving yourself: You can move yourself like in V2.1 with the buttons/keys.
- Most of you will kill me because I've changed the sign of the
- y-axis with the buttons/keys. If you're working in double view
- you are always using the left view to move yourself.
- You can save/restore camera positions with Ctrl/Shift+F1-F10 keys.
- Ctrl+F12 is overview (you are moved back along your z-axis until
- the whole level fits on your screen, so you'll get different 
- overviews for different orientations of yourself), Shift+F12 is restore 
- position you had before you pressed Ctrl+F12. Ctrl+F11 is overview for 
- corridor (see below), Shift+F11 is back from overview for corridor.
- Moving yourself with mouse: This is completely new. You can move
- yourself with the mouse if you press the right mouse button in
- one of the two views and release it. The you can turn yourself
- by moving the mouse, you can go forward by pressing the left
- mouse button (how fast you go forward: Internal/Mousespeed).
- If you press Shift, you slide when you use the mouse.
- If you press Ctrl, you go forward/backward if you move the
- mouse forward/backward and you back if you move the mouse left/right)
- If you press Shift+Ctrl, you can turn yourself around the hotspot
- (just center a thing in the left and right view and then try it,
-  you'll see what it means).
--Changing the current object: You can change the current object
- by clicking on the new current object (you can only click objects
- of the current mode). You can tag/untag objects by holding Ctrl and
- clicking on them with the left/right mouse button. You can tag/untag a group
- of things by holding Ctrl and holding the left/right mouse button
- down (tagbox). 
- Of course the old methods are still working. 
--Moving/Turning objects: Same as in V2.1 but now you can move objects
- with the mouse, too. Just change to the mode of the object
- (cube/side/pnt/thing) and click on it with the left mouse button
- and hold the mouse button down. The clicked object will be highlighted violet
- and you can move it. You can move tagged objects with
- the mouse if you press Shift. All modified cubes will be highlighted
- in violet. If you press the right mouse button after you
- pressed the left mouse button you can turn the object around your x/y-axis
- (if it is a thing you turn it around it's own x/y-axis, if not
- the object is turned around it's center, if you have tagged
- several objects, they're turned around their center). If you release
- the left mouse button after you pressed both buttons, you can
- turn the object around your z-axis (or their z-axis for things).
--Corridor Wizard: You can activate the corridor wizard via the
- menupoint edit/corridor wizard. A not connected current side
- must be selected. Devil will open a small window (Wizard Window) 
- with a few buttons and draw a number of new cubes connected with the
- current side in yellow with two little control points
- in it (looking like yellow things). The middle of the
- corridor is always running through the control points and
- the direction of the control points is the same as the
- direction of the corridor. You can change the shape
- of the corridor by moving/turning the control points (they
- can be moved like things; furthermore if you have pressed
- left, then right, then released left you can bank (as always)
- and if you move up/down you can change the size of the
- thing. If it is larger the curvature of the corridor
- in this point will be smaller and vice versa).
- The control point at the start of the corridor can only
- be turned (not moved). If you need more than two control
- points you can insert new ones with the 'Insert'-Button
- in the Wizard Window, if you have too much control points,
- you can delete it with the 'Delete'-Button. In both cases
- the shape of your corridor will change (slightly if you
- press 'Insert', a lot if you press 'Delete'). 'Delete'
- will not work every time (depends on the shape of your
- corridor). You can change the number of cubes used for
- the corridor with the 'Cubesize:' button. This is the
- average depth (size along the corridor direction)
- of a cube in the corridor. If your mouse is blocked when
- you want to move/turn a control point, a cube in your
- corridor is not valid (convex). You can turn this off
- if you turn off the Warning for convex/weird cubes
- in the Internal menu.
- There are two standard corridors available: A straight
- corridor and a ellipse. You can choose them with the
- 'Type' button in the Wizard Window. If you choose 'Straight'
- you can only move (not turn) a point at the end of the
- corridor, if you choose 'Ellipse' you can move (not turn) two 
- points to set the two diameters of the Ellipse (it will
- be not a very good approximation to an Ellipse if you make
- the Ellipse very excentric, I will try to fix this mathematical
- problem in the next few days). If you change to 'Ellipse' or
- 'Straight'
--Illuminate: You can illuminate parts of the mine without loosing
- the info for the other parts of the mine. Maybe you will get strange
- results at the edges of the cubes that you tagged, so you should 
- calculate the whole level again if you have completed it.
- The data for the lightsources are now in an extra file (default.ls2), you
- can load these files with the menupoint 'Set lightsource file'.
- Descent 2 lightsource files have the extension 'ls2', D1 'ls1'.
--Texture conversion: The conversion table is now complete; thanks to
- Jon Barnhart and Ed Newton. Robot textures will not be converted.
--You can save/restore your personal window positions (have a look
- in the menu "File").
+V2.2b-->V2.2c:
+--------------
+
+New features:
+-Moving yourself: I've changed the key definitions to achieve similar 
+ key/mouse functions when you're moving yourself/objects. So most of you
+ will probably kill me (again) because they will always press the wrong 
+ key/button first but I hope you will get used to these definitions soon:
+ You can move yourself if you press the right mouse button in the level
+ window and hold it down (NEW):
+ -If you press nothing else, you can move forward/backward and turn
+  yourself around the z-axis.
+ -If you press the left mouse button while you're holding down the right one
+  you can turn yourself around the x/y-axis (left,right/up,down)
+ -If you press shift while you're holding down the right mouse button you
+  can slide right/left/up/down
+ -If you press ctrl while you're holding down the right mouse button you
+  will travel forward (so if you press the left mouse button, too,
+  you can fly through the level)
+ -If you press shift+left while you're holding down the right mouse button
+  you will turn around the coord cross (if it is turned on, differs from
+  pressing the left mouse button only in double view, of course)
+ -It seems that ctrl+shift+left mouse button is not used ;-) but you feel
+  like in a roller coaster if you try it :-).
+-Clicking/Moving/Tagging an object: Press the left mouse button in the level 
+ window and hold it down. You will see a white "scan circle" and in this 
+ circle up to three other small purple/green circles (and if you are in 
+ cube/side mode additional lines marking the cube/side). The green small 
+ circle/lines mark the object which will be selected if you release the left 
+ button. Of course the object nearest to the cursor will be the green one.
+ You can tag the object if you press the ctrl button while you're holding
+ the left button down (the tag-box is used as usual: first press ctrl and
+ then the left mouse button).
+ If you hold the left button down and then press the right one, too, you
+ can move the object marked with the green circle in a similar manner
+ like you can move yourself:
+ -If you press nothing else, you can move forward/backward and turn
+  yourself around the z-axis.
+ -If you press the left mouse button while you're holding down the right one
+  you can turn yourself around the x/y-axis (left,right/up,down)
+ -If you press shift while you're holding down the right mouse button you
+  can slide right/left/up/down
+ If you press the ctrl-key before you press the right mouse button you will 
+ move/turn all tagged objects of this mode (for this reason the ctrl
+ sequences in moving yourself are the ones which make no sense for 
+ object moving).
+-A coord cross in the middle of the view can be turned on/off in single/double
+ mode. In double mode the coord cross is at the position where the z-axis
+ of the left and the right views have their intersection point.
+-Tag->Tag flat sides: Tags all sides that are connected in a "flat" way
+ to the current side. "Flat" means that the normal vector of the two
+ sides have an angle which is not larger than the angle in the
+ Internal Menu: Bitmaps&Illum.->Tag flat sides.
+-The "align Bitmaps" feature can now align bitmaps in the same cube.
+-The Internal Menu is somewhat reorganized
+-The uvl-coords are now in the "Side" and not in the "Point" Menu. So it
+ is no longer necessary to tag corners instead of points. In principle
+ it is now possible to make the current point completely independent from
+ the current cube but this was too much work for me in the moment...
+-And last but not least: Texture mapping. There are four different
+ kinds of texture mapping possible (Internal menu: Move&Display->Rendering)
+ - Off: quite obvious, usual wireframe 
+ - Only current cube: only the current cube is rendered.
+ - On: You are beamed in the current cube and the level is displayed
+    Descent like. You can fly around as you like if you leave the
+    level the view is changed to "only current cube", if you enter the
+    level again it is changed back. It is not that fast and it would
+    be possible to optimize this a lot (especially the draw to screen
+    procedure is quiet slow due to the graphics library I'm using and
+    the inner loop is not Pentium-optimized at all and such stuff). I will
+    focus my further work in enhancing this graphics engine and maybe I 
+    will do a Devil update sometimes with a faster engine. But all in all
+    it should be fast enough to have a look at the level and on a Pentium
+    133 in a window not too large it should be fast enough to fly through
+    the level. If you don't like the wireframe, you can turn it on/off with
+    shift+tab.
+  - On with collision: Same as above but now you should collide with the
+    walls, so you can't leave the mine.
+  The latter two modes might have a problem with recognize a collision
+  with the wall (so may happen that you face a black screen). This problem
+  is not a trivial one as I first thought but it hopefully will be fixed
+  in one of the next versions. It doesn't happen very often but if it
+  happens you can recover the correct view with ctrl+shift+space. You
+  can select one of the four modes with shift+1,shift+2,shift+3,shift+4.
+  Mode 3+4 only work in single view mode.
+-With texture mapping it was quite obvious that my routines for
+ recalculating the uv-coords of a side when a point of the side was
+ moved wasn't very useful. I've changed them. 
+-Moving textures: If you press alt when you're in side mode you can move
+ the texture on the side instead of the side itself (of course you should
+ have turned one of the texture mapping modes on if you do this otherwise
+ you will see nothing).
+-DMB 2 levels can now be read (but be careful: I've not programmed the
+ support for the new RL2 version levels, so you will loose the data
+ for the blinking lights and maybe some other things but I hope it will
+ work). 
  
+Fixed bugs:
+-Hopefully avoided some assert-errors from insert.c line 62
+-Fixed some problems with renumbering the cubes.
+-Hopefully fixed the wrong shown lightsource file.
+-"saved to descent directory" does not count as a "real" save, so there is
+ now a further prompt if you leave the editor.
+-Levels in D2 mode have now the ending .RL2 even if they were D1 levels when
+ they were loaded.
+-Messages for handling errors during loading a level are now much more
+ meaningful (i.e. the number for the door not found for a specific cube
+ is now the real number not 255)
+-Zoom of texture list is saved 
+-F5 mode is now turned off if you split a cube, so you don't get funny
+ lines/FP exceptions anymore.
+-Hopefully fixed the bug with non-convex cubes/connecting
+-Fixed the bug with deleting tagged cubes and not deleting the tag list
+
+V2.2c-->V2.2d:
+
+New features:
+-The RL2 files version 7 are now fully supported (so you can load DMB
+ levels but not levels from the Vertigo series because you need some
+ additional data (pig-files and so on) to handle this levels)
+-Blinking lights are now available (if you have Descent V1.1 or better)
+-You can tag single corners now with Alt+Space (in Point mode) and all
+ corners with Alt+Shift+Space. Then you can change all the light values
+ of the tagged corners with pressing the right mousebutton on one of
+ the four light fields (which will be changed, too, of course). This
+ is not the best solution but it is one I could do quickly. Maybe I will
+ make an additional window for the corners but I have to think about this.
+
+Fixed Bugs:
+-Problems with crashing Devil if you turn on rendering/change display options
+ without a level
+-You can now click&tag pnts (it seems that I've forgotten to program this?!)
+-Fixed the problem with moving the pnts the old way (with the buttons)
+-Added the run.bat-File (don't know why this was not in the zip file ?)
+-The message window now disappears if you press a key.
+-The graphic errors if you change the current thing are fixed.
+-Fixed bug with 'New level'.
+-Hopefully fixed problems with the producers in Descent 1 mode.
+-Fixed the problem with tagging walls.
+
 A BIG thanks to all guys at the mailing list and all others for bug reporting
 and making suggestions.
 
@@ -135,14 +176,12 @@ Have a good time,
 Achim
 
 PS: Next version:
- - bug fixes, I suppose.
- - a better "Fit Bitmap" feature (with zoom and several sides at once).
-   Maybe I will make the "Align Bitmaps" feature a bit more intelligent
-   (handling lights etc.)
- - smart mines   
- - maybe a Windows 95 version.
- - other major changes (like texture mapping and undo)
- - a lot of minor changes (i.e. dos shell, object randomizer, making
-   sides coplanar, introduce a minimal visibility, autosave, rewrite
-   "thing out of bounds" warning, saving the level is Devil crashes...)
+ - a lot of bug fixes.
+   I won't do any new major features anymore because in November I've started 
+   to work on my diploma and this is quite time consuming.
+   Furthermore I want to play a little bit with the texture mapping routines
+   to see what I can do with them. Anyway, I will fix the bugs that are 
+   reported so maybe Devil will become a somewhat stable program in a few
+   months (sounds unbelievable to me ;-).
+   For this reasons I won't release any V2.1? versions anymore.
    
