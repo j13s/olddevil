@@ -13,7 +13,7 @@
       \_________________\____________\__________/____________/______________/
             (thanks to Catalin-Andrei Stefanescu for the ASCII art)
 					
-                This is the README.TXT for version V2.10
+                This is the README.TXT for version V2.20
          For further info refer to whatsnew.txt and docs/userman.doc
 		
                 Mail address: ubdb@rz.uni-karlsruhe.de
