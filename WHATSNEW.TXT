@@ -7,7 +7,7 @@ in the file docs/german.doc. I've found someone who will translate
 the manual to English. If you want to help him (the complete manual
 are >50 pages), please send him a E-Mail (robinm@za.eds.com)
 
-This is the full version of Devil V2.2g.
+This is the full version of Devil V2.2h.
 
 Please, please e-mail all bugs you encounter to the Mailing List. 
 And please use the word "bug" somewhere in your header because all
@@ -17,6 +17,27 @@ automatically.
 FOR DESCENT 2 MODE, DEVIL NEEDS THE MEDIUM (48MB) INSTALLATION. Sorry about
 this, but I can't access the data from the CD, it is packed (I think).
 
+V2.2g-->V2.2h:
+New features:
+-In the edit menu: 'Make standard side'. If you choose this Devil tries
+ to set the coords of all tagged sides to the standard coords (from a 
+ 20x20x20 cube). The algorithm tries to deform the side minimal, I hope
+ the result is therefore predictable (it looks as it is).
+-Insert in side menu with right button on a side without a neighbour:
+ Same as insert with left button and then 'Make standard side' with
+ the side opposite to the connected side in the new cube
+ (suggested by Morg).
+
+Fixed bugs:
+-If the levels are saved due to a crash, Devil doesn't ask any question 
+ anymore (Bradley Schneider & myself)
+-Fixed the problems with inserting things...(Bradley Schneider)
+-I've changed a few lines in the corridor generator, maybe it is crashing
+ with a floating point exception anymore...
+-Problems with connect cubes & rendering (John Ratcliff)
+-'move texture' mode is not activated with tab anymore (Morg)
+-The problems with deleting cubes with things within (Tony Brook)
+ 
 V2.2f-->V2.2g:
 Changed features:
 -Texture moving with Alt+mouse is now somewhat more intuitive.
