@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     stdtypes.h - the default things you insert.
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,25 +17,35 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
     
 /* stdtypes for unknown bytes/constants */
-struct item stditem =
- { { {},2,7,1,{0xd,5},0,{} },{},{},0,{},0x12,0,0 };
-struct item stdhostage =
- { { {},2,7,1,{0xd,4},0,{} },{},{},0,{},0x21,0,0 };
 #define STDORIENTATION { 0x10000,0,0,0,0x10000,0,0,0,0x10000 }
 long stdorientation[9] = STDORIENTATION;
+struct item stditem =
+ { { {},2,7,1,ct_powerup,mt_none,rt_powerup,0,0,{},STDORIENTATION,0,0,{},
+     0xff,0,0 },{},{ 0x12,0,0 } };
+struct item stdhostage =
+ { { {},2,3,0,ct_powerup,mt_none,rt_hostage,0,0,{},STDORIENTATION,0,0,{},
+     0xff,0,0 },{},{ 0x21,0,0 } };
 struct robot stdrobot =
- { { {},0,2,3,{0x0101,1},0,{} },STDORIENTATION,{},0xff,0,0,{},0xffffffff };
+ { { {},0,2,3,ct_ai,mt_physics,rt_polyobj,0,0,{},STDORIENTATION,0,0,{},
+     0xff,0,0 },{},{ 0x81 },{ 0,{},0,-1 } };
+/* control for the start is set at saving */
 struct start stdstart =
- { { {},1,4,0,{0x0105,1},0,{} },STDORIENTATION,{},{} };
+ { { {},1,4,0,ct_none,mt_physics,rt_polyobj,0,0,{},STDORIENTATION,0,0,{},
+     0xff,0,0 },{},{ 0,{},0,-1 } };
+struct start stdcoopstart =
+ { { {},1,4,0,ct_none,mt_physics,rt_polyobj,0,0,{},STDORIENTATION,0,0,{},
+     0xff,0,0 },{},{ 0,{},0,-1 } };
+#define REACTOR_SIZE 0xc14ed
+#define REACTOR_SHIELD 0xc81999
 struct reactor stdreactor =
- { { {},3,9,0,{0x0010,1},0,{} },STDORIENTATION,{0xc14ed,0xc81999},{},
-    0x270000ff,{},{},0xffffffff };
+ { { {},3,9,0,ct_control,mt_none,rt_polyobj,0,0,{},STDORIENTATION,
+     REACTOR_SIZE,REACTOR_SHIELD,{},0xff,0,0 },{ 0x27,{},0,-1 } };
 struct producer stdproducer=
  { 0,0x01f40000,0x00050000,0,0,NULL };
 struct sdoor stdsdoor=
- { 0x0100,0x0500,0xff00,0xffffffff,0,{},{} };
+ { 0,0x0001,0x050000,-1,-1,0,{},{} };
 struct door stddoor=
- { 0,0,0,0,0xffffffff,2,0x10,0,0xff,4,1,0,NULL,0,NULL,{},NULL,NULL,
+ { 0,0,-1,0,2,0x10,0,0xff,4,1,0,NULL,0,NULL,{},NULL,NULL,
    {{0.0,0.0,0.0}} };
 struct point stdcubepts[8]={
  {{0,0,0}},{{0,-655360*2,0}},
@@ -43,7 +53,7 @@ struct point stdcubepts[8]={
  {{0,0,655360*2}},{{0,-655360*2,655360*2}},
  {{-655360*2,-655360*2,655360*2}},{{-655360*2,0,655360*2}} };
 struct corner stdcorners[4]={
- { 0,0,0x6000 }, {0,2047,0x6000}, {-2048,2047,0x6000}, {-2048,0,0x6000} };
+ { 0,0,0x6000 }, {0,2047,0x6000}, {-2047,2047,0x6000}, {-2047,0,0x6000} };
 /* wall opposite to index wall */
 int oppwalls[6]={ 2,3,0,1,5,4 };
 /* first index is the wallno, second the number of the corner */

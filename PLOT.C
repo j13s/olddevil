@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     plot.c - all vector drawing routines.
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,12 +17,13 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
     
 #include "structs.h"
+#include "system.h"
 #include "tools.h"
+#include "insert.h"
 #include "plot.h"
-#include <dpmi.h> /* output of remaining mem */
-#define COLORNUM2(d) (((d)>=view.maxvisibility) ? BLACK : \
+#define COLORNUM2(d,min) (((d)>=view.maxvisibility) ? (min) : \
    (d<=0.0) ? GRAYSCALE : ((int)((GRAYSCALE-1)*(1-(d)/view.maxvisibility))+1))
-#define WCOLORNUM(d,h) view.color[((h)==0 || (h)<0) ? COLORNUM2(d) : \
+#define WCOLORNUM(d,h) view.color[(h)<=0 ? COLORNUM2(d,(h)==0 ? 1 : BLACK) :\
  HILIGHTCOLORS+(h)-1]
 #define TCOLORNUM(d,c,h) view.color[((h)==0 || (h)<0) ? \
  (((d)>view.maxvisibility) ? BLACK : (c)+THINGCOLORS) : HILIGHTCOLORS+(h)-1]
@@ -32,7 +33,7 @@ int partcolor(struct door *d,double dist,int h)
  switch(d->type1)
   {
   case 3: case 4: case 5: /* a texture/switch/window */
-   return COLORNUM2(dist); 
+   return COLORNUM2(dist,h==0 ? 1 : BLACK); 
   case 1: /* blow door */
    return DOORCOLORS;
   case 2: /* normal door */
@@ -42,8 +43,7 @@ int partcolor(struct door *d,double dist,int h)
    return WHITE;
   }
  }
-#define PCOLORNUM(dist,door,h) view.color[((h)==0 || (h)<0) ? \
- (((dist)>view.maxvisibility) ? BLACK : partcolor(door,dist,h)) :  \
+#define PCOLORNUM(dist,door,h) view.color[(h)<=0 ? partcolor(door,dist,h) : \
  HILIGHTCOLORS+(h)-1]
 
 int pointinsight(struct point *p,struct point *d,double *dist);
@@ -54,13 +54,28 @@ void calcpoint(struct point *p,struct pixel *pix,struct point *v,
  int calchit(double *r,double ax,double ay,double ex,double ey,
  double dx,double dy);
 void plotline(struct pixel *ps,struct pixel *pe,struct point *p1,
- struct point *p2,int color);
+ struct point *p2,int color,int xor);
 void plotwall(struct cube *c,int wno,int hilight);
 
+void printpos(void)
+ {
+ char buffer[100];
+ sprintf(buffer,"%.1f,%.1f,%.1f",view.e0.x[0]/65536.0,view.e0.x[1]/65536.0,
+  view.e0.x[2]/65536.0);
+ buffer[view.smenuwidth]=0;
+ sys_text(view.bounds[ecw_lowermenu][0],view.bounds[ecw_lowermenu][3]+1,
+  buffer,view.color[WHITE],view.color[BLACK]);
+ sprintf(buffer,"%5.3f,%5.3f,%5.3f",view.e[2].x[0],view.e[2].x[1],
+  view.e[2].x[2]);
+ buffer[view.smenuwidth]=0;
+ sys_text(view.bounds[ecw_lowermenu][0],view.bounds[ecw_lowermenu][3]+1+
+  view.fontheight,buffer,view.color[WHITE],view.color[BLACK]);
+ }
+ 
 void makeview(void)
  {
- short int i;
-/* int x1,y1,x2,y2; */
+ int i;
+ printpos();
  /* Position of viewpoint: */
  for(i=0;i<3;i++)
   {
@@ -75,11 +90,11 @@ void makeview(void)
  view.yviewphi=view.dist/sqrt(view.dist*view.dist+1);
  /* kill oldpicture, one pixel more in every direction because of
     two points thick tagged lines */
- GrFilledBox(view.xoffset-1,view.yoffset-1,view.xsize+view.xoffset+1,
-  view.ysize+view.yoffset+1,view.color[BLACK]);
+ sys_filledbox(view.xoffset-1,view.yoffset-1,view.xsize+view.xoffset+1,
+  view.ysize+view.yoffset+1,view.color[BLACK],0);
  }
 
-inline int pointinsight(struct point *p,struct point *d,double *dist)
+int pointinsight(struct point *p,struct point *d,double *dist)
  {
  int i;
  for(i=0;i<3;i++)
@@ -88,7 +103,7 @@ inline int pointinsight(struct point *p,struct point *d,double *dist)
  return *dist<view.maxvisibility;
  }
  
-inline int pointinangle(struct point *d,double *dist)
+int pointinangle(struct point *d,double *dist)
  {
  double m0_d;
  if(0.0>(m0_d=SCALAR(d,&view.e[2])))
@@ -100,8 +115,8 @@ inline int pointinangle(struct point *d,double *dist)
 int pointvisible(struct point *p,double *dist)
  {
  struct point d;
- pointinsight(p,&d,dist);
- return pointinangle(&d,dist);
+ int insight=pointinsight(p,&d,dist);
+ return pointinangle(&d,dist) && insight;
  }
 
 /* calculates the point of intersection of the line between p and v
@@ -146,7 +161,7 @@ int calchit(double *r,double ax,double ay,double ex,double ey,
  }
  
 void plotline(struct pixel *ps,struct pixel *pe,struct point *p1,
- struct point *p2,int color)
+ struct point *p2,int color,int xor)
  {
  int x1,y1,x2,y2,hit[4],numhits;
  double dx,dy,t[4];
@@ -210,30 +225,63 @@ void plotline(struct pixel *ps,struct pixel *pe,struct point *p1,
  x2=(int)(e.x*(view.xsize-1))+view.xoffset;
  y1=(int)view.ysize-(s.y*(view.ysize-1))+view.yoffset;
  y2=(int)view.ysize-(e.y*(view.ysize-1))+view.yoffset;
- if(color==view.color[HILIGHTCOLORS+2])
-  GrCustomLine(x1,y1,x2,y2,&view.taggedline);
- else
-  GrLine(x1,y1,x2,y2,color);
+ sys_line(x1,y1,x2,y2,color,xor);
+/* if(color==view.color[HILIGHTCOLORS+2])
+  { / tagged, make one line left and one line right next the real line /
+  ty=2*(x2-x1)<(y2-y1) ? 0 : (x2-x1)>0 ? 1 : -1;
+  tx=2*(y2-y1)<(x2-x1) ? 0 : (y2-y1)>0 ? 1 : -1;
+  sys_line(x1+tx,y1+ty,x2+tx,y2+ty,color,xor);
+  sys_line(x1-tx,y1-ty,x2-tx,y2-ty,color,xor); 
+  } */
  }
 
 void plot3dline(struct point *sp,struct point *ep,int color,int hilight,
  int xor)
  {
  struct pixel pix[2];
+ struct point d;
  int a,b;
- a=pointvisible(sp,&pix[0].d);
- b=pointvisible(ep,&pix[1].d);
+ a=pointinsight(sp,&d,&pix[0].d) || hilight!=0;
+ a=a&&pointinangle(&d,&pix[0].d);
+ b=pointinsight(ep,&d,&pix[1].d) || hilight!=0;
+ b=b&&pointinangle(&d,&pix[1].d);
  if(a||b)
   {
   calcpoint(sp,&pix[0],&view.x0,0.5,0.5,view.dist);
   calcpoint(ep,&pix[1],&view.x0,0.5,0.5,view.dist);
-  if(xor)
-   plotline(&pix[0],&pix[1],sp,ep,
-    TCOLORNUM((pix[0].d+pix[1].d)/2,color,hilight)|GrXOR);
-  else
-   plotline(&pix[0],&pix[1],sp,ep,
-    TCOLORNUM((pix[0].d+pix[1].d)/2,color,hilight));
+  plotline(&pix[0],&pix[1],sp,ep,
+   TCOLORNUM((pix[0].d+pix[1].d)/2,color,hilight),xor);
   }
+ }
+ 
+void plotgrid(void)
+ {
+ struct point splot,eplot,p;
+ double sizeofgrid,runx,runy;
+ int i,n,j;
+ if(!view.gridonoff) return;
+ p=view.x0;
+ fittogrid(&p);
+ sizeofgrid=(view.gridlength>=view.maxvisibility/10) ? view.gridlength :
+  (int)(view.maxvisibility/10/view.gridlength+0.5)*view.gridlength;
+ if(sizeofgrid==0) { printmsg("Gridsize=0???"); return; }
+ printmsg("Shown grid %g:Real grid %g = %d:1.",sizeofgrid,view.gridlength,
+  (int)(sizeofgrid/view.gridlength));
+ n=view.maxvisibility/sizeofgrid+1;
+ if(n>view.plottimes) n=view.plottimes;
+ fprintf(errf,"Plotting %d times.\n",n); fflush(errf);
+ /* filling the whole visible ball&more with lines */
+ for(runx=-sizeofgrid*n;runx<=sizeofgrid*n;runx+=sizeofgrid)
+  for(runy=-sizeofgrid*n;runy<=sizeofgrid*n;runy+=sizeofgrid)
+   for(i=0;i<1;i++)
+    {
+    splot.x[i]=eplot.x[i]=p.x[i]+runx;
+    j=i+1>=3 ? i-2 : i+1; splot.x[j]=eplot.x[j]=p.x[j]+runy;
+    j=i+2>=3 ? i-1 : i+2;
+    splot.x[j]=p.x[j]-sizeofgrid*n; eplot.x[j]=p.x[j]+sizeofgrid*n;
+    plot3dline(&splot,&eplot,0,1,0);  
+    }
+ fprintf(errf,"End of plotgrid.\n"); fflush(errf);
  }
  
 void plotmarker(struct point *p,int hilight,int xor)
@@ -258,13 +306,13 @@ void plotdoor(struct node *n,int hilight)
   if(pointvisible(p[j],&pix[j].d) || hilight!=0) visible=1;
   }
  calcpoint(&d->p,&ep,&view.x0,0.5,0.5,view.dist);
- if(pointvisible(&d->p,&ep.d) || hilight!=0) j=1;
- if(visible || j)
+ if(pointvisible(&d->p,&ep.d) || hilight!=0) visible=1;
+ if(visible)
   {
-  plotline(&pix[0],&ep,p[0],&d->p,PCOLORNUM((pix[0].d+ep.d)/2,d,hilight));
-  plotline(&pix[1],&ep,p[1],&d->p,PCOLORNUM((pix[1].d+ep.d)/2,d,hilight));
-  plotline(&pix[2],&ep,p[2],&d->p,PCOLORNUM((pix[2].d+ep.d)/2,d,hilight));
-  plotline(&pix[3],&ep,p[3],&d->p,PCOLORNUM((pix[3].d+ep.d)/2,d,hilight));
+  plotline(&pix[0],&ep,p[0],&d->p,PCOLORNUM((pix[0].d+ep.d)/2,d,hilight),0);
+  plotline(&pix[1],&ep,p[1],&d->p,PCOLORNUM((pix[1].d+ep.d)/2,d,hilight),0);
+  plotline(&pix[2],&ep,p[2],&d->p,PCOLORNUM((pix[2].d+ep.d)/2,d,hilight),0);
+  plotline(&pix[3],&ep,p[3],&d->p,PCOLORNUM((pix[3].d+ep.d)/2,d,hilight),0);
   }
  if(d->sd!=NULL && (hilight==1 || hilight==-1))
   {
@@ -293,7 +341,7 @@ void plotwall(struct cube *c,int wno,int hilight)
   }
  for(j=0;j<4;j++)
   plotline(&pix[j],&pix[j==3?0:j+1],p[j],p[j==3?0:j+1],
-   WCOLORNUM(0.0,((j==0||j==3) && hilight==2) ? 4 : hilight));  
+   WCOLORNUM(0.0,((j==0||j==3) && hilight==2) ? (j==0) ? 4 : 5 : hilight),0);
  }  
    
 void plotpnt(struct cube *c,int wn,int pn,int hilight)
@@ -400,16 +448,16 @@ void plotcube(struct node *n,int hilight)
   for(j=0;j<4;j++)
    if((next&(1<<j))!=0)
     plotline(&pix[j],&pix[j==3?0:(j+1)],c->p[j]->d.p,c->p[j==3?0:j+1]->d.p,
-     WCOLORNUM((pix[j].d+pix[j==3?0:(j+1)].d)/2,hilight));
+     WCOLORNUM((pix[j].d+pix[j==3?0:(j+1)].d)/2,hilight),0);
  if(visible&0xf0)
   for(j=4;j<8;j++)
    if((next&(1<<j))!=0)
     plotline(&pix[j],&pix[j==7?4:(j+1)],c->p[j]->d.p,c->p[j==7?4:j+1]->d.p,
-     WCOLORNUM((pix[j].d+pix[j==7?4:(j+1)].d)/2,hilight));
+     WCOLORNUM((pix[j].d+pix[j==7?4:(j+1)].d)/2,hilight),0);
  for(j=0;j<4;j++)
   if((next&(0x100<<j))!=0)
    plotline(&pix[j],&pix[j+4],c->p[j]->d.p,c->p[j+4]->d.p,
-    WCOLORNUM((pix[j].d+pix[j+4].d)/2,hilight));
+    WCOLORNUM((pix[j].d+pix[j+4].d)/2,hilight),0);
  }
 
 void plotthing(struct node *n,int hilight)

@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     do_side.c - included in "change.c". all functions for side-effects.
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 enum sidecodes { sc_changeitemtype,sc_changetxt,sc_changeswitch,
  sc_producer,sc_changepnt,sc_itemgrfx,sc_changedooranim,sc_setorigin,
  sc_changecubetype,sc_changedoortype,sc_doorchangetxt1,sc_doorchangetxt2,
- sc_number };
+ sc_changethingtxt,sc_number };
 
 int dsc_changeitemtype(struct infoitem *i,int to,int no)
  { 
@@ -37,22 +37,17 @@ int dsc_changeitemtype(struct infoitem *i,int to,int no)
 
 void drawtxt(int n,int *data)
  {
+ struct wall *w=view.pcurrcube->d.c->walls[view.currwall];
  if(*data==0)
-  {
-  drawtexture((int)n,0);
-  drawtexture(*(data+1),1);
-  }
+  w->texture1=n;
  else
-  {
-  drawtexture(*(data+1),0);
-  drawtexture((int)n|*(data+2),1);
-  }
+  { w->texture2=n|*(data+1); }
+ drawtextures(w);
  }
  
 int dsc_changetxt(struct infoitem *i,int to,int no)
  {
- int n=no;
- int ok=1;
+ int n=no,ok=1,data[2];
  struct objdata *od;
  if(!view.pcurrcube || view.pcurrcube->d.c->walls[view.currwall]==NULL)
   { if(!to) printmsg("No current wall."); return no; }
@@ -63,20 +58,32 @@ int dsc_changetxt(struct infoitem *i,int to,int no)
  if(!to)
   {
   if(i->offset==0)
-   { int data[2]={0,(int)view.pcurrcube->d.c->walls[view.currwall]->texture2};
+   { data[0]=0; 
      ok=readltype(drawtxt,od->str,od,1,&n,data); }
   else
-   { int data[3]={1,(int)view.pcurrcube->d.c->walls[view.currwall]->texture1,
-      (int)(view.pcurrcube->d.c->walls[view.currwall]->texture2>>14)&0x3};
+   { data[0]=1;
+     data[1]=view.pcurrcube->d.c->walls[view.currwall]->texture2&0xc000;
      ok=readltype(drawtxt,od->str,od,1,&n,data); }
   }
  if(ok) return n;
  else return no;
  }
 
+int dsc_changethingtxt(struct infoitem *i,int to,int no)
+ {
+ int n=no,ok=1,data=0;
+ struct objdata *od;
+ if(!view.pcurrthing)
+  { printmsg("No current thing."); return no; }
+ od=&view.txtnums[0];
+ if(!to) ok=readltype(drawtxt,od->str,od,1,&n,&data); 
+ if(ok) return n;
+ else return no;
+ }
+ 
 int dsc_doorchangetxt(struct infoitem *i,int to,int no)
  {
- int n;
+ int n,data[2];
  int ok=1;
  struct objdata *od;
  if(!view.pcurrdoor || !view.pcurrdoor->d.d->w)
@@ -87,11 +94,11 @@ int dsc_doorchangetxt(struct infoitem *i,int to,int no)
  if(!to)
   {
   if(i->sidefuncnr==sc_doorchangetxt1)
-   { int data[2]={0,(int)view.pcurrdoor->d.d->w->texture2};
+   { data[0]=0; 
      ok=readltype(drawtxt,od->str,od,1,&n,data); }
   else
-   { int data[3]={1,(int)view.pcurrdoor->d.d->w->texture1,
-      (int)(view.pcurrdoor->d.d->w->texture2>>14)&0x3};
+   { data[0]=1;
+     data[1]=view.pcurrdoor->d.d->w->texture2&0xc000;
      ok=readltype(drawtxt,od->str,od,1,&n,data); }
   }
  else n=no; /* for tagged objects */
@@ -169,6 +176,7 @@ int dsc_changepnt(struct infoitem *i,int to,int no)
  oldpos=*pos;
  strncpy(txt,i->txt,4); txt[4]=0;
  if(readkeyb(txt,"%lg",pos)==0) return no; 
+ *pos*=65536.0;
  if(!testpnt(view.pcurrcube->d.c->p[wallpts[view.currwall][view.currpnt]]))
   *pos=oldpos;
  else
@@ -268,58 +276,67 @@ void drawdoortxt(int n,int *data)
  if(n<0) return;
  no=view.doorstarts[n];
  if(no>=0)
-  { drawtexture(no,0); drawtexture(0,1); }
+  { view.pcurrdoor->d.d->w->texture1=no;
+    view.pcurrdoor->d.d->w->texture2=0; }
  else
-  { drawtexture((int)view.pcurrdoor->d.d->w->texture1,0); 
-    drawtexture((int)(-no)|((view.pcurrdoor->d.d->w->texture2>>14)&3),1); }
+  { view.pcurrdoor->d.d->w->texture1=*data; 
+    view.pcurrdoor->d.d->w->texture2&=0xc000;
+    view.pcurrdoor->d.d->w->texture2|=(-no)&0x3fff; }
+ drawtextures(view.pcurrdoor->d.d->w);
  }
  
 int dsc_changedooranim(struct infoitem *i,int to,int no)
  {
- int n=no;
+ int n=no,ot1,ot2;
  if(view.pcurrdoor==NULL)
   { printmsg("No current wall."); return no; }
  if(view.pcurrdoor->d.d->w==NULL)
   { printmsg("No side there."); return no; }
- if(to || readltype(drawdoortxt,i->txt,&view.doornums,1,&n,NULL))
+ ot1=view.pcurrdoor->d.d->w->texture1;
+ ot2=view.pcurrdoor->d.d->w->texture2;
+ if(to || readltype(drawdoortxt,i->txt,&view.doornums,1,&n,&ot1))
   {
-  if(view.doorstarts[n]>=0) 
-   { view.pcurrdoor->d.d->w->texture2=0; 
-     view.pcurrdoor->d.d->w->texture1=view.doorstarts[n]; }
-  else view.pcurrdoor->d.d->w->texture2=-view.doorstarts[n];
+  to=1;
   if(view.pcurrdoor->d.d->d!=NULL && view.pcurrdoor->d.d->d->d.d->w!=NULL)
    if(view.doorstarts[n]>=0) 
     { view.pcurrdoor->d.d->d->d.d->w->texture2=0; 
       view.pcurrdoor->d.d->d->d.d->w->texture1=view.doorstarts[n]; }
-  else view.pcurrdoor->d.d->d->d.d->w->texture2=-view.doorstarts[n];
+  else 
+   { view.pcurrdoor->d.d->d->d.d->w->texture2&=0xc000;
+     view.pcurrdoor->d.d->d->d.d->w->texture2|=(-view.doorstarts[n])&0x3fff; }
   printmsg("Texture changed.");
   }
+ if(!to)
+  { view.pcurrdoor->d.d->w->texture1=ot1;
+    view.pcurrdoor->d.d->w->texture2=ot2; }
  return n;
  }
 
 void draworigintxt(int n,int *data)
- {
- int t1=view.pcurrcube->d.c->walls[view.currwall]->texture1;
- int t2=(view.pcurrcube->d.c->walls[view.currwall]->texture2&0x3fff)
-  |(n<<14);
- drawtexture(t1,0);
- drawtexture(t2,1);
+ { 
+ struct wall *w=view.pcurrcube->d.c->walls[view.currwall]; 
+ w->texture2=(w->texture2&0x3fff)|(n<<14);
+ drawtextures(w);
  }
  
 int dsc_setorigin(struct infoitem *i,int to,int no)
  {
- int direction;
+ int odir,direction;
  if(view.pcurrcube->d.c->walls[view.currwall]==NULL)
   { printmsg("No side here."); return no; }
  if(view.pcurrcube->d.c->walls[view.currwall]->texture2==0)
   { printmsg("No second texture."); return no; }
- direction=(view.pcurrcube->d.c->walls[view.currwall]->texture2>>14)&3;
- if(readltype(draworigintxt,i->txt,i->od,1,&direction,NULL))
+ if(!to)
   {
-  view.pcurrcube->d.c->walls[view.currwall]->texture2&=0x3fff;
-  view.pcurrcube->d.c->walls[view.currwall]->texture2|=direction<<14;
+  odir=direction=(view.pcurrcube->d.c->walls[view.currwall]->texture2>>14)&3;
+  if(!readltype(draworigintxt,i->txt,i->od,1,&direction,NULL))
+   { view.pcurrcube->d.c->walls[view.currwall]->texture2&=0x3fff;
+     view.pcurrcube->d.c->walls[view.currwall]->texture2|=odir<<14; }
   }
- return no;
+ else
+  { view.pcurrcube->d.c->walls[view.currwall]->texture2&=0x3fff;
+    view.pcurrcube->d.c->walls[view.currwall]->texture2|=no<<14; } 
+ return direction;
  }
  
 int dsc_dummy(struct infoitem *i,int to,int no)
@@ -334,4 +351,4 @@ int (*do_extrasideeffect[sc_number])(struct infoitem *i,int to,
  { dsc_changeitemtype,dsc_changetxt,dsc_changeswitch,dsc_producer,
    dsc_changepnt,dsc_itemgrfx,dsc_changedooranim,dsc_setorigin,
    dsc_changecubetype,dsc_changedoortype,dsc_doorchangetxt,
-   dsc_doorchangetxt};
+   dsc_doorchangetxt,dsc_changethingtxt};

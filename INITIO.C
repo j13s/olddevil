@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     initio.c - reading "devil.ini" file
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
     along with this program (file COPYING); if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
     
-#include <dir.h>
 #include "structs.h"
+#include "system.h"
 #include "tools.h"
 #include "initio.h"
 
@@ -359,11 +359,11 @@ void readtxts(void)
  unsigned long int numlong;
  FILE *f;
  if((view.pigfile=f=fopen(view.pigname,"rb"))==NULL)
-  { fprintf(errf,"Can't open bitmaps.\n"); exit(0); }
+  { printf("Can't open bitmaps.\n"); exit(0); }
  if(fread(&view.numtxtdir,sizeof(long),(size_t)1,f)!=1)
-  { fprintf(errf,"Can't read number of short entries.\n"); exit(0); }
+  { printf("Can't read number of short entries.\n"); exit(0); }
  if(fread(&numlong,sizeof(long),(size_t)1,f)!=1)
-  { fprintf(errf,"Can't read number of long entries.\n"); exit(0); }
+  { printf("Can't read number of long entries.\n"); exit(0); }
  if(init_test&1)
   fprintf(errf,"Found %d short, %lu long entries.\n",view.numtxtdir,numlong);
  if((view.txts=malloc(sizeof(struct texture)*view.numtxtdir))==NULL)
@@ -371,7 +371,7 @@ void readtxts(void)
  for(i=0;i<view.numtxtdir;i++)
   {
   if(fread(&view.txts[i],17,1,f)!=1)
-   { fprintf(errf,"Can't read dir of textures.\n"); exit(0); }
+   { printf("Can't read dir of textures.\n"); exit(0); }
   memset(view.txts[i].name,' ',8);
   strncpy(view.txts[i].name,view.txts[i].rname,
    strlen(view.txts[i].rname)<9 ? strlen(view.txts[i].rname) : 8);
@@ -391,12 +391,26 @@ void readtxts(void)
 void makehotkey(struct objtype *ot)
  {
  char *pos;
+ int i,l;
  if((pos=strchr(ot->str,'>'))==NULL)
   { printf("No hotkey for menupnt %s\n",ot->str); exit(0); }
  ot->no=(ot->no<<16)+(pos-ot->str);
  if(!isupper(toupper(*(pos+1))))
   { printf("Illegal character for hotkey in menupnt %s\n",ot->str); exit(0); }
  memmove(pos,pos+1,strlen(pos)+1);
+ for(i=0;i<view.noevents;i++)
+  if(view.events[i].no==(ot->no>>16) && view.events[i].flags==se_f_keypress)
+   if((pos=strchr(view.events[i].txt,':'))!=NULL)
+    {
+    l=pos-view.events[i].txt;
+    if(!(ot->str=realloc(ot->str,strlen(ot->str)+l+4)))
+     { printf("no mem for menu hotkeys.\n"); exit(0); }
+    ot->str[strlen(ot->str)+l+3]=0;
+    ot->str[strlen(ot->str)+1]='[';
+    strncpy(&ot->str[strlen(ot->str)+2],view.events[i].txt,l);
+    ot->str[strlen(ot->str)+l+2]=']';
+    ot->str[strlen(ot->str)]=' ';
+    }
  }    
   
 void copytxtnums(enum txttypes dest,enum txttypes source)
@@ -430,23 +444,23 @@ void initeditor(char *fn)
  {
  int i,j,n,maxanimtxt;
  FILE *f;
- struct ffblk macfiles;
  struct macro *m;
  struct macrogroup *mg;
- char text[100],*countedtxts,*doortextures,*pos;
+ char text[100],*countedtxts,*doortextures,*pos,*mfname;
  struct texture *texture;
  if((f=fopen(fn,"r"))==NULL)
   { printf("Can't open initfile %s!\n",fn); exit(0); }
  printf("Reading initdata...\n");
  findmarker(f,"INITDATA",&init_test);
- iniread(f,"sdpppgggggggggggggggggdddddssss",&l->lname,
+ iniread(f,"sdpppgggggggggggggggggggddddddssss",&l->lname,
   &view.showwhat,&view.e0,&view.e[0],&view.e[1],&view.dist,&view.distscala,
   &view.movefactor,&view.pmovefactor,&view.movescala,
-  &view.rotangel,&view.rotscala,&view.maxvisibility,&view.visscala,
-  &view.mousesensivity,&view.tsize,&view.dsize,&view.clickphi,&view.mincorner,
-  &view.minweirdwall,&view.gridlength,&view.gridscala,&view.gridonoff,
-  &view.numkeymacros,&view.txtoffset,&view.brightness,&view.waittime,
-  &view.macropath,&view.levelpath,&view.pigname,&view.palettename);
+  &view.rotangle,&view.protangle,&view.rotscala,&view.maxvisibility,
+  &view.visscala,&view.mousesensivity,&view.tsize,&view.dsize,&view.clickphi,
+  &view.mincorner,&view.minweirdwall,&view.maxconndist,&view.gridlength,
+  &view.gridscala,&view.gridonoff,&view.plottimes,&view.numkeymacros,
+  &view.txtoffset,&view.brightness,&view.waittime,&view.macropath,
+  &view.levelpath,&view.pigname,&view.palettename);
  switch(view.showwhat)
   {
   case in_cube: view.currmode=tt_cube; break;
@@ -463,6 +477,13 @@ void initeditor(char *fn)
  normalize(&view.e[0]); 
  normalize(&view.e[1]); 
  VECTOR(&view.e[2],&view.e[1],&view.e[0]); /* left-handed system */
+ printf("Reading eventcodes...\n");
+ findmarker(f,"EVENTCODES",&view.noevents);
+ if((view.events=calloc(sizeof(struct eventcode),(size_t)view.noevents))
+  ==NULL)
+  { printf("No mem for events.\n"); exit(0); }
+ for(i=0;i<view.noevents;i++)
+  iniread(f,"e",&view.events[i]);
  printf("Reading menuline...\n");
  findmarker(f,"MENUS",&view.nummenus);
  if(view.nummenus<1)
@@ -485,13 +506,6 @@ void initeditor(char *fn)
    makehotkey(view.menuline[i].data[n]);
    }
   }
- printf("Reading eventcodes...\n");
- findmarker(f,"EVENTCODES",&view.noevents);
- if((view.events=calloc(sizeof(struct eventcode),(size_t)view.noevents))
-  ==NULL)
-  { printf("No mem for events.\n"); exit(0); }
- for(i=0;i<view.noevents;i++)
-  iniread(f,"e",&view.events[i]);
  printf("Reading buttons...\n");
  findmarker(f,"BUTTONS",&view.numbuttons);
  if(view.numbuttons!=in_number)
@@ -589,16 +603,14 @@ void initeditor(char *fn)
 #else
  strcat(text,"*.rmc");
 #endif
- if(findfirst(text,&macfiles,FA_ARCH|FA_RDONLY)==0)
+ if((mfname=sys_searchfirstfile(text))!=NULL)
   do
    {
    if((m=malloc(sizeof(struct macro)))==NULL)
-    { printf("No mem for macro in file %s\n",macfiles.ff_name); exit(0); }
+    { printf("No mem for macro in file %s\n",mfname); exit(0); }
    view.pcurrmacro=NULL;
    m->longtxt=NULL;
-   if((m->filename=malloc(strlen(macfiles.ff_name)+1))==NULL)
-    { printf("No mem for macro filename: %s\n",macfiles.ff_name); exit(0); }
-   strcpy(m->filename,macfiles.ff_name);
+   m->filename=mfname;
    strcpy(text,view.macropath);
    strcat(text,m->filename);
    if(init_test&1) fprintf(errf,"Found macro file %s\n",m->filename);
@@ -612,14 +624,14 @@ void initeditor(char *fn)
     fprintf(errf,"GroupNo.: %d STxt: %s\n",m->groupno,m->shorttxt);
    if(m->groupno<0 || m->groupno>=view.macros.size)
     { printf("Unknown macrogroup: %d (macrofile=%s).\n",
-       m->groupno,macfiles.ff_name); m->groupno=0; }
+       m->groupno,m->filename); m->groupno=0; }
    mg=(struct macrogroup *)view.macros.data[m->groupno];
    if(init_test&1)
     fprintf(errf,"Adding %d. macro to group %d.\n",mg->macros.size,
      m->groupno);
    addnode(&mg->macros,mg->macros.size,m);
    }
-  while(findnext(&macfiles)==0);
+  while((mfname=sys_searchnextfile())!=NULL);
  if(f) fclose(f);
  printf("Init objtypes...\n");
  for(n=0;n<in_number;n++)

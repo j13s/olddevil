@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     do_move.c - included in "do_event.c". all functions for moving/rotating.
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ int pm_thing(struct list *l,enum evcodes ec)
    {
    for(i=0;i<3;i++)
     for(j=0;j<3;j++)
-     coords[i].x[j]=n->d.S->orientation[i*3+j]/65536.0;
+     coords[i].x[j]=n->d.t->orientation[i*3+j]/65536.0;
    if(!makedirection(ec,coords,&r)) return 1;
    }
   else
@@ -62,33 +62,10 @@ int pm_thing(struct list *l,enum evcodes ec)
 int move_pnts(struct list *l,enum evcodes ec)
  {
  struct point r;
- struct listpoint *save,*p,*p2;
- struct node *n,*sn;
- int i;
- if((save=malloc(sizeof(struct listpoint)*l->size))==NULL)
-  { printmsg("No mem for saving old coords."); return 1; }
  if(!makedirection(ec,view.e,&r)) return 1;
- for(sn=l->head,p=save,p2=NULL;sn->next!=NULL && p2==NULL;sn=sn->next,p++)
-  {
-  n=sn->d.n;
-  *p=*n->d.lp;
-  for(i=0;i<3;i++)
-   n->d.p->x[i]+=r.x[i];
-  fittogrid(n->d.p);
-  if(!testpnt(n)) p2=p; 
-  }
- if(p2!=NULL)
-  {
-  for(n=l->head,p=save;p<=p2;n=n->next,p++)
-   *n->d.n->d.lp=*p; 
-  return 1;
-  }
- else
-  for(n=l->head;n->next!=NULL;n=n->next) newcorners(n->d.n);
- free(save);
- return 6;
+ return move_pntlist(l,&r);
  }
-
+ 
 int pm_pnt(struct list *l,enum evcodes ec)
  {
  struct list lp;
@@ -153,12 +130,12 @@ int maketurndir(enum evcodes ec,struct point *oc,struct point *nc)
  double x;
  switch(ec)
   {
-  case ec_pbankleft: a0=0;a1=1;a2=2;x=view.rotangel; break;
-  case ec_pbankright: a0=0;a1=1;a2=2;x=-view.rotangel; break; 
-  case ec_pturnleft: a0=2;a1=0;a2=1;x=-view.rotangel; break;
-  case ec_pturnright: a0=2;a1=0;a2=1;x=view.rotangel; break;
-  case ec_pturnup: a0=1;a1=2;a2=0;x=-view.rotangel; break;
-  case ec_pturndown: a0=1;a1=2;a2=0;x=view.rotangel; break;
+  case ec_pbankleft: a0=0;a1=1;a2=2;x=view.protangle; break;
+  case ec_pbankright: a0=0;a1=1;a2=2;x=-view.protangle; break; 
+  case ec_pturnleft: a0=2;a1=0;a2=1;x=-view.protangle; break;
+  case ec_pturnright: a0=2;a1=0;a2=1;x=view.protangle; break;
+  case ec_pturnup: a0=1;a1=2;a2=0;x=-view.protangle; break;
+  case ec_pturndown: a0=1;a1=2;a2=0;x=view.protangle; break;
   default: fprintf(errf,"Unknown event code in pturn.\n"); return 0; break;
   }
  turn(oc,nc,a0,a1,a2,x);
@@ -176,11 +153,11 @@ int pr_thing(struct list *nl,enum evcodes ec)
   if(n->d.t->type1!=2 && n->d.t->type1!=4 && n->d.t->type1!=9) continue;
   for(k=0;k<3;k++)
    for(l=0;l<3;l++)
-    coords[k].x[l]=n->d.S->orientation[k*3+l]/65536.0;
+    coords[k].x[l]=n->d.t->orientation[k*3+l]/65536.0;
   maketurndir(ec,coords,coords);
   for(k=0;k<3;k++)
    for(l=0;l<3;l++)
-    n->d.S->orientation[k*3+l]=coords[k].x[l]*65536;
+    n->d.t->orientation[k*3+l]=coords[k].x[l]*65536;
   setthingpts(n->d.t);
   }
  return 6;
@@ -238,16 +215,20 @@ int pr_cube(struct list *nl,enum evcodes ec)
  struct point offset,coords[3],ncoords[3],*save,*p;
  struct node *n,*cn;
  struct list lp;
- int j,k;
- if(ec!=ec_pbankleft && ec!=ec_pbankright) 
+ int j,k,currcubeins=0;
+ if(ec!=ec_pbankleft && ec!=ec_pbankright && ec!=ec_pturnleft &&
+  ec!=ec_pturnright) 
   { printmsg("Only banking allowed with cubes."); return 1; }
  initlist(&lp);
  if(!turningcoords(&offset,coords)) return 1;
+ /* add current cube to tag list */
+ if(ec==ec_pbankleft || ec==ec_pbankright)
+  { if((currcubeins=((cn=findnode(nl,view.pcurrcube->no))==NULL))==1)
+     cn=addnode(nl,view.pcurrcube->no,view.pcurrcube); }
+ else
+  { cn=NULL; ec=ec==ec_pturnleft ? ec_pbankleft : ec_pbankright; }
  /* turn coordsystem */
  maketurndir(ec,coords,ncoords);
- /* add current cube to tag list */
- if((cn=findnode(nl,view.pcurrcube->no))==NULL)
-  cn=addnode(nl,view.pcurrcube->no,view.pcurrcube);
  if((save=malloc(sizeof(struct point)*nl->size*8))==NULL)
   { printmsg("No mem to save coords\n"); return 1; }
  for(n=nl->head;n->next!=NULL;n=n->next)
@@ -269,7 +250,7 @@ int pr_cube(struct list *nl,enum evcodes ec)
    newcorners(n);
  free(save);
  freelist(&lp,NULL);
- if(cn!=NULL) /* for empty tagged list */
+ if(cn!=NULL && currcubeins) /* for empty tagged list */
   freenode(nl,cn,NULL);
  return (!k) ? 1 : 6;
  }

@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     readlvl.c - reading whole levels.
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
     
 #include "structs.h"
+#include "system.h" /* just for event.h */
 #include "tools.h"
 #include "savetool.h"
 #include "event.h"
@@ -27,7 +28,7 @@ extern int init_test;
 
 struct leveldata initlevdat= {
  { "LVLP",0x1,0x14,0,0,0,0,0 }, 
- { 0x196705,0x77,"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" ,0,0x74, 
+ { 0x6705,0x19,0x77,"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",0,0,0x74, 
    0,0,0x108, 0,0,0x18, 0,0,0x10, 0,0,0x36, { 0,0,0 }, 0,0,0x2a, 0,0,0x10 },
  { 0x19, {}, "GUILE" },
 #ifdef SHAREWARE
@@ -192,13 +193,15 @@ int makedoors(void)
  {
  struct node *n;
  int i;
+ char x;
  l->edoors->num=0;
  for(n=l->doors.head;n->next!=NULL;n=n->next)
   {
   if(n->d.d->edoor)
    {
    if(l->edoors->num==10)
-    { printmsg("Too many doors to be opened at end (max.: 10)."); return 0; }
+    { if(!readkeyb("Too many doors to be opened at end (max.: 10). 
+       Ignore rest?","%c",&x) || x!='y') return 0; }
    l->edoors->cubes[l->edoors->num]=n->d.d->cubenum;
    l->edoors->walls[l->edoors->num++]=n->d.d->wallnum; 
    }
@@ -214,7 +217,7 @@ int makedoors(void)
    }
  for(n=l->producers.head;n->next!=NULL;n=n->next)
   { n->d.cp->cubenum=n->d.cp->c->no; 
-    n->d.cp->stuffnum=n->d.cp->c->d.c->subtype; }
+    n->d.cp->stuffnum=n->d.cp->c->d.c->value; }
  return 1;
  }
  
@@ -226,28 +229,31 @@ int checklvl(void)
  int i;
  char x;
  if(view.exitcube==NULL)
-  { printmsg("WARNING: No exit side defined."); 
-    if(!readkeyb("Ignore? (y/n)","%c",&x) || x!='y') return 0; }
+  { if(!readkeyb("WARNING: No exit side defined. Ignore? (y/n)","%c",&x) || 
+     x!='y') return 0; }
  sortlist(&l->cubes,0); /* so we get no higher numbers than size */
  for(n=l->things.head;n->next!=NULL;n=n->next)
   {
   for(i=0;i<3;i++)
    n->d.t->pos[i]=n->d.t->p[0].x[i];
   if((c=findpntcube(&l->cubes,&n->d.t->p[0]))==NULL)
-   { printmsg("WARNING: Thing %d out of bounds.",n->no); view.pcurrthing=n; 
-     if(!readkeyb("Ignore? (y/n)","%c",&x) || x!='y') return 0;
+   { view.pcurrthing=n; 
+     if(!readkeyb("WARNING: Thing %d out of bounds. Ignore? (y/n)","%c",&x,
+      n->no) || x!='y') return 0;
      else c=l->cubes.head; }
   if(n->d.t->type1==4 && n->d.t->type2==0) 
    if(start==NULL) start=n;
    else
-    { printmsg("WARNING: Two starting places: thing %d and thing %d",
-       start->no,n->no); view.pcurrthing=n;
-      if(!readkeyb("Ignore? (y/n)","%c",&x) || x!='y') return 0; }
+    { view.pcurrthing=n;
+      if(!readkeyb("WARNING: Two starting places: thing %d and thing %d",
+       "%c",&x,start->no,n->no)) return 0; }
   n->d.t->cube=c->no;
   }
  if(start==NULL)
-  { printmsg("WARNING: No starting place."); 
-    if(!readkeyb("Ignore? (y/n)","%c",&x) || x!='y') return 0; }
+  { if(!readkeyb("WARNING: No starting place. Ignore? (y/n)","%c",&x) || 
+     x!='y') return 0; }
+ else
+  start->d.t->control=ct_slew;
  data=start->d.v; i=start->no;
  freenode(&l->things,start,NULL); 
  if(!addheadnode(&l->things,i,data))
@@ -269,7 +275,7 @@ int savelvl(FILE *f)
  if(!savelist(f,&l->pts,savepoint,0)) return 0;
  /* and cubes */
  if(!savelist(f,&l->cubes,savecube,0)) return 0;
- l->lh1.endofcubes=ftell(f);
+ l->lh1.gamedata_offset=ftell(f);
  l->lh2.numthings=l->things.size;
  l->lh2.numdoors=l->doors.size;
  l->lh2.numsdoors=l->sdoors.size;
@@ -288,7 +294,7 @@ int savelvl(FILE *f)
  if(!makedoors()) return 0; 
  l->lh2.posdoors=ftell(f);
  if(!savelist(f,&l->doors,savedoor,0)) return 0;
- l->lh2.possdoors=l->lh2.posempty=ftell(f);
+ l->lh2.possdoors=l->lh2.posopendoors=ftell(f);
  if(!savelist(f,&l->sdoors,savesdoor,0)) return 0;
  l->lh2.posedoors=ftell(f);
  if(fwrite(l->edoors,sizeof(struct edoor),l->lh2.numedoors,f)!=
@@ -296,12 +302,12 @@ int savelvl(FILE *f)
   { fprintf(errf,"Can't write edoors.\n"); return 0; }
  l->lh2.posproducer=ftell(f);
  if(!savelist(f,&l->producers,saveproducer,0)) return 0;
- l->lh1.sizeall=ftell(f);
+ l->lh1.hostagetxt_offset=ftell(f);
 #ifdef SHAREWARE 
  if(fwrite(l->end,1,9,f)!=9)
   { fprintf(errf,"Can't write end.\n"); return 0; } 
 #endif 
- fseek(f,l->lh1.endofcubes,SEEK_SET);
+ fseek(f,l->lh1.gamedata_offset,SEEK_SET);
  if(fwrite(&l->lh2,sizeof(struct levelhead2),1,f)!=1) /* cause of pos */
   { fprintf(errf,"Savelvl: Can't write header for things 2.\n"); return 0; }
  fseek(f,0,SEEK_SET);
@@ -310,3 +316,4 @@ int savelvl(FILE *f)
  fclose(f);  
  return 1;
  }
+ 

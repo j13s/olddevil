@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     tools.c - all functions which have no better place
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,36 +17,21 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
     
 #include "structs.h"
+#include "system.h"
 #include "tools.h"
-#include <sys/farptr.h>
+#include "grfx.h"
 
-int getnumlock(void)
- { return (_farpeekb(0x40,0x17)&0x20)!=0; }
- 
-int numlockonoff(void)
- {
- unsigned char value;
- value=_farpeekb(0x40,0x17);
- _farpokeb(0x40,0x17,value^0x20);
- return (value^0x20)!=0;
- }
- 
+extern int supervga;
+
 int drawnumlock(void)
  {
- int xsize,ysize,width=2;
- GrTextOption txt={NULL,1,1,{view.color[MENUCOLORS+5]},
-  {view.color[MENUCOLORS]},GR_TEXT_RIGHT,GR_ALIGN_CENTER,GR_ALIGN_CENTER,
-  GR_BYTE_TEXT};
- GrSetContext(view.movebuttons);
- xsize=GrMaxX()/3; ysize=GrMaxY()/3; 
- GrFramedBox(width,2*ysize+width,3*xsize-width,3*ysize-width,width,
-  &boxcolors);
- if((width=getnumlock())==1)
-  GrDrawString("Move",4,xsize/2+1+xsize,ysize/2+1+2*ysize,&txt);
- else
-  GrDrawString("Modify",6,xsize/2+1+xsize,ysize/2+1+2*ysize,&txt);
- GrSetContext(NULL); 
- return width;
+ int xoffs=view.bounds[ecw_movebuttons][0],
+  yoffs=view.bounds[ecw_movebuttons][1],xsize,ysize;
+ xsize=(view.bounds[ecw_movebuttons][2]-xoffs)/3;
+ ysize=(view.bounds[ecw_movebuttons][3]-yoffs)/3;
+ sys_drawbutton(xoffs,yoffs+2*ysize,xoffs+3*xsize,yoffs+3*ysize,
+  sys_getnumlock() ? "Move" : "Modify");
+ return sys_getnumlock();
  }
  
 unsigned char *getsidedata(unsigned int *se,int *length)
@@ -94,7 +79,7 @@ struct infoitem *findnpmenuitem(int row,int column,int nextprev,
  struct infoitem *i;
  for(i=is;i-is<num;i++)
   {
-  dist=((i->row-row)*view.menu.txr_width+i->column-column)*nextprev;
+  dist=((i->row-row)*view.smenuwidth+i->column-column)*nextprev;
   if(dist>=0 && dist<*mindist)
    { *mindist=dist; mini=i; }
   if(i->numchildren>0)
@@ -113,7 +98,7 @@ struct infoitem *findnpmenuitem(int row,int column,int nextprev,
    if i==NULL the first or last menuitem is returned */
 struct infoitem *findmenuitem(struct infoitem *i,int nextprev)
  {
- int mindist=view.menu.txr_height*view.menu.txr_width;
+ int mindist=view.smenuheight*view.smenuwidth;
  struct infoitem *si;
  if(i!=NULL)
   si=findnpmenuitem(i->row,i->column+nextprev,nextprev,&mindist,
@@ -124,7 +109,7 @@ struct infoitem *findmenuitem(struct infoitem *i,int nextprev)
    si=findnpmenuitem(0,0,1,&mindist,NULL,view.info[view.showwhat],
     view.infonum[view.showwhat]);
   else
-   si=findnpmenuitem(view.menu.txr_height,view.menu.txr_width,-1,&mindist,
+   si=findnpmenuitem(view.menuheight,view.smenuwidth,-1,&mindist,
     NULL,view.info[view.showwhat],view.infonum[view.showwhat]);
  return si;
  }
@@ -207,6 +192,7 @@ struct thing *changething(struct thing *t,int newtype,struct cube *c)
   case 4: size=sizeof(struct start); data=&stdstart; break;
   case 7: size=sizeof(struct item); data=&stditem; break;
   case 9: size=sizeof(struct reactor); data=&stdreactor; break;
+  case 0xe: size=sizeof(struct start); data=&stdcoopstart; break;
   default: fprintf(errf,"Unknown thing type %d in changething.\n",t->type1);
    my_exit();
   }
@@ -216,10 +202,9 @@ struct thing *changething(struct thing *t,int newtype,struct cube *c)
  if(t!=NULL)  
   { for(j=0;j<3;j++) t2->p[j]=t->p[j]; 
     t2->type1=newtype; }
- if(t!=NULL && t->stuff[1]==1 && t2->stuff[1]==1) /* with orientation */
-  for(j=0;j<9;j++)
-   ((struct robot *)t2)->orientation[j]=((struct robot *)t)->orientation[j];
- else if(t2->stuff[1]==1)
+ if(t!=NULL) /* orientation */
+  for(j=0;j<9;j++) t2->orientation[j]=t->orientation[j];
+ else 
   {
   for(j=0;j<3;j++)
    {
@@ -233,7 +218,7 @@ struct thing *changething(struct thing *t,int newtype,struct cube *c)
   VECTOR(&coords[2],&coords[0],&coords[1]);
   for(j=0;j<3;j++)
    for(i=0;i<3;i++)
-    ((struct robot *)t2)->orientation[j*3+i]=coords[j].x[i]*65536;
+    t2->orientation[j*3+i]=coords[j].x[i]*65536;
   }
  setthingpts(t2);
  view.oldpcurrthing=NULL;
@@ -241,7 +226,7 @@ struct thing *changething(struct thing *t,int newtype,struct cube *c)
  }
  
 void printdatabyte(int row,int column,unsigned char *data,int offset)
- { sprintf(&view.menu.txr_buffer[(row+1)*view.menu.txr_width+column+5],
+ { sprintf(&view.menubuffer[(row+1)*view.smenuwidth+column+5],
     "%.2x",(unsigned int)data[offset]); }
 
 void markdatabyte(struct infoitem *i,int byte)
@@ -249,37 +234,35 @@ void markdatabyte(struct infoitem *i,int byte)
  int x1,y1,x2,y2,row,column;
  row=(i->offset+byte)/4+view.maxrow[view.showwhat]+3-view.menuoffset+1;
  column=((i->offset+byte)%4)*3+4;
- x1=column*view.menu.txr_font->fnt_width+view.menu.txr_font->fnt_width/2+
-  view.menu.txr_xpos;
- y1=row*view.menu.txr_font->fnt_height+view.menu.txr_ypos+1;
- x2=x1+3*view.menu.txr_font->fnt_width-1;
- y2=y1+view.menu.txr_font->fnt_height-2;
- GrFilledBox(x1,y1,x2,y2,view.color[(HILIGHTCOLORS+i->class)]|GrXOR);
- if(byte==0) GrVLine(x1,y1,y2,view.color[WHITE]);
- if(byte==i->length-1) GrVLine(x2,y1,y2,view.color[WHITE]);
+ x1=column*view.fontwidth+view.fontwidth/2+view.bounds[ecw_uppermenu][0];
+ y1=row*view.fontheight+view.bounds[ecw_uppermenu][1]+1;
+ x2=x1+3*view.fontwidth-1;
+ y2=y1+view.fontheight-2;
+ sys_filledbox(x1,y1,x2,y2,view.color[(HILIGHTCOLORS+i->class)],1);
+ if(byte==0) sys_line(x1,y1,x1,y2,view.color[WHITE],0);
+ if(byte==i->length-1) sys_line(x2,y1,x2,y2,view.color[WHITE],0);
  }
  
 /* reads texture sd from file f in direction dir.
    dir=0 -> normal (origin left upper corner x+ y+).
-   dir=1 -> 90ø    (origin left lower corner x+ y-).
+   dir=1 -> 90ø   (origin right upper corner x- y+). 
    dir=2 -> 180ø   (origin right lower corner x- y-).
-   dir=3 -> 270ø   (origin right upper corner x- y+). */
+   dir=3 -> 270ø    (origin left lower corner x+ y-). */
 void readbitmap(FILE *f,struct texture *sd,int dir)
  {
- unsigned char *sbitmap,*bitmap=view.txt_buffer,
+ unsigned char *sbitmap,*bitmap=view.txt_sbuffer,
   *buffer,*fill,*nobytesinrow;
  unsigned int size;
  unsigned int i;
  int startx,starty,endx,endy,addx,addy,mx,my,x,y;
  if(sd->xsize!=64 || sd->ysize!=64)
   { printmsg("Texture of wrong size: %d %d",sd->xsize,sd->ysize); return; }
-/* for(fill=bitmap;fill-bitmap<64*64;fill++) *fill=0xff; */
  switch(dir)
   {
   case 0: startx=starty=0; addx=addy=1; mx=1; my=64; break;
-  case 1: startx=0; starty=63; addx=1; addy=-1; mx=64; my=1; break;
+  case 1: startx=63; starty=0; addx=-1; addy=1; mx=64; my=1; break;
   case 2: startx=starty=63; addx=addy=-1; mx=1; my=64; break;
-  case 3: startx=63; starty=0; addx=-1; addy=1; mx=64; my=1; break;
+  case 3: startx=0; starty=63; addx=1; addy=-1; mx=64; my=1; break;
   default:
    printmsg("Unknown direction in readbitmap: %d\n",dir); return;
   }
@@ -346,33 +329,74 @@ void readbitmap(FILE *f,struct texture *sd,int dir)
   default:
    printmsg("Bitmap-type %d not implemented.",(int)sd->type1);
   }
- for(fill=bitmap,sbitmap=view.txt_sbuffer;fill-bitmap<64*64;fill++,
+ for(fill=bitmap,sbitmap=view.txt_buffer;fill-bitmap<64*64;fill++,
   sbitmap++)
-  *sbitmap=(*fill!=0xff) ? 0xff : 0x0;
+  if(*fill!=0xff) *sbitmap=*fill;
  }
- 
-void drawtexture(int rtxtnum,int w)
+
+void drawonetexture(int rtxtnum,int w)
  {
  struct texture *sd;
- int txtnum=rtxtnum&0x3fff; /* the first two bits are direction */
- sd=(txtnum>=0 && txtnum<view.numtxtref) ? view.txtref[txtnum] : NULL;
- if(sd==NULL || (txtnum==0 && w==1))
-  { GrTextXY(view.txt_txtxpos[w],view.txt_txtypos[w],
-    (rtxtnum>0) ? "UNKNOWN " : "Nothing ",view.color[WHITE],
-    view.color[BLACK]); return; }
- GrTextXY(view.txt_txtxpos[w],view.txt_txtypos[w],sd->name,
-  view.color[WHITE],view.color[BLACK]); 
- fseek(view.pigfile,(long)sd->offset+view.txt_bmoffset,SEEK_SET);
- readbitmap(view.pigfile,sd,(rtxtnum>>14)&0x3);
- if(w==1)
-  GrBitBlt(view.txt_complete,0,0,view.txt_shape,0,0,63,63,GrOR); 
- GrBitBlt(view.txt_complete,0,0,view.txt_context,0,0,
-  63,63,(w==1) ? GrAND : GrWRITE); 
- GrBitBlt(view.texture,0,0,view.txt_complete,0,0,63,63,GrWRITE);
- GrVLine(view.texture->gc_xoffset+64,view.texture->gc_yoffset,
-  view.texture->gc_yoffset+64,view.color[HILIGHTCOLORS+3]);
- GrHLine(view.texture->gc_xoffset,view.texture->gc_xoffset+64,
-  view.texture->gc_yoffset+64,view.color[HILIGHTCOLORS+3]);
+ char *txt;
+ int plot;
+ unsigned int txtnum=rtxtnum&0x3fff; /* the first two bits are direction */
+ sd=(txtnum<view.numtxtref) ? view.txtref[txtnum] : NULL;
+ if((plot=(sd!=NULL && (txtnum!=0 || w!=1)))==0)
+  txt=(rtxtnum>0) ? "UNKNOWN " : "Nothing ";
+ else
+  {
+  txt=sd->name;
+  fseek(view.pigfile,(long)sd->offset+view.txt_bmoffset,SEEK_SET);
+  readbitmap(view.pigfile,sd,(rtxtnum>>14)&0x3);
+  }
+ sys_drawtexture(plot,view.txt_xpos,view.txt_ypos,view.txt_xpos,
+  view.txt_ypos + (w ? 85 : 70),txt); 
+ }
+
+void drawtextures(struct wall *w)
+ {
+ struct corner *c,*c0;
+ int orig_x[9],orig_y[9],i;
+ double l;
+ changeto256();
+ sys_filledbox(view.txt_xpos,view.txt_ypos,view.txt_xpos+64,
+  view.txt_ypos+85+view.fontheight,view.color[BLACK],0);
+ if(w==NULL) { drawonetexture(-1,0); drawonetexture(-1,1); return; }
+ drawonetexture(w->texture1,0);
+ if(w->texture2!=0) drawonetexture(w->texture2,1);
+ else drawonetexture(-1,1);
+ sys_initclipping(view.txt_xpos,view.txt_ypos,view.txt_xpos+63,
+  view.txt_ypos+63);
+ c0=&view.pcurrwall->corners[0];
+ orig_x[0]=orig_x[1]=orig_x[2]=(c0->xpos*64/2048)%64;
+ orig_x[3]=orig_x[4]=orig_x[5]=(c0->xpos*64/2048)%64+64;
+ orig_x[6]=orig_x[7]=orig_x[8]=(c0->xpos*64/2048)%64-64;
+ orig_y[0]=orig_y[3]=orig_y[6]=(c0->ypos*64/2048)%64;
+ orig_y[1]=orig_y[4]=orig_y[7]=(c0->ypos*64/2048)%64+64;
+ orig_y[2]=orig_y[5]=orig_y[8]=(c0->ypos*64/2048)%64-64;
+ c=&view.pcurrwall->corners[1];
+ l=sqrt((c->xpos-c0->xpos)*(c->xpos-c0->xpos)+(c->ypos-c0->ypos)*(c->ypos-
+  c0->ypos))/32;
+ for(i=0;i<9;i++)
+  sys_clipline(view.txt_xpos+orig_x[i],view.txt_ypos+orig_y[i],
+   (int)((c->xpos-c0->xpos)/l)+view.txt_xpos+orig_x[i],
+   (int)((c->ypos-c0->ypos)/l)+view.txt_ypos+orig_y[i],
+   supervga ? view.color[HILIGHTCOLORS+3] : view.color[WHITE],0);
+ c=&view.pcurrwall->corners[3];
+ l=sqrt((c->xpos-c0->xpos)*(c->xpos-c0->xpos)+(c->ypos-c0->ypos)*(c->ypos-
+  c0->ypos))/32;
+ for(i=0;i<9;i++)
+  {
+  sys_clipline(view.txt_xpos+orig_x[i],view.txt_ypos+orig_y[i],
+   (int)((c->xpos-c0->xpos)/l)+view.txt_xpos+orig_x[i],
+   (int)((c->ypos-c0->ypos)/l)+view.txt_ypos+orig_y[i],
+   supervga ? view.color[HILIGHTCOLORS+4] : view.color[WHITE],0);
+  sys_clipline(view.txt_xpos+orig_x[i]+3,view.txt_ypos+orig_y[i]+3,
+   view.txt_xpos+orig_x[i]-3,view.txt_ypos+orig_y[i]-3,view.color[WHITE],0);
+  sys_clipline(view.txt_xpos+orig_x[i]-3,view.txt_ypos+orig_y[i]+3,
+   view.txt_xpos+orig_x[i]+3,view.txt_ypos+orig_y[i]-3,view.color[WHITE],0);
+  }
+ sys_killclipping();
  }
  
 void beam(struct point *p)
@@ -383,7 +407,7 @@ void beam(struct point *p)
   view.e0.x[x]-=view.tsize*4*view.e[2].x[x]; 
  }
  
-inline int testvector(struct cube *c,int p0,int p1,int p2,int p3,
+int testvector(struct cube *c,int p0,int p1,int p2,int p3,
  struct point *p)
  { 
  int i;
@@ -432,7 +456,6 @@ void makemarker(struct point *mp,struct point *np)
 void setthingpts(struct thing *t)
  {
  struct point p;
- struct start *s;
  int j;
  if(t->type1==3 || t->type1==7)
   {
@@ -443,11 +466,10 @@ void setthingpts(struct thing *t)
   }
  else
   {
-  s=(struct start *)t;
   for(j=1;j<11;j++)
    t->p[j]=t->p[0];
   for(j=0;j<3;j++)
-   p.x[j]=s->orientation[j+6];
+   p.x[j]=t->orientation[j+6];
   for(j=0;j<3;j++)
    {
    t->p[2].x[j]+=p.x[j]/LENGTH(&p)*view.tsize*3;
@@ -455,7 +477,7 @@ void setthingpts(struct thing *t)
    t->p[9].x[j]+=p.x[j]/LENGTH(&p)*view.tsize*3;
    }
   for(j=0;j<3;j++)
-   p.x[j]=s->orientation[j+3];
+   p.x[j]=t->orientation[j+3];
   for(j=0;j<3;j++)
    {
    t->p[6].x[j]+=p.x[j]/LENGTH(&p)*view.tsize;
@@ -463,7 +485,7 @@ void setthingpts(struct thing *t)
    t->p[10].x[j]+=p.x[j]/LENGTH(&p)*view.tsize;
    }
   for(j=0;j<3;j++)
-   p.x[j]=s->orientation[j];
+   p.x[j]=t->orientation[j];
   for(j=0;j<3;j++)
    {
    t->p[1].x[j]-=p.x[j]/LENGTH(&p)*view.tsize;
@@ -474,29 +496,27 @@ void setthingpts(struct thing *t)
   }
  }
   
-void printsmsg(char *txt)
- {
- memset(&view.menu.txr_buffer[(view.menu.txr_height-2)*view.menu.txr_width],
-  ' ',view.menu.txr_width);
- strcpy(&view.menu.txr_buffer[(view.menu.txr_height-2)*view.menu.txr_width],
-  txt);
- GrDumpText(0,view.menu.txr_height-2,view.menu.txr_width,1,&view.menu); 
- }
- 
 void printmsg(char *txt,...)
  {
  va_list args;
- char buffer[255];
  va_start(args,txt);
- GrFilledBox(view.xoffset,view.maxysize-view.menu.txr_font->fnt_height-2,
-  view.xoffset+view.xsize,view.maxysize,view.color[BLACK]);
- vsprintf(buffer,txt,args); 
- buffer[view.xsize/view.menu.txr_font->fnt_width]=0;
- GrTextXY(view.xoffset,view.maxysize-view.menu.txr_font->fnt_height-1,
-  buffer,view.color[WHITE],view.color[BLACK]);
+ vprintmsg(txt,args);
  va_end(args);
  }
  
+void vprintmsg(char *txt,va_list args)
+ {
+ int addy=3;
+ char buffer[255];
+ vsprintf(buffer,txt,args); 
+ buffer[view.xsize/view.fontwidth]=0;
+ if(buffer[0]=='*') addy+=view.fontheight+1; 
+ sys_filledbox(view.xoffset,view.yoffset+view.ysize+addy,
+  view.xoffset+view.xsize,view.maxysize-1,view.color[BLACK],0);
+ sys_text(view.xoffset,view.yoffset+view.ysize+addy,
+  buffer[0]=='*' ? &buffer[1] : buffer,view.color[WHITE],view.color[BLACK]);
+ }
+
 /* makes the thing nearest to the normal screen coords x,y the current th.*/
 int findthing(int sx,int sy)
  {
@@ -772,7 +792,7 @@ int getno(struct infoitem *i,unsigned long *no)
  
 enum sdoortypes getsdoortype(struct sdoor *sd)
  {
- if(sd->type==0x0100) return sdtype_door;
+ if(sd->flags==0x0001) return sdtype_door;
  else return sdtype_cube;
  }
  
@@ -902,3 +922,4 @@ int copylist(struct list *dl,struct list *sl,size_t s)
   }
  return 1;
  }
+

@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     structs.h - global variables, structures, defines and so on.
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,9 +21,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <grx.h>
-#include <grxfont.h>
-#include <mousex.h>
+#include <time.h>
+
+/* Well, this is not so nice, but I need it. Perhaps you must set a flag
+   also. GNU-C will align characters to longs and savetool needs packed
+   structures (every type as long as in sizeof()) */
+#ifdef GNU_C
+#define NONANSI_FLAG __attribute__ ((packed))
+#else
+#define NONANSI_FLAG 
+#endif
 
 #define VECTOR(c,a,b) { \
  (c)->x[0]=(double)(a)->x[1]*(b)->x[2]-(double)(a)->x[2]*(b)->x[1]; \
@@ -40,12 +47,13 @@
 #define SCALAR(a,b) ((double)(a)->x[0]*(b)->x[0]+ \
  (double)(a)->x[1]*(b)->x[1]+(double)(a)->x[2]*(b)->x[2])
 #define LENGTH(a) sqrt((double)SCALAR(a,a))
-#define DW_BITMAP 0x20
+#define DW_BITMAP 0x40
+#define DW_GRID 0x20
 #define DW_DATA 0x10
 #define DW_DOORS 0x8
 #define DW_ALLLINES 0x4
-#define DW_CUBES 0x1
 #define DW_THINGS 0x2
+#define DW_CUBES 0x1
 #define DW_DEFAULT 0x0f
 /* colors */
 #define BLACK 0
@@ -55,7 +63,7 @@
 #define DOORCOLORS (THINGCOLORS+NUM_OF_THINGS)
 #define NUM_OF_DOORS 5
 #define HILIGHTCOLORS (DOORCOLORS+NUM_OF_DOORS)
-#define MAXHILIGHT 4
+#define MAXHILIGHT 5
 #define MENUCOLORS (HILIGHTCOLORS+MAXHILIGHT)
 #define NUM_OF_MCOLORS 6
 #define USEDCOLORS (MENUCOLORS+NUM_OF_MCOLORS+1)
@@ -63,7 +71,7 @@
 
 #define MAX_OBJSTR_LENGTH 15
 #define MAX_XNOBUTTON 2
-#define MAX_YNOBUTTON 4
+#define MAX_YNOBUTTON 3
 
 struct node 
  { 
@@ -101,38 +109,17 @@ struct listpoint
 struct thing
  {
  /* my stuff */
- struct point p[11]; /* 0 is center, 1..10 are the drawn lines */
- int color;
+ struct point p[11] NONANSI_FLAG; /* 0 is center, 1..10 are the drawn lines */
+ int color NONANSI_FLAG;
  /* descent stuff */
- unsigned char type1 __attribute__ ((packed));
- unsigned char type2 __attribute__ ((packed));
- unsigned short stuff[2] __attribute__ ((packed));
- unsigned short cube __attribute__ ((packed));
- long pos[3] __attribute__ ((packed));
- };
-struct item
- {
- struct thing t __attribute__ ((packed));
- unsigned short stuff0[22] __attribute__ ((packed));
- long pos2[3] __attribute__ ((packed));
- unsigned long stuff1 __attribute__ ((packed));
- unsigned char stuff2[3] __attribute__ ((packed));
- unsigned long grfx __attribute__ ((packed));
- unsigned long stuff3 __attribute__ ((packed));
- unsigned char stuff4 __attribute__ ((packed));
- };
-struct robot
- {
- struct thing t __attribute__ ((packed));
- long orientation[9] __attribute__ ((packed));
- long pos2[5] __attribute__ ((packed));
- unsigned char droptype,dropsubtype,drophowmany __attribute__ ((packed));
- unsigned long stuff1[39] __attribute__ ((packed));
- unsigned long texture __attribute__ ((packed));
- };
-struct start
- {
- struct thing t __attribute__ ((packed));
+ unsigned char type1 NONANSI_FLAG;
+ unsigned char type2 NONANSI_FLAG;
+ unsigned char control NONANSI_FLAG;
+ unsigned char movement NONANSI_FLAG;
+ unsigned char render NONANSI_FLAG;
+ unsigned char flags NONANSI_FLAG;
+ unsigned short cube NONANSI_FLAG;
+ long pos[3] NONANSI_FLAG;
  /* one word to the orientation:
   the first 3 components define the normalvector on the right side of
    the object.
@@ -143,72 +130,133 @@ struct start
   that means the whole thing has too many parameters. the third vector
   is already defined from the first two one. the length of a 
   normalvector is 0x10000 */
- long orientation[9] __attribute__ ((packed));
- unsigned long stuff0[39] __attribute__ ((packed));
- unsigned char stuff1[3] __attribute__ ((packed));
+ long orientation[9] NONANSI_FLAG;
+ long size NONANSI_FLAG;
+ long shield NONANSI_FLAG;
+ long lastpos[3] NONANSI_FLAG;
+ unsigned char contain_type1 NONANSI_FLAG;
+ unsigned char contain_type2 NONANSI_FLAG;
+ unsigned char contain_count NONANSI_FLAG;
+ };
+struct movement_physics
+ {
+ long velocity[3] NONANSI_FLAG;
+ long thrust[3] NONANSI_FLAG;
+ long mass NONANSI_FLAG;
+ long drag NONANSI_FLAG;
+ long brakes NONANSI_FLAG;
+ long rotvel[3] NONANSI_FLAG;
+ long rotthrust[3] NONANSI_FLAG;
+ short turnroll NONANSI_FLAG;
+ short flags NONANSI_FLAG;
+ };
+struct movement_spinning
+ { long spin_rate[3] NONANSI_FLAG; };
+#define MAX_AIFLAGS 11
+struct control_ai
+ {
+ unsigned char behavior  NONANSI_FLAG;
+ unsigned char flags[MAX_AIFLAGS] NONANSI_FLAG;
+ unsigned short hide_cube NONANSI_FLAG;
+ unsigned short hide_index  NONANSI_FLAG;
+ unsigned short path_length NONANSI_FLAG;
+ unsigned short cur_path_index NONANSI_FLAG;
+ unsigned short start_cube NONANSI_FLAG;
+ unsigned short end_cube  NONANSI_FLAG;
+ };
+struct control_light
+ { long intensity NONANSI_FLAG; };
+struct control_powerup
+ { long count NONANSI_FLAG; };
+#define MAX_SUBMODELS 10
+struct render_polyobj
+ {
+ long model_num NONANSI_FLAG;
+ short anim_angles[MAX_SUBMODELS][3] NONANSI_FLAG;
+ unsigned long flags NONANSI_FLAG;
+ long texture NONANSI_FLAG;
+ };
+struct render_powerup
+ {
+ long vclip NONANSI_FLAG; /* this is the number of the graphics */
+ long frametime NONANSI_FLAG;
+ unsigned char framenum NONANSI_FLAG;
+ };
+struct item
+ {
+ struct thing t NONANSI_FLAG;
+ struct control_powerup c NONANSI_FLAG;
+ struct render_powerup r NONANSI_FLAG;
+ };
+struct robot
+ {
+ struct thing t NONANSI_FLAG;
+ struct movement_physics m NONANSI_FLAG;
+ struct control_ai c NONANSI_FLAG;
+ struct render_polyobj r NONANSI_FLAG;
+ };
+struct start
+ {
+ struct thing t NONANSI_FLAG;
+ struct movement_physics m NONANSI_FLAG;
+ struct render_polyobj r NONANSI_FLAG;
  };
 struct reactor
  {
- struct thing t __attribute__ ((packed));
- long orientation[9] __attribute__ ((packed));
- unsigned long stuff0[2] __attribute__ ((packed));
- unsigned long pos2[3] __attribute__ ((packed));
- unsigned long stuff1 __attribute__ ((packed));
- unsigned long stuff2[16] __attribute__ ((packed));
- unsigned char stuff3[3] __attribute__ ((packed));
- unsigned long texture __attribute__ ((packed));
+ struct thing t NONANSI_FLAG;
+ struct render_polyobj r NONANSI_FLAG;
  };
 enum sdoortypes { sdtype_door,sdtype_cube };
 struct sdoor
  {
- unsigned long int type __attribute__ ((packed));
- unsigned short int c0500 __attribute__ ((packed));
- unsigned short int cff00 __attribute__ ((packed));
- unsigned long int cffffffff __attribute__ ((packed));
- unsigned short int num  __attribute__ ((packed));
- unsigned short int cubes[10] __attribute__ ((packed));
- unsigned short int walls[10] __attribute__ ((packed));
+ char type_0 NONANSI_FLAG; /* always 0 */
+ short flags NONANSI_FLAG;
+ long value NONANSI_FLAG; /* 0x00050000 */
+ long time NONANSI_FLAG; /* -1 */
+ char link_num NONANSI_FLAG; /* -1 */
+ unsigned short int num  NONANSI_FLAG;
+ unsigned short int cubes[10] NONANSI_FLAG;
+ unsigned short int walls[10] NONANSI_FLAG;
  /* my stuff */
- struct node *d __attribute__ ((packed));
- struct node *target[10] __attribute__ ((packed));
+ struct node *d NONANSI_FLAG;
+ struct node *target[10] NONANSI_FLAG;
  };
 struct edoor
  {
- unsigned short int num __attribute__ ((packed));
- unsigned short int cubes[10] __attribute__ ((packed));
- unsigned short int walls[10] __attribute__ ((packed));
+ unsigned short int num NONANSI_FLAG;
+ unsigned short int cubes[10] NONANSI_FLAG;
+ unsigned short int walls[10] NONANSI_FLAG;
  };
 struct door
  {
- unsigned long cubenum __attribute__ ((packed));
- unsigned long wallnum __attribute__ ((packed));
- unsigned short stuff1 __attribute__ ((packed)); /* 0 */
- unsigned short hitpoints __attribute__ ((packed));
- unsigned long stuff2 __attribute__ ((packed)); /* ffffffff */
- unsigned char type1,type2 __attribute__ ((packed));
- unsigned char stuff3 __attribute__ ((packed)); 
- unsigned char sdoor __attribute__ ((packed));
- unsigned char animtxt __attribute__ ((packed));
- unsigned char key __attribute__ ((packed));
- unsigned short stuff4 __attribute__ ((packed)); /* 0 */
+ unsigned long cubenum NONANSI_FLAG;
+ unsigned long wallnum NONANSI_FLAG;
+ long hitpoints NONANSI_FLAG;
+ long linked_wall NONANSI_FLAG;
+ unsigned char type1,type2 NONANSI_FLAG;
+ unsigned char state NONANSI_FLAG;  /* should be closed=0 */
+ unsigned char sdoor NONANSI_FLAG;
+ unsigned char animtxt NONANSI_FLAG;
+ unsigned char key NONANSI_FLAG;
+ unsigned short stuff NONANSI_FLAG; /* 0 */
  /* my stuff */
- struct node *d __attribute__ ((packed)); /* door from other side */
- unsigned char edoor __attribute__ ((packed));
- struct node *sd __attribute__ ((packed));
+ struct node *d NONANSI_FLAG; /* door from other side */
+ unsigned char edoor NONANSI_FLAG;
+ struct node *sd NONANSI_FLAG;
   /* the sdoor corresponding to this door */
- struct list sdoors __attribute__ ((packed)); /* doors opening this door */
- struct node *c __attribute__ ((packed));
- struct wall *w __attribute__ ((packed));
- struct point p __attribute__ ((packed));
+ struct list sdoors NONANSI_FLAG; /* doors opening this door */
+ struct node *c NONANSI_FLAG;
+ struct wall *w NONANSI_FLAG;
+ struct point p NONANSI_FLAG;
  };
 struct corner
  {
- short int xpos,ypos __attribute__ ((packed));
- short int light __attribute__ ((packed));
+ short int xpos,ypos NONANSI_FLAG;
+ short int light NONANSI_FLAG;
  };
 struct wall
  {
- short int texture1,texture2 __attribute__ ((packed));
+ short int texture1,texture2 NONANSI_FLAG;
  /* corners:
   in the coord-system of the corners is the bitmap drawn.
   (0,0) is the right lower corner of the bitmap, the x-axis
@@ -227,49 +275,49 @@ struct wall
   wall 4 (front):       4 5 6 7
   wall 5 (back):        3 2 1 0
   */
- struct corner corners[4] __attribute__ ((packed));
+ struct corner corners[4] NONANSI_FLAG;
  /* my stuff */
- struct node *p[4] __attribute__ ((packed));
- int no __attribute__ ((packed));
- unsigned short int orientation __attribute__ ((packed)); 
+ struct node *p[4] NONANSI_FLAG;
+ int no NONANSI_FLAG;
+ unsigned short int orientation NONANSI_FLAG; 
   /* 0,1,2,3 rotating second txt */
  };
 struct producer
  {
  /* producer produces all roboter with the number of the setted bit */
- unsigned long prodwhat __attribute__ ((packed));
- unsigned long c01f40000 __attribute__ ((packed));
- unsigned long c00050000 __attribute__ ((packed));
- unsigned short cubenum __attribute__ ((packed));
- unsigned short stuffnum __attribute__ ((packed));
-  /* is the same as subtype in cube */
+ unsigned long prodwhat NONANSI_FLAG;
+ unsigned long hitpoints NONANSI_FLAG; /* 0x01f40000=32768000 */
+ unsigned long interval NONANSI_FLAG; /* 0x00050000=327680 */
+ unsigned short cubenum NONANSI_FLAG;
+ unsigned short stuffnum NONANSI_FLAG;
+  /* is the same as value in cube */
  /* my stuff */
- struct node *c __attribute__ ((packed));
+ struct node *c NONANSI_FLAG;
  };
 struct cube
  {
- unsigned short int nextcubes[6] __attribute__ ((packed));
- unsigned short int pts[8] __attribute__ ((packed));
- unsigned char type __attribute__ ((packed));
- unsigned char prodnum __attribute__ ((packed));
- unsigned short int subtype,stuff __attribute__ ((packed));
- unsigned char doors[6] __attribute__ ((packed));
+ unsigned short int nextcubes[6] NONANSI_FLAG;
+ unsigned short int pts[8] NONANSI_FLAG;
+ unsigned char type NONANSI_FLAG;
+ char prodnum NONANSI_FLAG;
+ unsigned short int value,light NONANSI_FLAG;
+ unsigned char doors[6] NONANSI_FLAG;
  /* my stuff */
- struct list sdoors __attribute__ ((packed));
- struct wall *walls[6] __attribute__ ((packed));
- struct node *p[8],*nc[6],*d[6] __attribute__ ((packed));
- struct node *cp __attribute__ ((packed)); /* producer */
+ struct list sdoors NONANSI_FLAG;
+ struct wall *walls[6] NONANSI_FLAG;
+ struct node *p[8],*nc[6],*d[6] NONANSI_FLAG;
+ struct node *cp NONANSI_FLAG; /* producer */
  };
 struct texture
  {
- char rname[8] __attribute__ ((packed));
- unsigned char ruxsize,rxsize __attribute__ ((packed));
- unsigned char rysize __attribute__ ((packed));
- unsigned char type1,type2 __attribute__ ((packed));
- unsigned long int offset __attribute__ ((packed));
+ char rname[8] NONANSI_FLAG;
+ unsigned char ruxsize,rxsize NONANSI_FLAG;
+ unsigned char rysize NONANSI_FLAG;
+ unsigned char type1,type2 NONANSI_FLAG;
+ unsigned long int offset NONANSI_FLAG;
  /* my stuff */
- char name[9] __attribute__ ((packed));
- unsigned short xsize,ysize __attribute__ ((packed));
+ char name[9] NONANSI_FLAG;
+ unsigned short xsize,ysize NONANSI_FLAG;
  };
 /*
  sizes: 0x108,0x18,0x10,0x36,0x0,0x2a,0x10
@@ -279,61 +327,65 @@ struct texture
 struct levelhead1
  {
  /* header */
- char lvlp[4] __attribute__ ((packed));
- unsigned long int c1 __attribute__ ((packed)),c14 __attribute__ ((packed));
- unsigned long int endofcubes __attribute__ ((packed)),
-  sizeall __attribute__ ((packed));
- unsigned char stuff0 __attribute__ ((packed));
+ char lvlp[4] NONANSI_FLAG;
+ unsigned long int version NONANSI_FLAG; /* 0x1 */
+ unsigned long int minedata_offset NONANSI_FLAG; /* 0x14 */
+ unsigned long int gamedata_offset NONANSI_FLAG;
+ unsigned long int hostagetxt_offset NONANSI_FLAG; /* not used */
+ unsigned char version0 NONANSI_FLAG; /* always 0 */
 #ifdef SHAREWARE
- unsigned long numpts __attribute__ ((packed)),
-  numcubes __attribute__ ((packed));
+ unsigned long numpts NONANSI_FLAG,
+  numcubes NONANSI_FLAG;
 #else
- unsigned short numpts __attribute__ ((packed)),
-  numcubes __attribute__ ((packed));
+ unsigned short numpts NONANSI_FLAG,
+  numcubes NONANSI_FLAG;
 #endif
  };
 struct levelhead2
  {
  /* header for things etc. */
- unsigned long c196705 __attribute__ ((packed)),
-  sizedir __attribute__ ((packed));
- char stuff1[19] __attribute__ ((packed)); 
- unsigned long posguile __attribute__ ((packed)),
-  sizeguile __attribute__ ((packed)); 
- unsigned long posthings __attribute__ ((packed)),
-  numthings __attribute__ ((packed)),sizethings __attribute__ ((packed)); 
+ unsigned short signature NONANSI_FLAG; /* 0x6705 */
+ unsigned short version NONANSI_FLAG; /* reg. version=0x19 */
+ long sizedir NONANSI_FLAG;
+ char mine_filename[15] NONANSI_FLAG; /* never used by anyone */
+ long level NONANSI_FLAG; /* always zero in not saved games I suppose */
+ unsigned long posguile NONANSI_FLAG,sizeguile NONANSI_FLAG; 
+ unsigned long posthings NONANSI_FLAG,
+  numthings NONANSI_FLAG,sizethings NONANSI_FLAG; 
   /* size=0x108 */
- unsigned long posdoors __attribute__ ((packed)),
-  numdoors __attribute__ ((packed)),sizedoors __attribute__ ((packed)); 
+ unsigned long posdoors NONANSI_FLAG,
+  numdoors NONANSI_FLAG,sizedoors NONANSI_FLAG; 
   /* size=0x18 */
- unsigned long posempty __attribute__ ((packed)),
-  numempty __attribute__ ((packed)),sizeempty __attribute__ ((packed)); 
+ unsigned long posopendoors NONANSI_FLAG,
+  numopendoors NONANSI_FLAG,sizeopendoors NONANSI_FLAG; 
   /* num=0, size=0x10 */
  /* doors opening if entering a sector */
- unsigned long possdoors __attribute__ ((packed)),
-  numsdoors __attribute__ ((packed)),sizesdoors __attribute__ ((packed)); 
+ unsigned long possdoors NONANSI_FLAG,
+  numsdoors NONANSI_FLAG,sizesdoors NONANSI_FLAG; 
   /* size=0x36 */
- unsigned long stuff2[3] __attribute__ ((packed));  /* always zero */
+ unsigned long stuff2[3] NONANSI_FLAG;  /* always zero */
  /* doors opening after blown the reactor */
- unsigned long posedoors __attribute__ ((packed)),
-  numedoors __attribute__ ((packed)),sizeedoors __attribute__ ((packed)); 
+ unsigned long posedoors NONANSI_FLAG,
+  numedoors NONANSI_FLAG,sizeedoors NONANSI_FLAG; 
   /* size=0x2a */
  /* doors open with walls */
- unsigned long posproducer __attribute__ ((packed)),
-  numproducer __attribute__ ((packed)),sizeproducer __attribute__ ((packed)); 
+ unsigned long posproducer NONANSI_FLAG,
+  numproducer NONANSI_FLAG,sizeproducer NONANSI_FLAG; 
   /* size=0x10 */
  };
 struct levelhead3
  {
- unsigned short c19 __attribute__ ((packed)); 
+ unsigned short num_of_saved_pofs NONANSI_FLAG; 
+  /* seems to be a bug in the specs: this number is in my registered
+     levels always 25 not as it should be 78 */
 #ifdef SHAREWARE
- char pofs[728] __attribute__ ((packed));
+ char pofs[728] NONANSI_FLAG;
   /* a long list of pofs (56*13 byte) */
 #else
- char pofs[1014] __attribute__ ((packed));
+ char pofs[1014] NONANSI_FLAG;
   /* a long list of pofs (78*13 byte) */
 #endif
- char guile[0x74] __attribute__ ((packed));  /* don't know, don't mind */
+ char guile[0x74] NONANSI_FLAG;  /* don't know, don't mind */
  };
 struct leveldata
  {
@@ -423,24 +475,27 @@ struct viewdata
  double maxvisibility,visscala; /* maxdistance which will be drawn */
  double movefactor; /* how fast we will move */
  double pmovefactor,movescala; /* how fast the points will move */
- double rotangel,rotscala; /* how fast will we turn */
+ double rotangle; /* how fast will we turn */
+ double protangle,rotscala; /* how fast will we turn */
  double gridlength,gridscala;
- int gridonoff;
- /* this is what you can set */
- struct point e0; /* Pos. of screen (in the middle) */
- struct point e[3]; /* orientation of screen (left-handed system) */
+ double maxconndist; /* for connectcubes */
  double clickphi; /* this is the angle for clicking */
  double tsize; /* size of things */
+ double dsize; /* size of beat out of doors */
+ struct point e0; /* Pos. of screen (in the middle) */
+ int gridonoff,plottimes;
+ /* this is what you can set */
+ struct point e[3]; /* orientation of screen (left-handed system) */
  char *pigname; /* name of .pig file */
  unsigned int numkeymacros;
  int drawwhat;
- double dsize; /* size of beat out of doors */
  /* for the user-defined keys */
  struct eventcode *events;
  int noevents;
  int bounds[ecw_num_of_boxes][4]; /* bounds of the four possible boxes */
- /* this is what the program sets */
- int maxxsize,maxysize,xsize,ysize,xoffset,yoffset;
+ /* this is what system.c sets */
+ int maxxsize,maxysize,xsize,ysize,xoffset,yoffset,fontheight,fontwidth,
+  smenuwidth,smenuheight;
  double xviewphi,yviewphi; /* this is the cos(view angle) */
  struct point x0,m0; /* x0 viewpoint, m0 line viewpoint-center of screen */
  double mincorner; /* the maximum angle - that means min. cos(angle) -
@@ -453,7 +508,6 @@ struct viewdata
  char *macropath,*levelpath;
  struct objdata macros;
  int color[USEDCOLORS];
- GrLineOption taggedline;
  int mouse;
  double mousesensivity;
  int brightness;
@@ -465,13 +519,10 @@ struct viewdata
  int numtxtref;
  struct texture *txts;
  int numtxtdir,txt_bmoffset;
- GrContext *txt_context,*txt_shape; /* for readbitmap */
  unsigned char *txt_buffer,*txt_sbuffer;
  FILE *pigfile;
- GrContext *texture,*txt_complete; /* for plotbitmap and others */
- GrContext *txt_window;
- int txt_maxxnum,txt_maxynum;
- int txt_txtxpos[2],txt_txtypos[2];
+ int fit_maxxnum,fit_maxynum,fit_xpos,fit_ypos;
+ int txt_xpos,txt_ypos;
  struct list tagged[tt_number]; /* cubes,walls,pts,things */
  enum tagtypes currmode;
  struct node *pcurrcube,*oldpcurrcube,*pcurrthing,*oldpcurrthing,
@@ -481,13 +532,11 @@ struct viewdata
  struct node *exitcube;
  int exitwall;
  struct point *oldpcurrpnt;
- GrTextRegion menu;
  int menuoffset; /* first line to display */
+ char *menubuffer;
  int showwhat;
- GrContext *buttonmenu;
  int bxsize,bysize,numbuttons;
  char **bnames;
- GrContext *movebuttons;
  int waittime;
  struct infoitem *info[in_number];
  int infonum[in_number],descripnum[in_number],maxrow[in_number],menuheight;
@@ -496,10 +545,18 @@ struct viewdata
      menuheight=number of lines which can be displayed */
  struct infoitem *curmenuitem;
  };
-/*
-enum types { door_type1,door_type2,door_openatend,door_key,
- thing_type,thing_grfx,num_of_types }; */
- 
+
+/* if m is a coordsystem in MATRIXMULT the vectors are in the columns */
+#define MATRIXMULT(e,m,v) { int i;\
+ for(i=0;i<3;i++) \
+  ((e)->x[i])=((m)[0].x[i]*(v)->x[0]+(m)[1].x[i]*(v)->x[1]+ \
+   (m)[2].x[i]*(v)->x[2]); }
+/* and in INVMATRIXMULT in the rows */
+#define INVMATRIXMULT(e,m,v) { int i;\
+ for(i=0;i<3;i++) \
+  ((e)->x[i])=((m)[i].x[0]*(v)->x[0]+(m)[i].x[1]*(v)->x[1]+ \
+   (m)[i].x[2]*(v)->x[2]); }
+   
 void normalize(struct point *p);
 void my_exit(void);
 
@@ -507,8 +564,11 @@ extern FILE *errf;
 extern struct viewdata view;
 extern struct leveldata *l;
 extern int altkeys[26];
-extern GrFBoxColors boxcolors;
 /* stdtypes.h */
+enum control_types { ct_none=0,ct_ai=1,ct_slew=5,ct_powerup=13,
+ ct_control=16 };
+enum movement_types { mt_none=0,mt_physics=1 };
+enum render_types { rt_polyobj=1,rt_hostage=4,rt_powerup=5 };
 extern int wallpts[6][4];
 extern int wallno[8][2][3];
 extern int oppwalls[6];
@@ -520,7 +580,7 @@ extern struct producer stdproducer;
 extern long stdorientation[9];
 extern struct item stditem,stdhostage;
 extern struct robot stdrobot;
-extern struct start stdstart;
+extern struct start stdstart,stdcoopstart;
 extern struct reactor stdreactor;
 extern char *structname[ds_number];
   

@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     savetool.c - saving single things. used for macros & levels.
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -69,8 +69,12 @@ void *readdoor(FILE *f)
  initlist(&d->sdoors);
  d->edoor=0;
  if(init_test&2)
+  {
   fprintf(errf,"read door: c: %lx w: %lx sdoor: %x\n",d->cubenum,d->wallnum,
    d->sdoor);
+  if(d->linked_wall!=-1)
+   fprintf(errf,"read door: linked_wall: %lx\n",d->linked_wall);
+  }
  return d;
  }
  
@@ -81,12 +85,14 @@ void *readsdoor(FILE *lf)
   { fprintf(errf,"No mem for sdoor.\n"); my_exit(); }
  if(fread(sd,getsize(ds_sdoor,NULL),1,lf)!=1)
   { fprintf(errf,"Can't read sdoor.\n"); my_exit(); }
- if(sd->c0500!=0x0500 || sd->cff00!=0xff00 || sd->cffffffff!=0xffffffff)
-  fprintf(errf,"SDOOR %hd %hd %hd typ=%lx: constant varies: %hx %hx %lx\n",
-   sd->num,sd->cubes[0],sd->walls[0],sd->type,sd->c0500,sd->cff00,
-   sd->cffffffff); 
  if(init_test&2)
-  fprintf(errf,"read sdoor: type: %lx num: %hd\n",sd->type,sd->num);
+  {
+  fprintf(errf,"read sdoor: type: %hx num: %hd\n",sd->flags,sd->num);
+  if(sd->value!=0x050000 || sd->time!=-1 || sd->link_num!=-1)
+   fprintf(errf,"SDOOR %hd %hd %hd typ=%hx: constant varies: %lx %lx %x\n",
+    sd->num,sd->cubes[0],sd->walls[0],sd->flags,sd->value,sd->time,
+    (unsigned int)sd->link_num); 
+  }
  return sd;
  }
  
@@ -103,7 +109,8 @@ void *readthing(FILE *lf)
  size=getsize(ds_thing,t)+(unsigned char *)&t->type1-(unsigned char *)t;
  if(init_test&2)
   fprintf(errf,"Read thing type/pos %lu: %x %x size: %ld pos: %ld %ld %ld\n",
-   ftell(lf),(int)t->type1,(int)t->type2,size,t->pos[0],t->pos[1],t->pos[2]);
+   ftell(lf),(int)t->type1,(int)t->type2,getsize(ds_thing,t),t->pos[0],
+    t->pos[1],t->pos[2]);
  switch(t->type1)
   {
   case 0xe: t->color=1; break;
@@ -128,8 +135,8 @@ void *readthing(FILE *lf)
   for(j=0;j<3;j++)
    {
    view.e0.x[j]=t->p[0].x[j]; 
-   view.e[0].x[j]=((struct start *)t)->orientation[j];
-   view.e[1].x[j]=((struct start *)t)->orientation[j+3];
+   view.e[0].x[j]=t->orientation[j];
+   view.e[1].x[j]=t->orientation[j+3];
    }
   normalize(&view.e[0]); normalize(&view.e[1]);
   VECTOR(&view.e[2],&view.e[0],&view.e[1]);
@@ -172,11 +179,13 @@ void *readproducer(FILE *f)
   { fprintf(errf,"No mem for producer.\n"); return NULL; }
  if(fread(p,getsize(ds_producer,NULL),1,f)!=1)
   { fprintf(errf,"Can't read producer.\n"); free(p); return NULL; }
- if(p->c01f40000!=0x1f40000 || p->c00050000!=0x50000)
-  fprintf(errf,"Producer cube %hd: Constant varies: %lx %lx\n",p->cubenum,
-   p->c01f40000,p->c00050000);
  if(init_test&2)
+  {
   fprintf(errf,"read producer: cube: %hx what: %lx\n",p->cubenum,p->prodwhat);
+  if(p->hitpoints!=0x1f40000 || p->interval!=0x50000)
+   fprintf(errf,"Producer cube %hd: Constant varies: %lx %lx\n",p->cubenum,
+    p->hitpoints,p->interval);
+  }
  return p;
  }
  
@@ -207,8 +216,16 @@ void *readcube(FILE *lf)
   else
    c->nextcubes[j]=0xffff;
   }
- if(fread(&c->pts[0],sizeof(short int),11,lf)!=11)
-  { fprintf(errf,"Can't read cube points or cube type.\n"); my_exit(); }
+ if((controlbyte&(1<<6))!=0)
+  { if(fread(&c->pts[0],sizeof(short int),11,lf)!=11)
+     { fprintf(errf,"Can't read cube points/type.\n"); my_exit(); } }
+ else
+  {
+  if(fread(&c->pts[0],sizeof(short int),8,lf)!=8 || 
+     fread(&c->light,sizeof(short int),1,lf)!=1)
+   { fprintf(errf,"Can't read cube points/light.\n"); my_exit(); }
+  c->prodnum=-1; c->value=0; c->type=0;
+  }
  if(fread(&controlbyte,sizeof(unsigned char),1,lf)!=1)
   { fprintf(errf,"Can't read cube doors control byte.\n"); my_exit(); }
  if(init_test&2)
@@ -263,7 +280,8 @@ int savecube(FILE *f,struct node *n)
  short int t1;
  char *offset;
  int size;
- unsigned char cbnext=0x40,cbdoor=0;
+ unsigned char cbnext,cbdoor=0;
+ cbnext=(c->type!=0 || c->prodnum!=-1 || c->value!=0) ? 0x40 : 0x0;
  for(j=0;j<6;j++)
   {
   if(c->nc[j]!=NULL) cbnext|=1<<j;
@@ -273,8 +291,7 @@ int savecube(FILE *f,struct node *n)
  if(fwrite(&cbnext,1,1,f)!=1)
   { printmsg("Can't write cube controlbyte."); return 0; }
 #endif
- for(j=0;j<8;j++)
-  c->pts[j]=c->p[j]->no;
+ for(j=0;j<8;j++) c->pts[j]=c->p[j]->no;
  for(j=0;j<6;j++)
   {
   c->doors[j]=(c->d[j]!=NULL) ? c->d[j]->no : 0xff;
@@ -288,16 +305,23 @@ int savecube(FILE *f,struct node *n)
   { fprintf(errf,"Savelvl: Can't write cube.\n"); return 0; }
 #else
  for(j=0;j<6;j++)
-  if(c->nextcubes[j]!=0xffff)
+  if(cbnext&(1<<j)) 
    if(fwrite(&c->nextcubes[j],sizeof(short int),1,f)!=1)
     { printmsg("Can't write nextcubes."); return 0; }
  c->prodnum=c->cp->no;
- if(fwrite(&c->pts[0],sizeof(short int),11,f)!=11)
-  { printmsg("Can't write cube data."); return 0; }
+ if(cbnext&(1<<6))
+  { if(fwrite(&c->pts[0],sizeof(short int),11,f)!=11)
+     { printmsg("Can't write cube data."); return 0; } }
+ else
+  { 
+  if(fwrite(&c->pts[0],sizeof(short int),8,f)!=8 || 
+     fwrite(&c->light,sizeof(short int),1,f)!=1)
+   { printmsg("Can't write cube data."); return 0; } 
+  }
  if(fwrite(&cbdoor,1,1,f)!=1)
   { printmsg("Can't write door control byte."); return 0; }
  for(j=0;j<6;j++)
-  if(c->doors[j]!=0xff)
+  if(cbdoor&(1<<j))
    if(fwrite(&c->doors[j],sizeof(char),1,f)!=1)
     { printmsg("Can't write cube door information."); return 0; }
 #endif
@@ -329,16 +353,6 @@ int savething(FILE *f,struct node *n)
  struct thing *t=n->d.t;
  int i;
  for(i=0;i<3;i++) t->pos[i]=t->p[0].x[i];
- switch(t->type1)
-  {
-  case 2: t->stuff[0]=0x0101; t->stuff[1]=1; break;
-  case 3: t->stuff[0]=0x000d; t->stuff[1]=4; break;
-  case 4: t->stuff[0]=(t->type2==0) ? 0x0105 : 0x0100; t->stuff[1]=1; break;
-  case 7: t->stuff[0]=0x000d; t->stuff[1]=5; break;
-  case 9: t->stuff[0]=0x0010; t->stuff[1]=1; break;
-  case 0xe: t->stuff[0]=0x0100; t->stuff[1]=1; break;
-  default: t->stuff[0]=0; t->stuff[1]=0;
-  }
  if(fwrite(&t->type1,getsize(ds_thing,t),1,f)!=1)
   { fprintf(errf,"Can't write thing.\n"); return 0; }
  return 1;
@@ -355,7 +369,7 @@ int savedoor(FILE *f,struct node *n)
 
 int saveproducer(FILE *f,struct node *pr)
  {
- pr->d.cp->stuffnum=pr->d.cp->c->d.c->subtype;
+ pr->d.cp->stuffnum=pr->d.cp->c->d.c->value;
  if(fwrite(pr->d.cp,getsize(ds_producer,NULL),1,f)!=1)
   { fprintf(errf,"Can't write producer.\n"); return 0; }
  return 1;

@@ -1,18 +1,16 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de) 
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de) 
     Further info see .c-files. */
 /* io-functions */
-int numlockonoff(void);
 int drawnumlock(void);
-int getnumlock(void);
 int fwritestring(FILE *f,char *s);
 char *freadstring(FILE *f);
 int readmacroheader(FILE *f,struct macro *m);
-void drawtexture(int rtxtnum,int w);
+void drawtextures(struct wall *w);
 void printdatabyte(int row,int column,unsigned char *data,int offset);
 void markdatabyte(struct infoitem *i,int byte);
 void printmsg(char *txt,...);
-void printsmsg(char *t);
+void vprintmsg(char *txt,va_list args);
 /* Functions for changing data. Use getdata only if necessary */
 void dosideeffects(struct infoitem *i,unsigned long no);
 int getsideno(unsigned int *se,unsigned long *no);

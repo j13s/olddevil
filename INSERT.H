@@ -1,5 +1,5 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de) 
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de) 
     Further info see .c-files. */
 void fittogrid(struct point *p);
 struct wall *insertwall(struct node *cube,int wallnum,int txt2);
@@ -19,8 +19,12 @@ void initcube(struct node *c);
 void initdoor(struct node *d);
 int changepnt(struct node *oldp,struct node *newp,struct node *sn);
 int connect(struct node *nc1,int w1,struct node *nc2,int w2);
+int connectcubes(struct list *taggedcubelist);
 void newwallpnt(struct cube *c,struct wall *w,struct point *np);
 void newcubecorners(struct cube *c,int pointnum);
 int testpnt(struct node *np);
 void newcorners(struct node *np);
-void arrangebitmaps(struct cube *c,struct wall *w1,struct list *ws);
+void arrangebitmaps(struct node *c,struct wall *w1,struct list *ws);
+void growshrink(struct node **ps,int *pntnos,int groworshrink);
+int move_pntlist(struct list *l,struct point *r);
+

@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     macros.c - build, save and insert macros.
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,23 +17,13 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
     
 #include "structs.h"
+#include "system.h" /* just for event.h */
 #include "tools.h"
 #include "savetool.h"
 #include "insert.h"
 #include "event.h"
 #include "macros.h"
 
-/* if m is a coordsystem in MATRIXMULT the vectors are in the columns */
-#define MATRIXMULT(e,m,v) { int i;\
- for(i=0;i<3;i++) \
-  ((e)->x[i])=((m)[0].x[i]*(v)->x[0]+(m)[1].x[i]*(v)->x[1]+ \
-   (m)[2].x[i]*(v)->x[2]); }
-/* and in INVMATRIXMULT in the rows */
-#define INVMATRIXMULT(e,m,v) { int i;\
- for(i=0;i<3;i++) \
-  ((e)->x[i])=((m)[i].x[0]*(v)->x[0]+(m)[i].x[1]*(v)->x[1]+ \
-   (m)[i].x[2]*(v)->x[2]); }
-   
 /* make a coordsystem naxis out of cube c in the following way:
    x-axis: vector from point pnt to point (pnt+1)&0x3 of wall.
    y-axis: the part of the vector from point pnt to point (pnt-1)&0x3 of wall
@@ -217,7 +207,7 @@ struct macro *buildmacro(struct list *l,struct list *tl)
    } 
   if(n->d.c->cp) 
    { n->d.c->cp->d.cp->cubenum=n->no; n->d.c->prodnum=n->d.c->cp->no; }
-  else n->d.c->prodnum=0xff;
+  else n->d.c->prodnum=-1;
   }
  for(n=m->sdoors.head;n->next!=NULL;n=n->next)
   for(j=0;j<n->d.sd->num;j++)
@@ -286,7 +276,7 @@ int readmacro(struct macro *m)
  return ok;
  }
    
-int insertmacro(struct macro *m,int connectnow)
+int insertmacro(struct macro *m,int connectnow,double scaling)
  {
  struct point naxis[3],*offset;
  struct listpoint *lp;
@@ -320,8 +310,8 @@ int insertmacro(struct macro *m,int connectnow)
    { printmsg("No mem to create point."); return 0; }
   /* rotating points */
   MATRIXMULT(&lp->p,naxis,&n->d.lp->p);
-  /* and move them */
-  for(i=0;i<3;i++) lp->p.x[i]+=offset->x[i];
+  /* and move&scale them */
+  for(i=0;i<3;i++) lp->p.x[i]=offset->x[i]+lp->p.x[i]*scaling;
   fittogrid(&lp->p);
   initlist(&lp->c);
   if(!addheadnode(&l->pts,n->no,lp))
@@ -336,7 +326,7 @@ int insertmacro(struct macro *m,int connectnow)
    { printmsg("No mem for thing."); return 0; }
   memcpy(t,n->d.t,j);
   MATRIXMULT(&t->p[0],naxis,&n->d.t->p[0]);
-  for(i=0;i<3;i++) t->p[0].x[i]+=offset->x[i];
+  for(i=0;i<3;i++) t->p[0].x[i]=offset->x[i]+t->p[0].x[i]*scaling;
   setthingpts(t);
   if(addheadnode(&l->things,n->no,t)==NULL)
    { printmsg("Can't add thing."); return 0; }
@@ -373,7 +363,7 @@ int insertmacro(struct macro *m,int connectnow)
   initdoor(n);
  /* now connect the current cube with the cube 0 of the macro */
  if(connectnow)
-  if(!connect(l->cubes.head,m->wallno,view.pcurrcube,view.currwall))
+  if(!connect(view.pcurrcube,view.currwall,l->cubes.head,m->wallno))
    return 0; 
  return 1;
  } 

@@ -1,6 +1,6 @@
 /*  DEVIL - Descent Editor for Vertices, Items and Levels at all
     insert.c - insert/delete all objects.
-    Copyright (C) 1995  Achim Stremplat (ubdb@rzstud1.uni-karlsruhe.de)
+    Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -369,6 +369,7 @@ int connect(struct node *nc1,int w1,struct node *nc2,int w2)
   }
  if(view.exitcube->no==nc1->no || view.exitcube->no==nc2->no)
   view.exitcube=NULL;
+ printmsg("Connected cube %d,%d with cube %d,%d",nc1->no,w1,nc2->no,w2);
  return 1;
  }
 
@@ -406,12 +407,12 @@ void initdoor(struct node *n)
   { fprintf(errf,"Door: wall number %lu (cube=%lu) == NULL.\n",d->wallnum,
      d->cubenum); my_exit(); }
  if(d->c->d.c->nc[d->wallnum]==NULL)
-  { fprintf(errf,"Door cube has no neighbour: %lu %lu\n",d->cubenum,
-     d->wallnum); my_exit(); }
+  { fprintf(errf,"Warning: Door cube has no neighbour: %lu %lu\n",d->cubenum,
+     d->wallnum);  }
  d->d=NULL;
  d->edoor=0;
  for(i=0;i<6;i++)
-  if(d->c->d.c->nc[d->wallnum]->d.c->nc[i]==d->c)
+  if(d->c->d.c->nc[d->wallnum] && d->c->d.c->nc[d->wallnum]->d.c->nc[i]==d->c)
    { d->d=d->c->d.c->nc[d->wallnum]->d.c->d[i]; break; }
  if(d->sdoor!=0xff)
   {
@@ -478,7 +479,7 @@ void initcube(struct node *n)
     c->walls[j]->p[k]=c->p[wallpts[j][k]];
   }
  initlist(&c->sdoors);
- if(c->type==4 && c->prodnum!=0xff) /* producer */
+ if(c->type==4 && c->prodnum>=0) /* producer */
   {
   if((c->cp=findnode(&l->producers,c->prodnum))==NULL)
    { fprintf(errf,"Can't find producer %d for cube %d.\n",
@@ -494,10 +495,10 @@ void newcubecorners(struct cube *c,int pointnum)
   newwallpnt(c,c->walls[wallno[pointnum][0][i]],c->p[pointnum]->d.p);
  }
 
-void newwallpnt(struct cube *c,struct wall *w,struct point *np)
+void newwall_offset(struct cube *c,struct wall *w,int op0,int op1)
  {
- struct point px,py,p1;
- int j,p1xoffs,p1yoffs;
+ struct point p[2],p1,p2,op,turnaxis;
+ int j,p1xoffs,p1yoffs,op2,op3,centerx,centery;
  struct pixel ex,ey;
  double x,lx,y;
 /*                        0 1 2 3 corner
@@ -508,10 +509,12 @@ void newwallpnt(struct cube *c,struct wall *w,struct point *np)
   wall 4 (front):       4 5 6 7
   wall 5 (back):        3 2 1 0 */
  if(w==NULL) return;
+ if(op1<op0) { j=op0; op0=op1; op1=j; }
+ op2=(op1+1)&3; op3=(op0-1)&3;
  /* save the old orientation of the texture */
- p1xoffs=w->corners[0].xpos; p1yoffs=w->corners[0].ypos;
- ex.x=w->corners[1].xpos-p1xoffs;
- ex.y=w->corners[1].ypos-p1yoffs;
+ p1xoffs=w->corners[op0].xpos; p1yoffs=w->corners[op0].ypos;
+ ex.x=w->corners[op1].xpos-p1xoffs;
+ ex.y=w->corners[op1].ypos-p1yoffs;
  lx=sqrt(ex.x*ex.x+ex.y*ex.y);
  if(lx==0)
   { ex.x=1; ex.y=0; lx=1; }
@@ -522,33 +525,69 @@ void newwallpnt(struct cube *c,struct wall *w,struct point *np)
     the second point is in the old direction but perhaps in another
     length */
  for(j=0;j<3;j++)
-  px.x[j]=w->p[1]->d.p->x[j]-w->p[0]->d.p->x[j];
- w->corners[1].xpos=(short int)(ex.x*LENGTH(&px)/640.0)+p1xoffs;
- w->corners[1].ypos=(short int)(ex.y*LENGTH(&px)/640.0)+p1yoffs;
+  p[0].x[j]=w->p[op1]->d.p->x[j]-w->p[op0]->d.p->x[j];
+ w->corners[op1].xpos=(short int)(ex.x*LENGTH(&p[0])/640.0)+p1xoffs;
+ w->corners[op1].ypos=(short int)(ex.y*LENGTH(&p[0])/640.0)+p1yoffs;
  /* OK. now the last point must be divided in one who goes
-    parallel to p[0]->p[1] and one who's orthogonal */
+    parallel to p[op0]->p[op1] and one who's orthogonal */
  for(j=0;j<3;j++)
-  p1.x[j]=w->p[3]->d.p->x[j]-w->p[0]->d.p->x[j];
- x=SCALAR(&px,&p1)/LENGTH(&px);
+  p1.x[j]=w->p[op3]->d.p->x[j]-w->p[op0]->d.p->x[j];
+ normalize(&p[0]);
+ x=SCALAR(&p[0],&p1);
  for(j=0;j<3;j++)
-  py.x[j]=p1.x[j]-x*px.x[j]/LENGTH(&px);
- /* in py is now the part of p1 that's not in px direction and
-    x the length of py in px direction.
-    px direction is in the plane ex, the orthognal direction ey,
+  p[1].x[j]=p1.x[j]-x*p[0].x[j];
+ /* in p[1] is now the part of p1 that's not in px direction and
+    x the length of p[1] in p[0] direction.
+    p[0] direction is in the plane ex, the orthognal direction ey,
     so we get the point in the plane with */
- w->corners[3].xpos=(short int)((ey.x*LENGTH(&py)+ex.x*x)/640.0)+p1xoffs;
- w->corners[3].ypos=(short int)((ey.y*LENGTH(&py)+ex.y*x)/640.0)+p1yoffs;
+ w->corners[op3].xpos=(short int)((ey.x*LENGTH(&p[1])+ex.x*x)/640.0)+p1xoffs;
+ w->corners[op3].ypos=(short int)((ey.y*LENGTH(&p[1])+ex.y*x)/640.0)+p1yoffs;
  /* now the last point: */
+ /* NEW */
+ /* turn last point into the plane of the three others: */
+ /* get the coordsystem of the turn axis */
+ for(j=0;j<3;j++) turnaxis.x[j]=w->p[op3]->d.p->x[j]-w->p[op1]->d.p->x[j];
+ normalize(&turnaxis);
  for(j=0;j<3;j++)
-  p1.x[j]=w->p[2]->d.p->x[j]-w->p[0]->d.p->x[j];
- x=SCALAR(&p1,&px)/LENGTH(&px);
- y=SCALAR(&p1,&py)/LENGTH(&py);
- w->corners[2].xpos=(short int)((ex.x*x+ey.x*y)/640.0)+p1xoffs;
- w->corners[2].ypos=(short int)((ex.y*x+ey.y*y)/640.0)+p1yoffs;
+  {
+  op.x[j]=(w->p[op3]->d.p->x[j]+w->p[op1]->d.p->x[j])/2.0;
+  p1.x[j]=w->p[op2]->d.p->x[j]-op.x[j];
+  }
+ x=SCALAR(&p1,&turnaxis);
+ y=sqrt(LENGTH(&p1)*LENGTH(&p1)-x*x);
+ /* now x,y are the coordinates of the point parallel/orthogonal to the
+    turnaxis */
+ /* now make the coordsystem of the other three points */
+ for(j=0;j<3;j++) p2.x[j]=w->p[op0]->d.p->x[j]-op.x[j];
+ lx=SCALAR(&p2,&turnaxis);
+ for(j=0;j<3;j++) p2.x[j]-=turnaxis.x[j]*lx;
+ normalize(&p2);
+ /* -p2.x[j] because the point lies on the other side of the turnaxis */
+ for(j=0;j<3;j++) 
+  p1.x[j]=op.x[j]+turnaxis.x[j]*x-p2.x[j]*y-w->p[op0]->d.p->x[j];
+ /* Ok, in p1 is now the point turned into the plane of the three other 
+    points. */
+ /* END NEW 
+ for(j=0;j<3;j++)
+  p1.x[j]=w->p[op2]->d.p->x[j]-w->p[op0]->d.p->x[j]; */
+ normalize(&p[1]);
+ x=SCALAR(&p1,&p[0]);
+ y=SCALAR(&p1,&p[1]);
+ w->corners[op2].xpos=(short int)((ex.x*x+ey.x*y)/640.0)+p1xoffs;
+ w->corners[op2].ypos=(short int)((ex.y*x+ey.y*y)/640.0)+p1yoffs; 
+ centerx=centery=0;
+ for(j=0;j<4;j++)
+  { centerx+=w->corners[j].xpos; centery+=w->corners[j].ypos; }
+ for(j=0;j<4;j++)
+  { w->corners[j].xpos-=(centerx/4/2048)*2048;
+    w->corners[j].ypos-=(centery/4/2048)*2048; }
  for(j=0;j<4;j++)
   if(c->d[w->no]!=NULL)
    makedoorpnt(c->d[w->no]->d.d);
  }
+ 
+void newwallpnt(struct cube *c,struct wall *w,struct point *np)
+ { newwall_offset(c,w,0,1); }
  
 /* test if one of the cubes depending on point np is not convex or weird.
    return 1 if all cubes are alright, 0 otherwise */
@@ -587,12 +626,12 @@ int testpnt(struct node *np)
     l3.x[j]=nc->d.n->d.c->p[l3n]->d.p->x[j] - 
      nc->d.n->d.c->p[newpnum]->d.p->x[j];
     }
-   for(j=0;j<3;j++)
-    { l1.x[j]/=LENGTH(&l1); l2.x[j]/=LENGTH(&l2); l3.x[j]/=LENGTH(&l3); }
+   normalize(&l1); normalize(&l2); normalize(&l3);
    /* test if l1,l2,l3 are a right-handed system */
    VECTOR(&e,&l3,&l2);
    if(SCALAR(&e,&l1)<=view.mincorner)
-    { printmsg("Cube %d not convex",nc->d.n->no); return 0; }
+    { printmsg("Cube %d at point %d not convex",nc->d.n->no,newpnum); 
+      return 0; }
      /* this was a nearly left-handed system */
    }
   /* test weird walls */
@@ -629,12 +668,197 @@ void newcorners(struct node *np)
   newcubecorners(nc->d.n->d.c,nc->no); 
  }
 
-void arrangebitmaps(struct cube *c,struct wall *w1,struct list *ws)
+/* gives wall with neighbourcube to points wp1, wp2 on wall w1 */
+int findalignwalltoline(struct wall *w1,int wp1,int wp2)
  {
- struct wall *w2;
+ int cn1,i,j;
+ for(i=0,cn1=-1;i<3;i++)
+  if((cn1=wallno[wallpts[w1->no][wp1]][0][i])!=w1->no)
+   for(j=0;j<3;j++)
+    if(cn1==wallno[wallpts[w1->no][wp2]][0][j]) 
+     return cn1;
+ fprintf(errf,"Can't find arrange cube??\n"); my_exit();
+ return 0;
+ }
+ 
+void arrangebitmaps(struct node *start_c,struct wall *start_w,struct list *ws)
+ {
+ int cn1,wp1,wp2,w2p1,w2p2,i,j;
+ struct wall *w,*w1;
+ struct node *nw,*nc,*c,*run;
+ struct node **save;
+ struct list walls;
+ if(start_w==NULL) 
+  { printmsg("No wall there."); return; }
+ /* I must do it with a list otherwise go32 crashes. perhaps stack overflow?*/
+ initlist(&walls);
+ if((save=(struct node **)malloc(sizeof(struct node *)*2))==NULL)
+  { printmsg("Sorry, not enough mem."); freelist(&walls,free); return; }
+ save[0]=start_c; save[1]=(struct node *)start_w;
+ if(!addnode(&walls,start_c->no,save))
+  { printmsg("Sorry, not enough mem."); freelist(&walls,free); return; }   
+ for(run=walls.head;run->next!=NULL;run=run->next)
+  {
+  c=*((struct node **)run->d.d); w1=*((struct wall **)run->d.d+1);
+  for(wp1=0;wp1<4;wp1++)
+   {
+   wp2=(wp1+1)&3;
+   /* first get the cube of every line in the wall which is equal and
+      not the cube corresponding to w1 (cause there's no neighbour, 
+      there's a side). */
+   cn1=findalignwalltoline(w1,wp1,wp2);
+   if((nc=c->d.c->nc[cn1])==NULL) continue;
+   /* now find the right wall */
+   for(i=0,w=NULL;i<6 && w==NULL;i++)
+    if(nc->d.c->walls[i]!=NULL && (nc->d.c->nc[i]==NULL || 
+     nc->d.c->nc[i]->no!=c->no))
+     for(j=0;j<4;j++)
+      if(nc->d.c->walls[i]->p[j]->no==w1->p[wp1]->no && 
+       (nc->d.c->walls[i]->p[(j+1)&0x3]->no==w1->p[wp2]->no ||
+        nc->d.c->walls[i]->p[(j-1)&0x3]->no==w1->p[wp2]->no))
+       { w=nc->d.c->walls[i]; break; }
+   if(w==NULL) continue;
+   /* OK, w should be one wall next to w1, now look, if it's tagged */
+   if((nw=findnode(ws,nc->no*6+w->no))==NULL) continue;
+   freenode(ws,nw,NULL); /* untag wall */
+   /* Search the shared points */
+   for(i=0,w2p1=w2p2=-1;i<4;i++)
+    if(w->p[i]->no==w1->p[wp1]->no) w2p1=i;
+    else if(w->p[i]->no==w1->p[wp2]->no) w2p2=i;
+   if(w2p1<0 || w2p2<0) 
+    { printmsg("Arrange bitmaps: couldn't find shared points.????");
+      continue; }
+   w->corners[w2p1].xpos=w1->corners[wp1].xpos;
+   w->corners[w2p1].ypos=w1->corners[wp1].ypos;
+   w->corners[w2p2].xpos=w1->corners[wp2].xpos;
+   w->corners[w2p2].ypos=w1->corners[wp2].ypos;
+   newwall_offset(nc->d.c,w,w2p1,w2p2);
+   if((save=malloc(sizeof(struct node *)*2))==NULL)
+    { printmsg("Sorry, not enough mem."); freelist(&walls,free); return; }
+   save[0]=nc; save[1]=(struct node *)w;
+   if(!addnode(&walls,nc->no,save))
+    { printmsg("Sorry, not enough mem."); freelist(&walls,free); return; }   
+   }
+  freenode(&walls,run,free);
+  }
+ freelist(&walls,free);
+ }
+ 
+int connectcubes(struct list *taggedcubes)
+ {
+ struct node *n,*np,*sn,*cn,*ncp[4];
+ int i,j,k,ok,wallnum;
+ struct point d;
+ struct list fndcubes;
+ if(view.currmode!=tt_cube)
+  { printmsg("Only in cubemode allowed."); return 1; }
+ initlist(&fndcubes);
+ for(n=taggedcubes->head;n->next!=NULL;n=n->next)
+  for(i=0;i<6;i++)
+   if(n->d.n->d.c->nc[i]==NULL)
+    {
+    freelist(&fndcubes,NULL);
+    for(j=0;j<4;j++)
+     {
+     sn=n->d.n->d.c->walls[i]->p[j];
+     for(np=l->pts.head,ok=0;np->next!=NULL;np=np->next)
+      {
+      for(k=0;k<3;k++) d.x[k]=np->d.p->x[k]-sn->d.p->x[k];
+      if(LENGTH(&d)<=view.maxconndist) 
+       { 
+       for(cn=np->d.lp->c.head;cn->next!=NULL;cn=cn->next)
+        {
+        if((j==0 || findnode(&fndcubes,cn->d.n->no*4+j-1)) &&
+	 cn->d.n->no!=n->no)
+         { if(!addnode(&fndcubes,cn->d.n->no*4+j,cn))
+	    { printmsg("Sorry, not enough mem."); freelist(&fndcubes,NULL);
+	      return 1; }
+	   ok=1; }
+	}
+       }
+      }
+     if(!ok) break; /* no pnt found for this pnt of the wall->next wall */
+     }
+    if(!ok) continue; /* next wall */
+    /* all four points have an near other pnt */
+    for(cn=fndcubes.head,sn=NULL;cn->next!=NULL;cn=cn->next)
+     if(cn->no%4==3) { sn=cn; break; }
+    if(sn==NULL) continue;  /* no cube between the four points */
+    /* find the other three entries */
+    ncp[3]=sn;
+    for(j=0;j<3;j++)
+     if((ncp[j]=findnode(&fndcubes,(ncp[3]->no/4)*4+j))==NULL)
+      { printmsg("Can't find lower three points???"); freelist(&fndcubes,
+        NULL); return 1; }
+    /* ncp is a node -> the node from list c from lp ->
+       the cubenode -> cube */
+    /* find the wallnumber */
+    for(wallnum=0;wallnum<6;wallnum++)
+     {
+     for(j=0;j<4;j++)
+      {
+      for(k=0;k<4;k++) if(wallpts[wallnum][j]==ncp[k]->d.n->no) break;
+      if(k==4) break;
+      }
+     if(j==4) break;
+     }
+    if(wallnum==6)
+     { printmsg("Can't get wallnum???"); freelist(&fndcubes,NULL);return 1; }
+    /* test if found cube is connected */
+    if(ncp[0]->d.n->d.n->d.c->nc[wallnum]!=NULL)
+     { printmsg("Cube %d has already a neighbour on wall %d",
+        ncp[0]->d.n->d.n->no,wallnum); continue; }
+    /* connect the two cubes */
+    connect(ncp[0]->d.n->d.n,wallnum,n->d.n,i);
+    } /* if no neighbourcube */
+ return 6;
+ }
+
+int move_pntlist(struct list *l,struct point *r)
+ {
+ struct point *save,*p;
+ struct node *n,*sn;
  int i;
- struct wall *w[6][4];
- /* first get the two cubes of every line in the wall that are equal.
-    They're the possible neighbours of this line. 
- for(*/
+ if((save=malloc(sizeof(struct point)*l->size))==NULL)
+  { printmsg("No mem for saving old coords."); return 1; }
+ for(sn=l->head,p=save;sn->next!=NULL;sn=sn->next,p++)
+  {
+  n=sn->d.n;
+  *p=*n->d.p;
+  for(i=0;i<3;i++)
+   n->d.p->x[i]+=r->x[i];
+  fittogrid(n->d.p);
+  }
+ for(sn=l->head,i=0;sn->next!=NULL;sn=sn->next)
+  if(!testpnt(sn->d.n)) { i=1;break;}
+ if(i)
+  {
+  for(n=l->head,p=save;p-save<l->size;n=n->next,p++)
+   *n->d.n->d.p=*p; 
+  return 1;
+  }
+ else
+  for(n=l->head;n->next!=NULL;n=n->next) newcorners(n->d.n);
+ free(save);
+ return 6;
+ }
+
+void growshrink(struct node **ps,int *pntnos,int groworshrink)
+ {
+ int i,j,ok;
+ struct point center,oldpnts[8];
+ for(i=0;i<3;i++)
+  {
+  center.x[i]=0;
+  for(j=0;j<pntnos[0];j++) center.x[i]+=ps[pntnos[j+1]]->d.p->x[i];
+  center.x[i]/=pntnos[0];
+  }
+ for(j=0;j<pntnos[0];j++) oldpnts[j]=*ps[pntnos[j+1]]->d.p; 
+ for(j=0;j<pntnos[0];j++)
+  for(i=0;i<3;i++)
+   ps[pntnos[j+1]]->d.p->x[i]=(ps[pntnos[j+1]]->d.p->x[i]-center.x[i])*
+    (groworshrink ? view.distscala : 1/view.distscala)+center.x[i];
+ for(j=0,ok=1;j<pntnos[0];j++)
+  if(!testpnt(ps[pntnos[j+1]])) { ok=0;break; }
+ if(!ok) for(j=0;j<pntnos[0];j++) *ps[pntnos[j+1]]->d.p=oldpnts[j];
  }
