@@ -27,6 +27,7 @@
 #include "do_mod.h"
 #include "grfx.h"
 #include "readtxt.h"
+#include "tag.h"
 #include "plotdata.h"
 #include "plotsys.h"
 #include "plottxt.h"
@@ -347,6 +348,7 @@ void in_plotcube(int w,struct node *n,int hilight,int withdoors,int xor,
  int j,next;
  struct cube *c=n->d.c;
  struct node *sdn;
+ if(hilight==1 && testtag(tt_cube,n)) hilight=6;
  if(withdoors)
   for(sdn=c->sdoors.head;sdn->next!=NULL;sdn=sdn->next)
    in_plotdoor(w,sdn->d.n,withdoors>0 ? 4 : -1,0,0);
@@ -491,21 +493,29 @@ void in_plotcurrent(int w)
  {
  if(!view.pcurrcube || !l) return;
  if(oldpcurrdoor) in_plotdoor(w,oldpcurrdoor,-1,-1,0);
- if(oldpcurrthing) in_plotthing(w,oldpcurrthing->d.t,257);
- if(oldpcurrpnt) in_plotmarker(w,oldpcurrpnt->d.p,-2);
+ if(oldpcurrthing) in_plotthing(w,oldpcurrthing->d.t,
+  testtag(tt_thing,oldpcurrthing) ? 3 : 257);
+ if(oldpcurrpnt) 
+  in_plotmarker(w,oldpcurrpnt->d.p,testtag(tt_pnt,oldpcurrpnt) ? 3 : -1);
  if(oldpcurrcube) 
-  { if(oldcurredge>=0) in_plotpnt(w,oldpcurrcube->d.c,oldcurrwall,
-     oldcurredge,-2);
-    in_plotcube(w,oldpcurrcube,oldpcurrcube->d.c->tagged ? 3 : -1,1,0,1,1); }
+  { if(oldcurredge>=0) in_plotpnt(w,oldpcurrcube,oldcurrwall,oldcurredge,
+     testtag(tt_edge,oldpcurrcube,oldcurrwall,oldcurredge) ? 3 : -1);
+    in_plotcube(w,oldpcurrcube,testtag(tt_cube,oldpcurrcube) ? 3 : -1,
+     1,0,1,1); }
  else
   if(oldcurredge>=0) 
-   in_plotpnt(w,view.pcurrcube->d.c,oldcurrwall,oldcurredge,-2);
- if(view.pcurrthing) in_plotthing(w,view.pcurrthing->d.t,1);
- if(view.pcurrdoor) in_plotdoor(w,view.pcurrdoor,1,1,0);
- if(view.pcurrpnt) in_plotmarker(w,view.pcurrpnt->d.p,-2);
+   in_plotpnt(w,view.pcurrcube,oldcurrwall,oldcurredge,
+    testtag(tt_edge,view.pcurrcube,oldcurrwall,oldcurredge) ? 3 : -1);
+ if(view.pcurrthing) in_plotthing(w,view.pcurrthing->d.t,
+  testtag(tt_thing,view.pcurrthing) ? 6 : 1);
+ if(view.pcurrdoor) in_plotdoor(w,view.pcurrdoor,
+  testtag(tt_door,view.pcurrdoor) ? 6 : 1,1,0);
+ if(view.pcurrpnt) in_plotmarker(w,view.pcurrpnt->d.p,
+  testtag(tt_pnt,view.pcurrpnt) ? 6 : -1);
  in_plotcube(w,view.pcurrcube,1,1,0,1,1);
  in_plotwall(w,view.pcurrcube->d.c,view.currwall,2,0);
- in_plotpnt(w,view.pcurrcube->d.c,view.currwall,view.curredge,-2);
+ in_plotpnt(w,view.pcurrcube,view.currwall,view.curredge,
+  testtag(tt_edge,view.pcurrcube,view.currwall,view.curredge) ? 6 : -1);
  }
 
 void plotcurrent(void)
@@ -534,30 +544,35 @@ void in_plotcoordaxis(int lr)
  ep=sp; ep.x[2]+=size; in_plot3dline(lr,&sp,&ep,TCOLORNUM(0,3),0,0);
  }
  
-/* highlight==0: normal thingcolor or black if too far away
+/* highlight==0: normal wallcolor 
    highlight>0: view.color[HILIGHTCOLORS+highlight-1]
    highlight<0: same as highlight>0 with xor.
-   highlight==256: black */ 
-void in_plotpnt(int w,struct cube *c,int wn,int pn,int hilight)
+   highlight==256: black
+   highlight==257: normal wallcolor or black if too far away*/ 
+void in_plotpnt(int w,struct node *c,int wn,int pn,int hilight)
  {
  struct point p1,p2;
  int i;
  for(i=0;i<3;i++)
   {
-  p1.x[i]=c->p[wallpts[wn][(pn+1)&0x3]]->d.p->x[i]-
-   c->p[wallpts[wn][pn]]->d.p->x[i];
-  p2.x[i]=c->p[wallpts[wn][(pn-1)&0x3]]->d.p->x[i]-
-   c->p[wallpts[wn][pn]]->d.p->x[i];
+  p1.x[i]=c->d.c->p[wallpts[wn][(pn+1)&0x3]]->d.p->x[i]-
+   c->d.c->p[wallpts[wn][pn]]->d.p->x[i];
+  p2.x[i]=c->d.c->p[wallpts[wn][(pn-1)&0x3]]->d.p->x[i]-
+   c->d.c->p[wallpts[wn][pn]]->d.p->x[i];
   }
  normalize(&p1); normalize(&p2);
  for(i=0;i<3;i++) p1.x[i]+=p2.x[i];
  normalize(&p1);
  for(i=0;i<3;i++)
-  p1.x[i]=c->p[wallpts[wn][pn]]->d.p->x[i]+p1.x[i]*view.tsize*3;
- in_plot3dline(w,c->p[wallpts[wn][pn]]->d.p,&p1,
+  p1.x[i]=c->d.c->p[wallpts[wn][pn]]->d.p->x[i]+p1.x[i]*view.tsize*3;
+ in_plot3dline(w,c->d.c->p[wallpts[wn][pn]]->d.p,&p1,
   WCOLORNUM(0.0,ANALYZE_HILIGHT(hilight)),hilight<0,hilight==0);
  }
 
+void plotpnt(struct node *n,int w,int c,int hilight) 
+ { makeview(0); in_plotpnt(0,n,w,c,hilight);
+   if(view.whichdisplay) { makeview(1); in_plotpnt(1,n,w,c,hilight); } }
+   
 /* plot current level l. */
 void plotlevel(void)
  {
@@ -617,7 +632,7 @@ void plotlevel(void)
   for(n=l->tagged[tt_door].head;n->next!=NULL;n=n->next)
    in_plotdoor(lr,n->d.n,3,0,0);
   for(n=l->tagged[tt_edge].head;n->next!=NULL;n=n->next)
-   in_plotpnt(lr,n->d.n->d.c,(n->no%24)/4,(n->no%24)%4,3);
+   in_plotpnt(lr,n->d.n,(n->no%24)/4,(n->no%24)%4,3);
   in_plotcurrent(lr);  
   in_plotcoordaxis(lr);
   }

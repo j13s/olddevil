@@ -27,6 +27,7 @@
 #include "do_event.h"
 #include "do_move.h"
 #include "options.h"
+#include "opt_txt.h"
 #include "readlvl.h"
 #include "readtxt.h"
 #include "plottxt.h"
@@ -52,7 +53,11 @@ void b_changemovemode(struct w_button *b)
  {
  if(b->d.ls->selected>=mt_number || b->d.ls->selected<0)
   printmsg("Unknown mode in changemovemode.\n");
- else view.movemode=b->d.ls->selected;
+ else 
+  if(b->d.ls->selected==mt_texture)
+   if(fb_isactive()) { fb_tofront(); view.movemode=mt_texture; }
+   else changemovemode(view.movemode==mt_texture ? mt_you : view.movemode);
+  else view.movemode=b->d.ls->selected;
  }
 
 void b_move0(struct w_button *b) { b_move(2,-1);}
@@ -107,7 +112,7 @@ int mbls[6][110]=
    { 0,2,1,10,1, 0,2,-1,10,-1, 0,-10,0,2,5, 0,-10,0,2,-5, 0,2,5,2,-5 },
    { 0,-1,-2,-1,-10, 0,1,-2,1,-10, 0,0,10,5,-2, 0,0,10,-5,-2, 0,5,-2,-5,-2 },
    { 0,-2,1,-10,1, 0,-2,-1,-10,-1, 0,10,0,-2,5, 0,10,0,-2,-5, 0,-2,5,-2,-5 }};
-const char *movemodes[mt_number]={ TXT_MOVEYOU,TXT_MOVEOBJ };
+const char *movemodes[mt_number]={ TXT_MOVEYOU,TXT_MOVEOBJ,TXT_MOVETXT };
 struct w_button *b_movemode,*b_currmode,*b_movebts[6],*b_pigfile;
 unsigned char *movebuttondata[6];
 int movebuttondsize[6];
@@ -123,10 +128,10 @@ void drawallbuttons(struct w_window *w)
  modifybutton.options=(const char **)init.bnames;
  modifybutton.selected=view.currmode;
  modifybutton.select_lroutine=modifybutton.select_rroutine=b_changemode;
- modebutton.num_options=2;
+ modebutton.num_options=mt_number;
  modebutton.options=movemodes;
  modebutton.selected=view.movemode;
- modebutton.select_lroutine= modebutton.select_rroutine=b_changemovemode;
+ modebutton.select_lroutine=modebutton.select_rroutine=b_changemovemode;
  if(init.d_ver>=d2_10_reg)
   { 
   pignames=ws_getallfilenames(init.pigpaths[init.d_ver],"PIG",
@@ -262,6 +267,7 @@ void initpalette(void)
  view.color[HILIGHTCOLORS+3]=w_makecolor(255,0,255); /* hilight for sdoor
                                                    for doors, wall line 1 */
  view.color[HILIGHTCOLORS+4]=w_makecolor(255,255,0); /* wall line 2 */
+ view.color[HILIGHTCOLORS+5]=w_makecolor(90,180,120); /* tagged&current */
  view.color[DOORCOLORS]=w_makecolor(255,100,100); /* blow door */
  view.color[DOORCOLORS+1]=w_makecolor(255,255,255); /* no key door */
  view.color[DOORCOLORS+2]=w_makecolor(100,150,255); /* blue key */

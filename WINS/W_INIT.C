@@ -612,9 +612,9 @@ void w_closewins(void)
   for(n=notes.windows.head->next;n!=NULL;n=n->next)
    w_closewindow((struct w_window *)n->prev->d.w_w); 
   killlist(&notes.windows);
-  ws_textmode();
   fclose(errf);
   }
+ ws_textmode();
  }
 
 /* recursive function for reading menu-data. See w_initmenu for details.
@@ -631,7 +631,7 @@ int wi_readmenu(FILE *mfile,int no,void (**action)(int),int max_anr,
   checkmem(m=MALLOC(sizeof(struct wi_menu)));
   if(fscanf(mfile," %i%*[^{]%1023[^}]%*[^{]%1023[^}]%*[^\n]",&m->actionnr,
    buffer,helptxt)!=3) 
-   { fprintf(errf,"Can't read menu-data %d.\n",i); return 0; }
+   { fprintf(errf,"Can't read menu-data %d/%d/%d.\n",i,no,level); return 0; }
   if((pos=strchr(buffer,'>'))==NULL)
    { fprintf(errf,"Can't find hotkey in %s.\n",buffer); return 0; }
   checkmem(m->txt=MALLOC(strlen(buffer)+(!mainline && m->actionnr<0 ?
@@ -786,6 +786,10 @@ void w_curwin(struct w_window *w)
  if(w) w_refreshwin(w);
  }
 
+/* test if win w is the current window */
+int w_isthiscurwin(struct w_window *w)
+ { return w==&notes.cur_win->w; }
+ 
 /* Set the window with the current button */
 void w_butwin(struct w_window *w)
  {

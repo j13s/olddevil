@@ -100,8 +100,9 @@ struct thing *changething(struct thing *t,struct thing *clone,int newtype,
  if(clone!=NULL) data=clone;
  checkmem(t2=MALLOC(size));
  memcpy(t2,data,size);
- if(t!=NULL)  
-  { t2->p[0]=t->p[0]; t2->type1=newtype; t2->tagged=t->tagged; }
+ if(t!=NULL) 
+  { t2->p[0]=t->p[0]; t2->nc=t->nc; t2->type1=newtype; t2->tagged=t->tagged; }
+ else t2->nc=NULL;
  if(t!=NULL) /* orientation */
   for(j=0;j<9;j++) t2->orientation[j]=t->orientation[j];
  else 
@@ -127,7 +128,7 @@ struct thing *changething(struct thing *t,struct thing *clone,int newtype,
   if(t->nc)
    { for(n=t->nc->d.c->things.head;n->next!=NULL;n=n->next)
       if(n->d.t==t) break;
-     if(n->next) freenode(&t->nc->d.c->things,n,NULL); }
+     if(n->next) n->d.t=t2; }
   FREE(t);
   }
  setthingpts(t2); setthingcube(t2); 
@@ -351,8 +352,9 @@ struct node *getnode(enum datastructs it)
  {
  switch(it)
   {
-  case ds_point: case ds_wall: case ds_corner: case ds_producer:
+  case ds_wall: case ds_corner: case ds_producer:
   case ds_cube: case ds_flickeringlight: return view.pcurrcube; break;
+  case ds_point: return view.pcurrpnt; break;
   case ds_sdoor:
   case ds_door: return view.pcurrdoor; break;
   case ds_thing: return view.pcurrthing; break;
@@ -507,6 +509,7 @@ enum sdoortypes getsdoortype(struct sdoor *sd)
   case switch_wall_to_ill:
    return sdtype_door;
   default: fprintf(errf,"Unknown sdoortype: %x\n",sd->type); my_assert(0);
+   return 0;
   }
  }
  

@@ -71,14 +71,14 @@
 #define DOORCOLORS (THINGCOLORS+NUM_OF_THINGS)
 #define NUM_OF_DOORS 5
 #define HILIGHTCOLORS (DOORCOLORS+NUM_OF_DOORS)
-#define MAXHILIGHT 5
+#define MAXHILIGHT 6
 #define USEDCOLORS (HILIGHTCOLORS+MAXHILIGHT+1)
 #define WHITE (USEDCOLORS-1)
 
 #define MAX_OBJSTR_LENGTH 15
 
 enum tagtypes { tt_cube,tt_wall,tt_edge,tt_pnt,tt_thing,tt_door,tt_number };
-enum movetypes { mt_you,mt_obj,mt_number };
+enum movetypes { mt_you,mt_obj,mt_texture,mt_number };
 enum infos { in_cube,in_wall,in_edge,in_pnt,in_thing,in_door,in_internal,
  in_number };
 enum datastructs { ds_cube,ds_wall,ds_corner,ds_thing,ds_door,ds_internal,
@@ -552,7 +552,7 @@ struct viewdata
  float distcenter NONANSI_FLAG; /* distance from two views to center */
  int whichdisplay NONANSI_FLAG; /* ==0 one display, ==1 two for each level.*/
  int doubleclick NONANSI_FLAG;
- int render NONANSI_FLAG; /* ==1->change cube with position */
+ int render NONANSI_FLAG;
  unsigned short int gamma_corr NONANSI_FLAG; 
  int coord_axis NONANSI_FLAG;
 /* 168 */ 

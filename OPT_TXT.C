@@ -24,6 +24,7 @@
 #include "grfx.h"
 #include "tag.h"
 #include "plot.h"
+#include "do_move.h"
 #include "options.h"
 #include "opt_txt.h"
 
@@ -61,7 +62,7 @@ int next_txtno(struct txt_list_win *tlw,int offset,int add)
    txt2_wall : txt2_normal; break;
   case tlw_thing: tt=txt_thing; break;
   case tlw_anim: tt=txt_door; break;
-  default: my_assert(0);
+  default: my_assert(0); exit(2);
   }
  rdlno=offset>=0 && offset<tlw->maxnum ? tlw->t[offset]->rdlno : -1;
  while(add!=0)
@@ -306,7 +307,7 @@ void tl_changeoffset(struct w_button *b,int amount)
   case -2: add=-tl_xnumtxt(tlw)*(tl_ynumtxt(tlw)/2+1);break;
   case 1: add=tl_ynumtxt(tlw)>1 ? tl_xnumtxt(tlw) : 1; break;
   case 2: add=tl_xnumtxt(tlw)*(tl_ynumtxt(tlw)/2+1); break;
-  default: my_assert(0);
+  default: my_assert(0); exit(2);
   }
  tlw->offset=next_txtno(tlw,tlw->offset,add);
  if(tlw->offset<0) tlw->offset=next_txtno(tlw,-1,1);
@@ -609,7 +610,7 @@ void texture_list(struct infoitem *i,enum txttypes tt,int no)
   case txt2_normal: case txt2_wall: tlw_type=tlw_t2; break;
   case txt_thing: tlw_type=tlw_thing; break;
   case txt_door: tlw_type=tlw_anim; break;
-  default: my_assert(0);
+  default: my_assert(0); exit(2);
   } 
  if(!tl_win[tlw_type].win)
   {
@@ -765,18 +766,6 @@ void refresh_txtlist(struct infoitem *i)
   tlw->oldtxttyp==newtxttyp) return;
  tlw->olddisplay=-1; tlw->oldtxttyp=newtxttyp;
  initdisplay(tlw); tl_refresh(tlw->win,tlw);
- }
- 
-void b_fitbitmap(struct w_button *b,int withtagged)
- { 
- struct node *n;
- if(view.pcurrwall==NULL) return;
- if(!yesnomsg(TXT_FITBMTOSIDE)) return;
- recalcwall(view.pcurrcube->d.c,view.currwall);
- for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
-  if(n->d.n->d.c->walls[n->no%6])
-   recalcwall(n->d.n->d.c,n->no%6);
- plotlevel(); drawopt(in_wall); 
  }
  
 void b_changetexture(struct infoitem *i,long no,int withtagged)
@@ -1004,3 +993,234 @@ void drawtxtlines(struct w_button *b,struct wall *w)
  ws_setclipping(-1,-1,-1,-1);
  }     
 
+struct fitbitmap_savedata fb_savedata;
+static struct fitbitmap_data
+ { struct w_window *w; 
+   int changed,autoshrunk; struct wall *currwall;
+   char texture[64*64];
+   struct ws_bitmap *bm_txt;
+   struct corner c[4]; } fb_data;
+ 
+void fb_refreshwin(struct w_window *w,void *d)
+ {
+ int x,y,xn,yn,xo,yo,*c=d;
+ if(w->shrunk) return;
+ fb_savedata.xpos=w_xwinspacecoord(w->xpos);
+ fb_savedata.ypos=w_ywinspacecoord(w->ypos);
+ fb_savedata.xsize=w->xsize; fb_savedata.ysize=w->ysize;
+ if(!view.pcurrwall) { if(!w->shrunk) w_shrinkwin(w); return; }
+ ws_setclipping(w_xwinincoord(w,0),w_ywinincoord(w,0),
+  w_xwinincoord(w,0)+w_xwininsize(w)-1,w_ywinincoord(w,0)+w_ywininsize(w)-1);
+ xn=w_xwininsize(w)/128+2;
+ yn=w_ywininsize(w)/128+2;
+ xo=w_xwininsize(w)/2+w_xwinincoord(w,0);
+ yo=w_ywininsize(w)/2+w_ywinincoord(w,0);
+ for(y=-yn+1;y<yn;y++) for(x=-xn+1;x<xn;x++)
+  ws_copybitmap(NULL,xo+x*64,yo+y*64,fb_data.bm_txt,0,0,64,64,1);
+ for(x=0;x<4;x++)
+  ws_drawline(xo+fb_data.c[x].x[0]/32,yo+fb_data.c[x].x[1]/32,
+   xo+fb_data.c[(x+1)&3].x[0]/32,yo+fb_data.c[(x+1)&3].x[1]/32,
+   view.color[HILIGHTCOLORS + (x==0 ? 3 : (x==3 ? 4 : 1))],0);
+ if(c!=NULL)
+  ws_drawcircle(xo+fb_data.c[*c].x[0]/32,yo+fb_data.c[*c].x[1]/32,3,
+   view.color[HILIGHTCOLORS+1],0);
+ ws_setclipping(-1,-1,-1,-1);
+ }
+ 
+void fb_closewin(void)
+ {
+ /* if the window is shrunk we need the correct data...*/
+ if(fb_data.w->shrunk) w_shrinkwin(fb_data.w);
+ ws_freebitmap(fb_data.bm_txt); fb_data.bm_txt=NULL;
+ fb_savedata.xpos=w_xwinspacecoord(fb_data.w->xpos);
+ fb_savedata.ypos=w_ywinspacecoord(fb_data.w->ypos);
+ fb_savedata.xsize=fb_data.w->xsize; fb_savedata.ysize=fb_data.w->ysize;
+ w_closewindow(fb_data.w); fb_data.w=NULL; fb_data.currwall=NULL;
+ if(view.movemode==mt_texture) changemovemode(mt_you);
+ }
+ 
+void fb_closewinbutton(struct w_window *w,void *d)
+ {
+ if(fb_data.changed && !yesnomsg(TXT_FB_CLOSEWIN)) return;
+ fb_closewin();
+ }
+ 
+void fb_movetxtpic(void) { fb_refreshwin(fb_data.w,NULL); }
+
+void fb_clickwin(struct w_window *w,void *d,struct w_event *we)
+ {
+ struct ws_event ws;
+ int i,min,xd,yd,min_i,xo,yo;
+ struct wall wall;
+ if(we->x<0 || we->y<0 || we->x>=w_xwininsize(w) || we->y>=w_ywininsize(w))
+  return; /* click on a system button */
+ if((we->ws->buttons&ws_bt_left)==0)
+  {
+  move_texture_with_mouse(w_xwinincoord(w,we->x),w_ywinincoord(w,we->y),
+   fb_data.c,NULL,0,0,0.0,fb_movetxtpic);
+  fb_data.changed=1;
+  }
+ else 
+  {
+  /* Check if we want to move a point */
+  xo=w_xwininsize(w)/2+w_xwinincoord(w,0);
+  yo=w_ywininsize(w)/2+w_ywinincoord(w,0);
+  for(i=0,min=16,min_i=-1;i<4;i++)
+   {
+   xd=xo+fb_data.c[i].x[0]/32-we->ws->x; yd=yo+fb_data.c[i].x[1]/32-we->ws->y;
+   if(xd*xd+yd*yd<min) { min=xd*xd+yd*yd; min_i=i; }
+   }
+  if(min_i>=0)
+   {
+   ws_erasemouse();
+   fb_data.changed=1;
+   ws.x=fb_data.c[min_i].x[0]/32+xo; ws.y=fb_data.c[min_i].x[1]/32+yo; 
+   do
+    {
+    fb_refreshwin(fb_data.w,&min_i);
+    xd=ws.x; yd=ws.y; ws_mousewarp(xd,yd);
+    while(xd==ws.x && yd==ws.y && !ws_getevent(&ws,0));
+    if(ws.x<w_xwinincoord(w,0)) ws.x=w_xwinincoord(w,0);
+    else if(ws.x>=w_xwinincoord(w,w_xwininsize(w)))
+     ws.x=w_xwinincoord(w,w_xwininsize(w))-1;
+    if(ws.y<w_ywinincoord(w,0)) ws.y=w_ywinincoord(w,0);
+    else if(ws.y>=w_ywinincoord(w,w_ywininsize(w)))
+     ws.y=w_xwinincoord(w,w_ywininsize(w))-1;
+    fb_data.c[min_i].x[0]=(ws.x-xo)*32; fb_data.c[min_i].x[1]=(ws.y-yo)*32;
+    }
+   while(ws.buttons&ws_bt_left);
+   ws_displaymouse();
+   }
+  /* no pnt hit, so check for a double click */
+  else if(ws_getevent(&ws,-view.doubleclick))
+   {
+   if((ws.buttons&ws_bt_left)==0)
+    if(ws_getevent(&ws,-view.doubleclick))
+     if((ws.buttons&ws_bt_left)==1)
+      if(ws.kbstat&ws_ks_shift)
+       { if(yesnomsg(TXT_FB_RECALCUV))
+          { wall=*view.pcurrwall;
+	    recalcwall(view.pcurrcube->d.c,view.currwall);
+            for(i=0;i<4;i++) fb_data.c[i]=view.pcurrwall->corners[i]; 
+	    fb_data.changed=0; *view.pcurrwall=wall; } }
+      else if(ws.kbstat&ws_ks_alt)
+       { if(yesnomsg(TXT_FB_STDSHAPE))
+          { for(i=0;i<4;i++) fb_data.c[i]=stdcorners[i]; 
+	    fb_data.changed=1; } }
+      else 
+       { if(yesnomsg(TXT_FB_RESETUV))
+          { for(i=0;i<4;i++) fb_data.c[i]=view.pcurrwall->corners[i]; 
+	    fb_data.changed=0; } }
+   }
+  fb_movetxtpic();
+  }
+ }
+
+void fb_initwin(void)
+ {
+ struct w_window wi;
+ int c,cx,cy;
+ if(fb_data.bm_txt) ws_freebitmap(fb_data.bm_txt);
+ memcpy(fb_data.texture,pig.txt_buffer,64*64);
+ checkmem(fb_data.bm_txt=ws_createbitmap(64,64,fb_data.texture));
+ fb_data.changed=0; fb_data.currwall=view.pcurrwall;
+ for(c=0,cx=0,cy=0;c<4;c++)
+  { fb_data.c[c]=view.pcurrwall->corners[c];
+    cx+=fb_data.c[c].x[0]; cy+=fb_data.c[c].x[1]; }
+ cx/=4; cy/=4;
+ for(c=0;c<4;c++)
+  { fb_data.c[c].x[0]-=(cx/2048)*2048; fb_data.c[c].x[1]-=(cy/2048)*2048; }
+ if(fb_data.w==NULL)
+  { /* open the window */
+  if(fb_savedata.xsize==0)
+   { wi.xpos=0; wi.ypos=0; wi.xsize=w_xmaxwinsize()/2;
+     wi.ysize=w_ymaxwinsize()/2; }
+  else
+   { wi.xpos=fb_savedata.xpos; wi.ypos=fb_savedata.ypos; 
+     wi.xsize=fb_savedata.xsize; wi.ysize=fb_savedata.ysize; }
+  wi.maxxsize=wi.maxysize=-1; wi.shrunk=0;
+  wi.title=TXT_FB_TITLE; wi.hotkey=-1; wi.help=NULL;
+  wi.buttons=wb_drag|wb_size|wb_close|wb_shrink; 
+  wi.refresh=wr_routine; wi.data=NULL;
+  wi.refresh_routine=fb_refreshwin;
+  wi.close_routine=fb_closewinbutton; wi.click_routine=fb_clickwin;
+  fb_data.autoshrunk=0;
+  checkmem(fb_data.w=w_openwindow(&wi));
+  }
+ if(fb_data.autoshrunk && fb_data.w->shrunk && view.pcurrwall)
+  { w_shrinkwin(fb_data.w); fb_data.autoshrunk=0; }
+ fb_refreshwin(fb_data.w,NULL); changemovemode(mt_texture);
+ }
+ 
+void b_fitbitmap(struct w_button *b,int withtagged)
+ {
+ struct node *n;
+ int c;
+ if(view.pcurrcube==NULL || view.pcurrwall==NULL || l==NULL) return;
+ if(fb_data.w!=NULL) /* close window */
+  {
+  fb_closewin();  l->levelsaved=0;
+  view.pcurrcube->d.c->recalc_polygons[view.currwall]=1;
+  for(c=0;c<4;c++)
+   { view.pcurrwall->corners[c].x[0]=fb_data.c[c].x[0];
+     view.pcurrwall->corners[c].x[1]=fb_data.c[c].x[1]; }
+  for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
+   if(n->d.n->d.c->walls[n->no%6])
+    {
+    for(c=0;c<4;c++)
+     { n->d.n->d.c->walls[n->no%6]->corners[c].x[0]=
+        view.pcurrwall->corners[c].x[0];
+       n->d.n->d.c->walls[n->no%6]->corners[c].x[1]=
+        view.pcurrwall->corners[c].x[1]; }
+    n->d.n->d.c->recalc_polygons[n->no%6]=1;
+    }
+  plotlevel(); drawopt(in_wall); drawopt(in_edge); 
+  }
+ else fb_initwin();
+ }
+ 
+void fb_refreshall(void)
+ {
+ int c;
+ if(!fb_data.w || fb_data.currwall==view.pcurrwall) return;
+ if(fb_data.changed && fb_data.currwall)
+  { w_wintofront(fb_data.w);
+    if(yesnomsg(TXT_FB_SAVE))
+     for(c=0;c<4;c++)
+      { fb_data.currwall->corners[c].x[0]=fb_data.c[c].x[0];
+	fb_data.currwall->corners[c].x[1]=fb_data.c[c].x[1]; } }
+ fb_data.currwall=view.pcurrwall;
+ if(!view.pcurrwall)
+  { if(!fb_data.w->shrunk) { fb_data.autoshrunk=1; w_shrinkwin(fb_data.w); } }
+ else fb_initwin();
+ }
+
+void fb_move_texture(int axis,int dir)
+ {
+ if(fb_data.w==NULL || fb_data.w->shrunk) return;
+ switch(axis)
+  {
+  case 0: move_texture(fb_data.c,dir*32,0); break;
+  case 1: move_texture(fb_data.c,0,-dir*32); break;
+  case 2: stretch_texture(fb_data.c,-dir,-dir); break;
+  default: my_assert(0);
+  }
+ fb_movetxtpic();
+ }
+
+void fb_turn_texture(int x,int y,int z,int dir)
+ {
+ if(fb_data.w==NULL || fb_data.w->shrunk) return;
+ switch(x)
+  {
+  case 0: rotate_texture(fb_data.c,dir*view.protangle); break;
+  case 1: stretch_texture(fb_data.c,0,-dir); break;
+  case 2: stretch_texture(fb_data.c,dir,0); break;
+  }
+  fb_movetxtpic();
+ }
+
+int fb_isactive(void)
+ { return fb_data.w!=NULL && !fb_data.w->shrunk && view.pcurrwall!=NULL; }
+
+void fb_tofront(void) { w_wintofront(fb_data.w); }

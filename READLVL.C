@@ -501,6 +501,7 @@ int initlevel(struct leveldata *ld)
    normalize(&ld->e[0]); normalize(&ld->e[1]);
    VECTOR(&ld->e[2],&ld->e[0],&ld->e[1]);
    }
+  setthingcube(t);
   }
  ld->currwall=ld->curredge=0;
  ld->pcurrpnt=(ld->pts.size>0) ? ld->pts.head : NULL;
@@ -811,6 +812,17 @@ int checklvl(struct leveldata *ld,int testlevel)
  sortlist(&ld->pts,0); sortlist(&ld->producers,0); sortlist(&ld->sdoors,0);
  sortlist(&ld->turnoff,0); sortlist(&ld->changedlights,0);
  sortlist(&ld->flickeringlights,0);
+ for(n=ld->cubes.head,i=0,no=0;n->next!=NULL;n=n->next) 
+  { if(n->d.c->cp!=NULL) 
+     { n->d.c->value=no++;
+       n->d.c->cp->prev->next=n->d.c->cp->next;
+       n->d.c->cp->next->prev=n->d.c->cp->prev;
+       n->d.c->cp->next=ld->producers.tail->next;
+       n->d.c->cp->prev=ld->producers.tail;
+       n->d.c->cp->prev->next=n->d.c->cp;
+       n->d.c->cp->next->prev=n->d.c->cp; }
+    if(n->d.c->type!=0) i++; }
+ if(testlevel<0) return 1;
  if(ld->cubes.size>MAX_DESCENT_CUBES && !yesnomsg(TXT_TOOMANYCUBES,
   ld->cubes.size,MAX_DESCENT_CUBES)) return 0;
  if(ld->pts.size>MAX_DESCENT_VERTICES && !yesnomsg(TXT_TOOMANYPTS,
@@ -835,16 +847,6 @@ int checklvl(struct leveldata *ld,int testlevel)
    MAX_DESCENT_CHANGEDLIGHTS))
    return 0;
   }
- for(n=ld->cubes.head,i=0,no=0;n->next!=NULL;n=n->next) 
-  { if(n->d.c->cp!=NULL) 
-     { n->d.c->value=no++;
-       n->d.c->cp->prev->next=n->d.c->cp->next;
-       n->d.c->cp->next->prev=n->d.c->cp->prev;
-       n->d.c->cp->next=ld->producers.tail->next;
-       n->d.c->cp->prev=ld->producers.tail;
-       n->d.c->cp->prev->next=n->d.c->cp;
-       n->d.c->cp->next->prev=n->d.c->cp; }
-    if(n->d.c->type!=0) i++; }
  flags[0]=flags[1]=NULL;
  for(i=0;i<3;i++) keys[i]=NULL; 
  for(i=0;i<11;i++) starts[i]=NULL; 

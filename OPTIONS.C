@@ -123,7 +123,7 @@ void changedata(struct infoitem *i,int withtagged,void *data)
       case tt_thing: cn=view.pcurrthing; break;
       case tt_door: cn=view.pcurrdoor; break;
       case tt_pnt: cn=view.pcurrpnt; break;
-      default: my_assert(0);
+      default: my_assert(0); exit(2);
       }
      if(cn!=n->d.n)
       if(i->sidefuncnr>=0 && i->sidefuncnr<sc_number)
@@ -797,6 +797,7 @@ void drawopt(enum infos what)
   for(i=0;i<init.infonum[what];i++) drawoptbuttons(&init.info[what][i]);
   w_refreshend(optionwins[what]);
   }
+ if(what==in_cube || what==in_wall) fb_refreshall();
  }
 
 void drawopts(void)

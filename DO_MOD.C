@@ -387,8 +387,8 @@ struct node *recalc_track(struct corridor *c,struct track *st,
  /* OK. Now we divide the curve in oldlength/depth*CORR_FINENESS parts 
    and step through it */
  num_parts=et->length/c->depth*CORRIDOR_FINENESS+0.5;
- dt=1.0/num_parts;
  if(num_parts<CORRIDOR_FINENESS*2) return 0;
+ dt=1.0/num_parts;
  /* First make the coordsystems untwisted */
  initlist(&curve);
  ref_coords[0]=st->coords[0]; ref_coords[1]=st->coords[1];
@@ -659,9 +659,11 @@ void close_corr_win(struct corridor *c)
  w_deletebutton(c->b_setend);
  c->b_ok=c->b_cancel=c->b_ins=c->b_del=c->b_setend=NULL;
  if(view.whichdisplay)
-  { corr_win2_xpos=c->win->xpos; corr_win2_ypos=c->win->ypos; }
+  { corr_win2_xpos=w_xwinspacecoord(c->win->xpos);
+    corr_win2_ypos=w_ywinspacecoord(c->win->ypos); }
  else
-  { corr_win1_xpos=c->win->xpos; corr_win1_ypos=c->win->ypos; }
+  { corr_win1_xpos=w_xwinspacecoord(c->win->xpos);
+    corr_win1_ypos=w_ywinspacecoord(c->win->ypos); }
  w_closewindow(c->win); c->win=NULL;
  l->cur_corr=NULL; plotlevel(); 
  }

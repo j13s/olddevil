@@ -32,6 +32,6 @@ enum evcodes {
  ec_overview_off,ec_cor_overview_off,ec_savewinpos,ec_loadwinpos,
  ec_reinitgrfx,ec_changeview,ec_render_0,ec_render_1,ec_render_2,
  ec_render_3,ec_tagflatsides,ec_usepnttag,ec_nextedge,
- ec_prevedge,ec_edgemode,ec_num_of_codes };
+ ec_prevedge,ec_edgemode,ec_makestdside,ec_num_of_codes };
 extern void (*do_event[ec_num_of_codes])(int ec);
 

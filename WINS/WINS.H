@@ -3,6 +3,8 @@
     Copyright (C) 1995  Achim Stremplat (ubdb@rz.uni-karlsruhe.de) 
     Further info see .c-files. */
 
+extern void my_exit(void);
+    
 #include "w_list.h"
    
 enum win_buttons { wb_none=0,wb_drag=1,wb_size=2,wb_close=4,wb_shrink=8 };

@@ -114,13 +114,15 @@ struct kbstatdescr { int kbstat; const char *txt; }
  txt_kbstat[NUM_KBSTATSDESCR] =
  { { 1,"Shift" }, { 2,"Alt" }, { 4,"Ctrl" }, { 8,"Numlock" },
    { 0x10,"Capslock" }, { 0x20,"Scrollock" } };
-#define NUM_KEYDESCR 53
+#define NUM_KEYDESCR 58
 struct keydescr { int key; const char *txt; } txt_key[NUM_KEYDESCR] =
  { { 27,"Esc" }, { 9,"Tab" }, { 271,"Tab" },
    { 315,"F1" }, { 316,"F2" }, { 317,"F3" }, { 318,"F4" }, { 319,"F5" },
    { 320,"F6" }, { 321,"F7" }, { 322,"F8" }, { 323,"F9" }, { 324,"F10" },   
    { 595,"Del" }, { 8,"BS" }, { 594,"Ins" }, { 32,"Space" }, { 335,"N3" },
    { 328,"N2" }, { 337,"N1" }, { 331,"N4" }, { 336,"N8" }, { 333,"N6" },
+   /* some keys I want to display not in the usual way */
+   { '!',"1" }, { '"',"2" }, {'õ',"3" }, { '#',"3" }, { '$',"4" },
    /* F-keys with shift: */
    { 340,"F1" }, { 341,"F2" }, { 342,"F3" }, { 343,"F4" }, { 344,"F5" }, 
    { 345,"F6" }, { 346,"F7" }, { 347,"F8" }, { 348,"F9" }, { 349,"F10" },
@@ -149,12 +151,13 @@ void help_refresh(struct w_window *w)
   for(j=0;j<NUM_KBSTATSDESCR;j++)
    if(view.ec_keycodes[i].kbstat&txt_kbstat[j].kbstat)
     sprintf(&buffer[strlen(buffer)],"%s+",txt_kbstat[j].txt);
-  if(view.ec_keycodes[i].key>=256 || !isgraph(view.ec_keycodes[i].key))
-   { for(j=0;j<NUM_KEYDESCR;j++)
-      if(view.ec_keycodes[i].key==txt_key[j].key)
-       { sprintf(&buffer[strlen(buffer)],"%s: ",txt_key[j].txt); break; }
-     if(j>=NUM_KEYDESCR) sprintf(&buffer[strlen(buffer)],"???: "); }
-  else sprintf(&buffer[strlen(buffer)],"%c: ",view.ec_keycodes[i].key);
+  for(j=0;j<NUM_KEYDESCR;j++)
+   if(view.ec_keycodes[i].key==txt_key[j].key)
+    { sprintf(&buffer[strlen(buffer)],"%s: ",txt_key[j].txt); break; }
+  if(j>=NUM_KEYDESCR) 
+   if(!isgraph(view.ec_keycodes[i].key))
+    sprintf(&buffer[strlen(buffer)],"???: ");
+   else sprintf(&buffer[strlen(buffer)],"%c: ",view.ec_keycodes[i].key);
   sprintf(&buffer[strlen(buffer)],"%s",view.txt_keycode[i]);  
   ws_drawtext(w_xwinincoord(w,x*COLUMNSIZE+5),
    w_ywinincoord(w,o_y+y*w_titlebarheight()),
@@ -220,7 +223,7 @@ void dec_wallmode(int ec)
  { shrinkopt_win(tt_door); changecurrmode(tt_door); }
 
 void dec_movemode(int ec)
- { changemovemode(view.movemode<mt_number-1 ? view.movemode+1 : 0); }
+ { changemovemode(view.movemode<mt_texture-1 ? view.movemode+1 : 0); }
 
 void dec_gridonoff(int ec) { view.gridonoff^=1; drawopt(in_internal); }
 
@@ -434,5 +437,5 @@ void (*do_event[ec_num_of_codes])(int ec)=
    dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,dec_gotopos,
    dec_savewinpos,dec_loadwinpos,dec_reinitgrfx,dec_changeview,
    dec_render,dec_render,dec_render,dec_render,dec_tagflatsides,
-   dec_usepnttag,dec_nextedge,dec_prevedge,dec_edgemode };
+   dec_usepnttag,dec_nextedge,dec_prevedge,dec_edgemode,dec_makestdside };
 

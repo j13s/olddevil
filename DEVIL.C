@@ -31,7 +31,7 @@
 const char *extnames[desc_number]={ "SDL","RDL","RDL","SL2","RL2","RL2" };
 #ifdef GER
 const char *ininames[desc_number]=
- { NULL,NULL,NULL,NULL,NULL,NULL };  /* german is deactivated */
+ { NULL,"d1r_g.ini","d1r_g.ini",NULL,"d2r_g_10.ini","d2r_g_11.ini" };
 #else 
 const char *ininames[desc_number]=
  { NULL,"d1reg.ini","d1reg.ini",NULL,"d2reg_10.ini","d2reg_11.ini" };
@@ -48,7 +48,26 @@ struct palette palettes[NUM_PALETTES];
 struct leveldata *l;
 
 void my_exit(void)
- { closegrph(); exit(2); }
+ { 
+ static int no_loop=0;
+ if(!no_loop)
+  { no_loop=1; 
+    fprintf(errf,"Severe bug. Trying to save current work...");
+    savestatus(-1);
+    fprintf(errf,"Done. Maybe you are a lucky guy.\n"); }
+ closegrph(); ws_textmode(); 
+ printf("Severe bug. Please have a look in the devil.err and try to\n");
+ printf("reconstruct how this happened and mail your bug report to the\n");
+ printf("Descent Designer Mailing List (see http://www.ladder.org)\n");
+ printf("If you're lucky, your current work will be restored when you\n");
+ printf("enter the program again. If this doesn't work and it won't start\n");
+ printf("anymore at all, try devil /new.\n");
+ printf("WARNING: It is not sure that your levels will be properly\n");
+ printf("working after the reconstruction. You should save them\n");
+ printf("under a different filename than the last 'real' saved version\n");
+ printf("Press a key.\n"); ws_waitforkey();
+ exit(2); 
+ }
 
 const char *signame[5]={ "Unknown","Floating point exception",
  "Illegal opcode","Segment violation","Terminate" };
@@ -62,7 +81,8 @@ void my_abort(int sigcode)
  if(errf!=NULL)
   { fprintf(errf,"Unexpected signal: %s\n",signame[x]); fflush(errf); }
  else printf("Unexpected signal: %s\n",signame[x]);
- exit(2);
+ if(x==1) my_exit();
+ else exit(2);
  }
  
 enum cmdline_params { clp_new,clp_notitle,clp_config,num_cmdlineparams };

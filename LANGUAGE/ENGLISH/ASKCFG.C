@@ -117,7 +117,7 @@ int checkd1version(char *path)
  FILE *f;
  char buffer[100];
  unsigned long d;
- printf("Checking Descent 2 version...\n");
+ printf("Checking Descent 1 version...\n");
  makedospath(path,buffer); strcat(buffer,"/"); strcat(buffer,"descent.pig");
  checkmem(f=fopen(buffer,"rb"));
  my_assert(fread(&d,sizeof(long),1,f)==1);
@@ -186,8 +186,7 @@ int askconfigdata(int *d_ver,char *devilpath,char *d1path,char *d2path,
    case 'D': *d_ver=((*d_ver)&1)+1;
     if(*d_ver==2)
      printf("\nDevil is now configured for Descent 2.\n"\
-      "You can load Descent 1 levels, too, but\n"
-      "the textures will be messed up.\n");
+      "You can load Descent 1 levels, too.\n");
     else
      printf("\nDevil is now configured for Descent 1.\n"\
       "You won't be able to load/edit Descent 2 levels.\n");
@@ -253,8 +252,8 @@ hotkeys[NUM_HOTKEYS]={
 { 0x00,103, 61, "grid on/off" },
 { 0x04, 99, 53, "mode: cube" },
 { 0x04,115, 54, "mode: side" },
-{ 0x04,112, 55, "mode: point" },
 { 0x04,101,126, "mode: edge" },
+{ 0x04,112, 55, "mode: point" },
 { 0x04,116, 56, "mode: thing" },
 { 0x04,119, 57, "mode: wall" },
 { 0x01, 76, 82, "previous level" },

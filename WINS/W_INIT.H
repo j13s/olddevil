@@ -29,6 +29,7 @@ void w_resizeinwin(struct w_window *w,int xinsize,int yinsize);
 void w_closewindow(struct w_window *w);
 void w_closewins(void);
 void w_curwin(struct w_window *w);
+int w_isthiscurwin(struct w_window *w);
 void w_butwin(struct w_window *w);
 int w_savecfg(FILE *f);
 void w_readcfg(FILE *f);

@@ -170,7 +170,7 @@ int findwallnotoline(int wno,int wp1,int wp2)
  }
  
 /* get the wall in neighbour cube nc which has the two points wp1,wp2
-   in wall w in cube c with wall w1 common. */
+   in wall w in cube c common with w. */
 int findnbwalltoline(struct node *c,struct cube *nc,
  int w,int wp1,int wp2)
  {

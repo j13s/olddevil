@@ -7,6 +7,7 @@ void makeview(int lr);
 int getpixelcoords(int lr,struct point *p,struct pixel *pix);
 void plotthing(struct thing *t,int hilight); 
 void plotmarker(struct point *p,int hilight);
+void plotpnt(struct node *n,int w,int c,int hilight);
 void plotcube(struct node *n,int hilight,int xor,int withalllines,
  int withlockedsides);
 void plotwall(struct cube *c,int wno,int hilight,int xor);

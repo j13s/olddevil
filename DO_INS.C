@@ -39,11 +39,12 @@ void dec_newlevel(int ec)
  strcpy(ld->pigname,pigname);
  old_l=l; l=ld; ld->pcurrcube=newcube(ld); l=old_l;
  ld->currwall=3; ld->pcurrwall=ld->pcurrcube->d.c->walls[ld->currwall];
+ ld->pcurrpnt=ld->pts.head;
  newlevelwin(ld,0);
  view.pcurrthing=insertthing(view.pcurrcube,NULL);
  view.pcurrthing->d.t=changething(view.pcurrthing->d.t,NULL,
   4,view.pcurrcube->d.c);
- view.currwall=0; view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
+ view.currwall=0;
  drawopts(); plotlevel();
  }
  
@@ -124,22 +125,24 @@ void dec_insert(int ec)
   case tt_wall: 
    warn=(l->pts.size<=MAX_DESCENT_VERTICES);
    view.drawwhat|=DW_ALLLINES;
-   if(fast)
-    for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
-     if(n->d.n->d.c->nc[n->no%6]!=NULL && n->d.n->d.c->d[n->no%6]==NULL)
-      deleteconnect(n->d.n,n->no%6,!special);
    if(view.pcurrcube->d.c->nc[view.currwall]!=NULL) 
     {
+    if(fast)
+     for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
+      if(n->d.n->d.c->nc[n->no%6]!=NULL && n->d.n->d.c->d[n->no%6]==NULL)
+       deleteconnect(n->d.n,n->no%6,!special);
     if(view.pcurrcube->d.c->d[view.currwall]!=NULL) 
      { printmsg(TXT_DOORINTHEWAY,view.currwall,view.pcurrcube->no); return; }
     deleteconnect(view.pcurrcube,view.currwall,!special);
     }
    else
-    if(!fast && view.pcurrcube->d.c->nc[view.currwall]==NULL) 
+    if(view.pcurrcube->d.c->nc[view.currwall]==NULL) 
      if(view.pcurrcube->d.c->d[view.currwall]!=NULL)
       printmsg(TXT_CANTINSCUBE);
      else 
-      { insertcube(NULL,NULL,view.pcurrcube,view.currwall,-1.0);plotlevel(); }
+      { checkmem(n=insertcube(NULL,NULL,view.pcurrcube,view.currwall,-1.0));
+        if(fast) makesidestdshape(n->d.c,view.currwall);
+	plotlevel(); }
    drawopt(in_wall); l->levelsaved=l->levelillum=0;
    if(l->pts.size>MAX_DESCENT_VERTICES && warn) waitmsg(TXT_INSTOOMANYPTS);
    break;
@@ -201,6 +204,7 @@ void dec_insert(int ec)
    break;
   default: printmsg(TXT_NOINSERTMODE,init.bnames[view.currmode]);
   }
+ plotlevel();
  }
 
 void dec_delete(int ec)
@@ -403,14 +407,28 @@ void dec_splitcube(int ec)
   newc[i]->d.c->walls[wno[i]]->texture2=w.texture2;
   newc[i]->d.c->walls[wno[i]]->txt2_direction=w.txt2_direction;
   newc[i]->d.c->walls[wno[i]]->locked=w.locked;
-  if(nc[i])
-   if(!connectcubes(NULL,newc[i],i,nc[i],ncw[i]))
-    waitmsg(TXT_SPLITCANTCONNECT,i,nc[i]->no,ncw[i]);
   }
+ for(i=0;i<6;i++)
+  if(nc[i])
+   if(!connectcubes(NULL,newc[i],wno[i],nc[i],ncw[i]))  
+    { waitmsg(TXT_SPLITCANTCONNECT,wno[i],nc[i]->no,ncw[i]); 
+      plotlevel(); drawopt(in_cube); drawopt(in_wall); drawopt(in_edge);
+      return; }   
  for(j=0;j<6;j++)
   for(i=0;i<6;i++)
    if(i!=wno[j] && i!=oppwalls[wno[j]] && newc[j]->d.c->nc[i]==NULL)
     if(!connectsides(newc[j],i))
-     waitmsg(TXT_SPLITCANTCONNECT2,newc[j]->no,i);
+     { waitmsg(TXT_SPLITCANTCONNECT2,newc[j]->no,i); 
+       plotlevel(); drawopt(in_cube); drawopt(in_wall); drawopt(in_edge);
+       return; } 
  plotlevel(); drawopt(in_cube); drawopt(in_wall); drawopt(in_edge);
  }
+
+void dec_makestdside(int ec)
+ { struct node *n;
+   if(!l) { printmsg(TXT_NOLEVEL); return; }
+   if(l->tagged[tt_wall].size<1) 
+    { printmsg(TXT_NOTHINGTAGGED,init.bnames[tt_wall]); return; }
+   for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
+    makesidestdshape(n->d.n->d.c,n->no%6); 
+   plotlevel(); drawopt(in_pnt); drawopt(in_wall); drawopt(in_edge); }

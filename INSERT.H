@@ -29,3 +29,4 @@ int testcube(struct node *nc,int withmsg);
 int testpnt(struct node *np);
 void growshrink(struct node **ps,int *pntnos,int groworshrink);
 int move_pntlist(struct list *l,struct point *r);
+void makesidestdshape(struct cube *c,int w);

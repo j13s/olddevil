@@ -351,9 +351,18 @@ void deletecube(struct list *cubes,struct list *pts,struct node *n)
   if(n==view.pdefcube)
    { view.pdeflevel=NULL; view.pdefcube=NULL; view.defwall=0; }
   view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
+  do
+   { for(k=0;k<8;k++)
+      if(view.pcurrcube->d.c->p[k]==view.pcurrpnt) break;
+     if(k<8) 
+      { view.pcurrpnt=view.pcurrpnt->next;
+        if(view.pcurrpnt->next==NULL) view.pcurrpnt=l->pts.head; } }
+  while(k<8);
   }
  for(k=0;k<6;k++)
   {
+  for(m=0;m<4;m++) untag(tt_edge,n,k,m);
+  untag(tt_wall,n,k);
   if(c->nc[k]!=NULL)
    {
    nc=c->nc[k]->d.c;
@@ -362,8 +371,6 @@ void deletecube(struct list *cubes,struct list *pts,struct node *n)
    my_assert(w!=-1 && c->nc[k]->d.c->walls[w]==NULL);
    nc->nc[w]=NULL; insertwall(c->nc[k],w,-1,-1,-1);
    }
-  for(m=0;m<4;m++) untag(tt_edge,n,k,m);
-  untag(tt_wall,n,k);
   }
  for(k=0;k<8;k++)
   {
@@ -376,7 +383,7 @@ void deletecube(struct list *cubes,struct list *pts,struct node *n)
  if(c->cp!=NULL) freenode(&l->producers,c->cp,free);
  killsdoorlist(&c->sdoors,n->no);
  for(cn=c->things.head;cn->next!=NULL;cn=cn->next)
-  cn->d.t->cube=NULL;
+  cn->d.t->nc=NULL;
  freelist(&c->things,NULL); 
  freenode(cubes,n,freecube);
  }
@@ -419,7 +426,7 @@ int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
  my_assert(nc1!=NULL && nc2!=NULL && w1>=0 && w1<6 && w2>=0 && w2<6);
  c1=nc1->d.c; c2=nc2->d.c;
  pw2=c2->walls[w2];
- my_assert(pw2!=NULL || c1->walls[w1]!=NULL);
+ my_assert(pw2!=NULL && c1->walls[w1]!=NULL);
  if(nc1->no==nc2->no) { printmsg(TXT_CONNCUBEITSELF,nc1->no); return 0; }
  if(c1->d[w1]!=NULL || c2->d[w2]!=NULL)
   { printmsg(TXT_CONNWALLINWAY,nc1->no,w1,nc2->no,w2); return 0; }
@@ -459,7 +466,7 @@ int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
   for(k=0;k<=i;k++)
    changepnt(pnts[k][1],pnts[k][0],on[k]);
   return 0;
-  }
+  } 
  /* connection is correct: let's kill all old things */
  if(c2->walls[w2]->ls) 
   freenode(&l->lightsources,c2->walls[w2]->ls,freelightsource);
@@ -471,15 +478,17 @@ int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
   freenode(&l->flickeringlights,c1->walls[w1]->fl,free);
  c2->nc[w2]=nc1; FREE(c2->walls[w2]); c2->walls[w2]=NULL;
  c1->nc[w1]=nc2; FREE(c1->walls[w1]); c1->walls[w1]=NULL;
- /* free old points and calculate new textures */
+ /* free old points and calculate new textures  */
  for(j=0;j<4;j++)
   {
   if(pnts[j][0]->no!=pnts[j][1]->no)
    {
-   freenode(pts==NULL ? &l->pts : pts,pnts[j][0],free);  
-   newcorners(pnts[j][1]); 
+   my_assert(pnts[j][0]->d.lp->c.size==0)
+   if(view.pcurrpnt==pnts[j][0]) view.pcurrpnt=pnts[j][1];
+   freenode(pts==NULL ? &l->pts : pts,pnts[j][0],free);   
+   newcorners(pnts[j][1]);  
    }
-  }
+  } 
  if((view.pdefcube==nc1 && view.defwall==w1) ||
   (view.pdefcube==nc2 && view.defwall==w2))
   { view.pdeflevel=NULL; view.pdefcube=NULL; view.defwall=0; }
@@ -487,6 +496,7 @@ int connectcubes(struct list *pts,struct node *nc1,int w1,struct node *nc2,
   if(l->exitcube!=NULL && ((l->exitcube->no==nc1->no && l->exitwall==w1) || 
    (l->exitcube->no==nc2->no && l->exitwall==w2))) l->exitcube=NULL;
  view.pcurrwall=view.pcurrcube->d.c->walls[view.currwall];
+ nc1->d.c->recalc_polygons[w1]=1; nc2->d.c->recalc_polygons[w2]=1;
  printmsg(TXT_CUBESCONNECTED,nc1->no,w1,nc2->no,w2);
  return 1;
  }
@@ -829,9 +839,8 @@ struct node *newcube(struct leveldata *ld)
   {
   checkmem(lp=MALLOC(sizeof(struct listpoint)));
   checkmem(nlp=addnode(&ld->pts,-1,lp)); initlist(&lp->c); lp->tagged=NULL;
-  checkmem(addnode(&lp->c,j,nnc)); nc->p[j]=nlp;
-  lp->p=stdcubepts[j];
-  nc->pts[j]=nc->p[j]->no;
+/*  checkmem(addnode(&lp->c,j,nnc)); is done by initcube */
+  nc->p[j]=nlp; lp->p=stdcubepts[j]; nc->pts[j]=nc->p[j]->no;
   }
  /* and now make the walls */
  for(i=0;i<6;i++)
@@ -945,4 +954,54 @@ struct node *insertcube(struct list *cubes,struct list *pts,struct node *c,
   }
  return nnc;
  }
-
+ 
+void makesidestdshape(struct cube *cube,int w)
+ {
+ struct point *p[4],c,x,y,d[4],np1[4],np2[4],op[4];
+ int i,pn;
+ float f,phi,a,b;
+ my_assert(cube!=NULL);
+ for(pn=0;pn<4;pn++) 
+  { p[pn]=cube->p[wallpts[w][pn]]->d.p; op[pn]=*p[pn]; }
+ for(i=0;i<3;i++)
+  { c.x[i]=0.0; for(pn=0;pn<4;pn++) c.x[i]+=p[pn]->x[i]/4.0;
+    x.x[i]=p[2]->x[i]-p[1]->x[i]+p[3]->x[i]-p[0]->x[i];
+    y.x[i]=p[1]->x[i]-p[0]->x[i]+p[2]->x[i]-p[3]->x[i]; }
+ normalize(&x); f=SCALAR(&x,&y);
+ for(i=0;i<3;i++) y.x[i]-=f*x.x[i];
+ normalize(&y);
+ for(i=0;i<3;i++) for(pn=0;pn<4;pn++) d[pn].x[i]=p[pn]->x[i]-c.x[i]; 
+ /* using stdcubepts[4+p] because they are numbered in the right way:
+    corner 0=point 4 1=5 2=6 3=7 */
+ for(pn=0,a=0.0;pn<4;pn++) a+=stdcubepts[4+pn].x[0]*SCALAR(&d[pn],&x)+
+  stdcubepts[4+pn].x[1]*SCALAR(&d[pn],&y);
+ if(fabs(a)>0.01)
+  {
+  for(pn=0,b=0.0;pn<4;pn++) b+=stdcubepts[4+pn].x[0]*SCALAR(&d[pn],&y)-
+   stdcubepts[4+pn].x[1]*SCALAR(&d[pn],&x);
+  phi=atan(b/a);
+  }
+ else phi=M_PI/2;
+ /* now we have two solutions: phi and phi+M_PI. Check which one is the
+    one with the largest distance between the four points and which one
+    the one with the smallest distance */
+ for(pn=0,a=b=0.0;pn<4;pn++)
+  {
+  for(i=0;i<3;i++)
+   { 
+   np1[pn].x[i]=d[pn].x[i]
+    -(stdcubepts[4+pn].x[0]*cos(phi)-stdcubepts[4+pn].x[1]*sin(phi))*x.x[i]
+    -(stdcubepts[4+pn].x[0]*sin(phi)+stdcubepts[4+pn].x[1]*cos(phi))*y.x[i];
+   np2[pn].x[i]=d[pn].x[i]
+    +(stdcubepts[4+pn].x[0]*cos(phi)-stdcubepts[4+pn].x[1]*sin(phi))*x.x[i]
+    +(stdcubepts[4+pn].x[0]*sin(phi)+stdcubepts[4+pn].x[1]*cos(phi))*y.x[i]; 
+   }
+  a+=SCALAR(&np1[pn],&np1[pn]); b+=SCALAR(&np2[pn],&np2[pn]);
+  }
+ for(pn=0;pn<4;pn++)
+  { for(i=0;i<3;i++)
+     p[pn]->x[i]-=a<b ? np1[pn].x[i] : np2[pn].x[i];
+    if(!testpnt(cube->p[wallpts[w][pn]])) break; }
+ if(pn!=4) for(pn=0;pn<4;pn++) *p[pn]=op[pn];
+ else for(pn=0;pn<4;pn++) newcorners(cube->p[wallpts[w][pn]]);
+ } 

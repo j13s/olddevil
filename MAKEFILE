@@ -20,7 +20,7 @@ compile: $(OBJ)
 %.o: %.c
 	gcc -MMD $(CFLAGS) -o $@ $<
 plotsys.o: plotsys.c plotsys.h plotdata.h structs.h
-	gcc -I wins -I language -Wall -Werror -O3 -m486 -g -DGNU_C -c plotsys.c -o plotsys.o
+	gcc -I wins -I language -Wall -Werror -O3 -m486 -g3 -DGNU_C -c plotsys.c -o plotsys.o
 plottxt.o: plottxt.c plottxt.h plotsys.h plotdata.h structs.h
 	gcc -I wins -I language -Wall -Werror -O3 -m486 -g -DGNU_C -c plottxt.c -o plottxt.o
 title.o: title.c title.h structs.h

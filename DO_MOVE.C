@@ -26,6 +26,8 @@
 #include "options.h"
 #include "tag.h"
 #include "plottxt.h"
+#include "opt_txt.h"
+#include "plotdata.h"
 #include "do_event.h"
 #include "do_opts.h"
 #include "do_mod.h"
@@ -117,7 +119,7 @@ void pm_wall(struct list *li,int axis,int dir)
  }
 
 void (*pmove[tt_number])(struct list *li,int axis,int dir) =
- { pm_cube,pm_wall,pm_pnt,pm_thing };
+ { pm_cube,pm_wall,NULL,pm_pnt,pm_thing,NULL };
 
 void pr_thing(struct list *nl,int x,int y,int z,int dir)
  {
@@ -264,6 +266,7 @@ void b_move(int axis,int dir)
    if(!view.pcurrcube) return;
    pmove[view.currmode](&l->tagged[view.currmode],axis,dir);
    break;
+  case mt_texture: fb_move_texture(axis,dir); return;
   default: printmsg("Movemode %d not implemented",view.movemode);
   }
  plotlevel(); if(view.movemode==mt_obj) drawopt(in_pnt);
@@ -293,6 +296,7 @@ void b_turn(int x,int y,int z,int dir)
     default: printmsg(TXT_NOTURNOBJECT); 
     }
    break;
+  case mt_texture: fb_turn_texture(x,y,z,dir); return;
   default: printmsg("Turnmode %d not implemented",view.movemode);
   }
  plotlevel(); if(view.movemode==mt_obj) drawopt(in_pnt);
@@ -553,8 +557,8 @@ int movepnt(struct point *add,union move_params *params)
    for(i=0;i<3;i++) n->d.p->x[i]+=add->x[i];
   /* is this is side/cube movement reinit the moved side */
   if(nc!=NULL) 
-   if(wall>=0) initfilledside(nc->d.c,wall);
-   else for(i=0;i<6;i++) initfilledside(nc->d.c,i);
+   if(wall>=0) nc->d.c->recalc_polygons[wall]=1;
+   else for(i=0;i<6;i++) nc->d.c->recalc_polygons[i]=1;
   for(n=side_list->head;n->next!=NULL;n=n->next) 
    if(n->d.mw->cube->d.c->d[n->no%6]!=NULL) 
     makedoorpnt(n->d.mw->cube->d.c->d[n->no%6]->d.d);
@@ -630,8 +634,8 @@ int rotatepnt(struct point *turn,float fx,float fy,int with_left,
      for(i=0;i<3;i++) n->d.p->x[i]=center_of_rot->x[i]+p.x[i]; }
   /* is this is side/cube movement reinit the moved side */
   if(nc!=NULL) 
-   if(wall>=0) initfilledside(nc->d.c,wall);
-   else for(i=0;i<6;i++) initfilledside(nc->d.c,i);
+   if(wall>=0) nc->d.c->recalc_polygons[wall]=1;
+   else for(i=0;i<6;i++) nc->d.c->recalc_polygons[i]=1;
   for(n=side_list->head;n->next!=NULL;n=n->next) 
    if(n->d.mw->cube->d.c->d[n->no%6]!=NULL) 
     makedoorpnt(n->d.mw->cube->d.c->d[n->no%6]->d.d);
@@ -766,75 +770,82 @@ void makesidemovelist(struct list *pntpl,struct list *sidepl)
 void redrawcubes(struct list *pntpl,struct list *cubepl)
  {
  struct node *n;
+ int w,c;
  plotcurrent(); 
- plotmarker(view.pcurrpnt->d.p,-2);
+ plotmarker(view.pcurrpnt->d.p,testtag(tt_pnt,view.pcurrpnt) ? -6 : -1);
+ plotpnt(view.pcurrcube,view.currwall,view.curredge,testtag(tt_edge,
+  view.pcurrcube,view.currwall,view.curredge) ? -6 : -1);     
  for(n=pntpl->head;n->next!=NULL;n=n->next)
-  if(testtag(tt_pnt,n)) plotmarker(n->d.p,-3);
+  if(testtag(tt_pnt,n) && n!=view.pcurrpnt) plotmarker(n->d.p,-3);
+ for(n=cubepl->head;n->next!=NULL;n=n->next)
+  for(w=0;w<6;w++) if(n->d.n->d.c->walls[w]) for(c=0;c<4;c++)
+   if(testtag(tt_edge,n->d.n,w,c) && (n->d.n!=view.pcurrcube ||
+    w!=view.currwall || c!=view.curredge)) plotpnt(n->d.n,w,c,-3);
  plotpntcubelist(cubepl,256,0,1); 
  plotpntcubelist(cubepl,MOUSEMOVE_HILIGHT,1,0);
  copytoscreen();
  }
 
-void rotate_texture(struct cube *cube,int wall,float angle)
+void rotate_texture(struct corner *cs,float angle)
  {
  float centerx,centery,dx,dy;
  int i;
- struct wall *w=cube->walls[wall];
- if(w==NULL) return;
  centerx=centery=0.0;
- for(i=0;i<4;i++) 
-  { centerx+=w->corners[i].x[0]; centery+=w->corners[i].x[1]; }
+ for(i=0;i<4;i++) { centerx+=cs[i].x[0]; centery+=cs[i].x[1]; }
  centerx/=4.0; centery/=4.0;
  for(i=0;i<4;i++)
-  { dx=w->corners[i].x[0]-centerx; dy=w->corners[i].x[1]-centery;
-    w->corners[i].x[0]=centerx+cos(angle)*dx+sin(angle)*dy+0.5;
-    w->corners[i].x[1]=centerx-sin(angle)*dx+cos(angle)*dy+0.5; }
- initfilledside(cube,wall);
+  { dx=cs[i].x[0]-centerx; dy=cs[i].x[1]-centery;
+    cs[i].x[0]=centerx+cos(angle)*dx+sin(angle)*dy+0.5;
+    cs[i].x[1]=centery-sin(angle)*dx+cos(angle)*dy+0.5; }
  }
  
-void move_texture(struct cube *cube,int wall,int dx,int dy)
+void move_texture(struct corner *cs,int dx,int dy)
  {
- int cx,cy,i;
- struct wall *w=cube->walls[wall];
- if(w==NULL) return;
+ int i,cx,cy;
  cx=cy=0;
  for(i=0;i<4;i++)
-  { w->corners[i].x[0]+=dx; w->corners[i].x[1]+=dy;
-    cx+=w->corners[i].x[0]; cy+=w->corners[i].x[1]; }
- cx/=4; cy/=4;
+  { cs[i].x[0]+=dx; cs[i].x[1]+=dy; cx+=cs[i].x[0]; cy+=cs[i].x[1]; }
  for(i=0;i<4;i++)
-  { w->corners[i].x[0]-=(cx/2048)*2048; w->corners[i].x[1]-=(cy/2048)*2048; }
- initfilledside(cube,wall);
+  { cs[i].x[0]-=(cx/2048/4)*2048; cs[i].x[1]-=(cy/2048/4)*2048; }
  }
  
-void stretch_texture(struct cube *cube,int wall,int sx,int sy)
+void stretch_texture(struct corner *cs,int sx,int sy)
  {
- float fx,fy;
- int cx,cy,dx,dy,i;
- struct wall *w=cube->walls[wall];
- if(w==NULL) return;
+ float fx,fy,cx,cy,dx,dy;
+ int i;
  fx=sx==0 ? 1.0 : (sx<0 ? 1/view.bm_stretchfactor : view.bm_stretchfactor);
  fy=sy==0 ? 1.0 : (sy<0 ? 1/view.bm_stretchfactor : view.bm_stretchfactor);
  cx=cy=0;
+ for(i=0;i<4;i++) { cx+=cs[i].x[0]; cy+=cs[i].x[1]; }
+ cx/=4.0; cy/=4.0;
  for(i=0;i<4;i++)
-  { cx+=w->corners[i].x[0]; cy+=w->corners[i].x[1]; }
- cx/=4; cy/=4;
- for(i=0;i<4;i++)
-  { dx=w->corners[i].x[0]-cx; dy=w->corners[i].x[1]-cy;
-    w->corners[i].x[0]=cx+dx*fx+0.5;
-    w->corners[i].x[1]=cx+dy*fy+0.5; }
- initfilledside(cube,wall);
+  { dx=cs[i].x[0]-cx; dy=cs[i].x[1]-cy;
+    cs[i].x[0]=cx+dx*fx+0.5; cs[i].x[1]=cy+dy*fy+0.5; }
  }
  
-void move_texture_with_mouse(struct w_window *w,int wx,int wy,
- struct node *cube,int wall,int withtagged)
+/* rotate x,y around angle and store the result in dx,dy */
+void txt_recalcdxdy(int x,int y,float angle,int *dx,int *dy)
+ { *dx=cos(angle)*x+sin(angle)*y;
+   *dy=-sin(angle)*x+cos(angle)*y; }
+ 
+/* move texture-coords in cs, if cs!=NULL.
+ If cs==NULL, then change the coords for side cube,wall.
+ If withtagged==1 changed all tagged walls, too.
+ Each time the coords are changed refresh_func is called.
+ First click was at screen coords sx,sy.
+ angle is the angle between the x-axis of the user and the u-axis of
+ the texture */
+void move_texture_with_mouse(int sx,int sy,struct corner *cs,
+ struct node *cube,int wall,int withtagged,float angle,
+ void (*refresh_func)(void))
  {
  struct ws_event ws;
- int ox,oy,xs,ys;
+ int ox,oy,xs,ys,dx,dy;
  struct node *n;
- xs=view.whichdisplay ? w_xwininsize(w)/2 : w_xwininsize(w);
- ys=w_xwininsize(w);
- ox=w_xwinincoord(w,wx); oy=w_ywinincoord(w,wy);
+ my_assert(cs!=NULL || cube!=NULL);
+ xs=init.xres; ys=init.yres; ox=sx; oy=sy;
+ if(cs==NULL && cube->d.c->walls[wall]!=NULL)
+  cs=cube->d.c->walls[wall]->corners;
  ws_erasemouse();
  do
   {
@@ -843,43 +854,76 @@ void move_texture_with_mouse(struct w_window *w,int wx,int wy,
   if((ws.kbstat&ws_ks_shift)==0 && ((ws.buttons&ws_bt_left)!=0
    || ABS(ws.x-ox)>ABS(ws.y-oy))) /* rotate */
    {
-   if((ws.buttons&ws_bt_left)==0) /* bank */
+/*   if(ABS(ws.x-ox)>ABS(ws.y-oy)) ws.y=oy;
+   else ws.x=ox;
+   if((ws.buttons&ws_bt_left)==0) bank */
     {
-    rotate_texture(cube->d.c,wall,(float)(ws.x-ox)/xs*M_PI);
-    for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
-     if(n->d.n!=cube || n->no%6!=wall)
-      rotate_texture(n->d.n->d.c,n->no%6,(float)(ws.x-ox)/xs*M_PI);
+    rotate_texture(cs,(float)(ws.x-ox)/xs*M_PI);
+    for(n=l->tagged[tt_wall].head;withtagged && n->next!=NULL;n=n->next)
+     if((n->d.n!=cube || n->no%6!=wall) && n->d.n->d.c->walls[n->no%6])
+      rotate_texture(n->d.n->d.c->walls[n->no%6]->corners,
+       (float)(ws.x-ox)/xs*M_PI);
     }
-   else
+/*   else
     {
-    stretch_texture(cube->d.c,wall,ws.x-ox,ws.y-oy);
-    for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
-     if(n->d.n!=cube || n->no%6!=wall)
-      stretch_texture(n->d.n->d.c,n->no%6,ws.x-ox,ws.y-oy);
-    }
+    stretch_texture(cs,ws.x-ox,ws.y-oy);
+    for(n=l->tagged[tt_wall].head;withtagged && n->next!=NULL;n=n->next)
+     if((n->d.n!=cube || n->no%6!=wall) && n->d.n->d.c->walls[n->no%6])
+      stretch_texture(n->d.n->d.c->walls[n->no%6]->corners,ws.x-ox,ws.y-oy);
+    } */
    }
   else /* move */
    if((ws.kbstat&ws_ks_shift)!=0) /* left, right, up, down */
     {
-    move_texture(cube->d.c,wall,(int)((float)(ws.x-ox)/xs*2*2048),
-     (int)((float)(ws.y-oy)/ys*2*2048));
-    for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
-     if(n->d.n!=cube || n->no%6!=wall)
-      move_texture(n->d.n->d.c,n->no%6,(int)((float)(ws.x-ox)/xs*2*2048),
-       (int)((float)(ws.y-oy)/ys*2*2048));
+    txt_recalcdxdy(ws.x-ox,ws.y-oy,angle,&dx,&dy);
+    move_texture(cs,(int)((float)dx/xs*2*2048),
+     (int)((float)dy/ys*2*2048));
+    for(n=l->tagged[tt_wall].head;withtagged && n->next!=NULL;n=n->next)
+     if((n->d.n!=cube || n->no%6!=wall) && n->d.n->d.c->walls[n->no%6])
+      move_texture(n->d.n->d.c->walls[n->no%6]->corners,
+       (int)((float)dx/xs*2*2048),(int)((float)dy/ys*2*2048));
     }
    else /* forward, backward */
     {
-    stretch_texture(cube->d.c,wall,ws.y-oy,ws.y-oy);
-    for(n=l->tagged[tt_wall].head;n->next!=NULL;n=n->next)
-     if(n->d.n!=cube || n->no%6!=wall)
-      stretch_texture(n->d.n->d.c,n->no%6,ws.y-oy,ws.y-oy);    
+    stretch_texture(cs,ws.y-oy,ws.y-oy);
+    for(n=l->tagged[tt_wall].head;withtagged && n->next!=NULL;n=n->next)
+     if((n->d.n!=cube || n->no%6!=wall) && n->d.n->d.c->walls[n->no%6])
+      stretch_texture(n->d.n->d.c->walls[n->no%6]->corners,ws.y-oy,ws.y-oy);
     }
+  if(cube) cube->d.c->recalc_polygons[wall]=1;
+  for(n=l->tagged[tt_wall].head;withtagged && n->next!=NULL;n=n->next)
+   if(n->d.n->d.c->walls[n->no%6])
+    n->d.n->d.c->recalc_polygons[n->no%6]=1;    
   ws_mousewarp(ox,oy);
-  plotlevel();
+  refresh_func();
   }
  while(ws.buttons!=ws_bt_none);
  ws_displaymouse();
+ }
+
+float txt_calcangle(struct wall *w)
+ {
+ float a,b;
+ struct corner *c;
+ struct point d1,d2,n;
+ int i;
+ my_assert(w!=NULL); c=w->corners;
+ for(i=0;i<3;i++)
+  { d1.x[i]=w->p[2]->d.p->x[i]-w->p[0]->d.p->x[i];
+    d2.x[i]=w->p[3]->d.p->x[i]-w->p[1]->d.p->x[i]; }
+ VECTOR(&n,&d1,&d2);
+ if(SCALAR(&n,&view.e[2])>=0.0) return 4*M_PI;
+ /* Calculate angle between x-axis of screen and u-axis of texture */
+ a=acos((c[1].x[0]-c[0].x[0])/
+  sqrt((c[1].x[0]-c[0].x[0])*(c[1].x[0]-c[0].x[0])+
+   (c[1].x[1]-c[0].x[1])*(c[1].x[1]-c[0].x[1])));
+ if(c[1].x[1]-c[0].x[1]<0) a=-a;
+ for(i=0;i<3;i++) d1.x[i]=w->p[1]->d.p->x[i]-w->p[0]->d.p->x[i];
+ b=acos(SCALAR(&view.e[0],&d1)/
+  sqrt(SCALAR(&view.e[0],&d1)*SCALAR(&view.e[0],&d1)+
+   SCALAR(&view.e[1],&d1)*SCALAR(&view.e[1],&d1)));
+ if(SCALAR(&view.e[1],&d1)>0) b=-b;
+ return a+b;
  }
  
 void moveobj_mouse(int withtagged,int wx,int wy,struct node *nc,int wall)
@@ -888,6 +932,7 @@ void moveobj_mouse(int withtagged,int wx,int wy,struct node *nc,int wall)
  struct list *cubepl,*sidepl,*pntpl,cubel,sidel,pntl;
  unsigned char *lockedsides=NULL,curlocked[6];
  int i,j,c;
+ float angle;
  struct point p;
  union move_params params;
  if(nc==NULL || l==NULL) return;
@@ -958,7 +1003,14 @@ void moveobj_mouse(int withtagged,int wx,int wy,struct node *nc,int wall)
     drawopt(in_edge);
     }
    else /* move texture of wall */
-    move_texture_with_mouse(l->w,wx,wy,nc,wall,withtagged&1);
+    if(nc->d.c->walls[wall])
+     {
+     angle=txt_calcangle(nc->d.c->walls[wall]);
+     fprintf(errf,"angle=%g\n",angle);
+     if(angle>2*M_PI) { printmsg(TXT_CANTSEETXTWALL); return; }
+     move_texture_with_mouse(w_xwinincoord(l->w,wx),w_ywinincoord(l->w,wy),
+      NULL,nc,wall,withtagged&1,angle,plotlevel);
+     }
    drawopt(in_wall); plotlevel();
    break;
   case tt_pnt: 
@@ -1153,7 +1205,7 @@ void dec_gotopos(int ec)
  view.e[2]=l->saved_pos[num_pos].e[2];
  view.maxvisibility=l->saved_pos[num_pos].max_vis;
  view.distcenter=l->saved_pos[num_pos].distcenter;
- plotlevel(); 
+ init_rendercube(); plotlevel(); 
  }
 
 void init_rendercube(void)

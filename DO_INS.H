@@ -10,3 +10,4 @@ void dec_delete(int ec);
 void dec_deletespecial(int ec);
 void dec_makeroom(int ec);
 void dec_splitcube(int ec);
+void dec_makestdside(int ec);

@@ -118,3 +118,7 @@ int w_titlebarheight(void) { return shapes.titlebar_height; }
 int w_xwinspacecoord(int x) { return x-notes.winspace.xp; }
 
 int w_ywinspacecoord(int y) { return y-notes.winspace.yp; }
+
+int w_xscrspacecoord(int x) { return x+notes.winspace.xp; }
+
+int w_yscrspacecoord(int y) { return y+notes.winspace.yp; }

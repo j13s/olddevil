@@ -38,7 +38,7 @@ void untagedge(struct node *nc,va_list args)
  {
  int wno,pno;
  wno=va_arg(args,int); pno=va_arg(args,int);
- if(nc==NULL && nc->d.c->walls[wno]==NULL) return;
+ if(nc==NULL || nc->d.c->walls[wno]==NULL) return;
  if(nc->d.c->walls[wno]->tagged[pno])
   freenode(&l->tagged[tt_edge],nc->d.c->walls[wno]->tagged[pno],NULL);
  nc->d.c->walls[wno]->tagged[pno]=NULL;

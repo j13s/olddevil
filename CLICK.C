@@ -153,14 +153,23 @@ void run_wallloop(struct clickhit **hits,int clickradius,int x,int y)
  struct node *n;
  struct clickhit *ch;
  int w,i,j;
- struct point p;
+ struct point p,d1,d2,nv;
  for(n=l->cubes.head;n->next!=NULL;n=n->next)
   for(w=0;w<6;w++)
    {
-   if(n->d.c->nc[w] && n->d.c->nc[w]->no<n->no) continue;
    for(i=0;i<3;i++)
     { p.x[i]=0.0;
       for(j=0;j<4;j++) p.x[i]+=n->d.c->p[wallpts[w][j]]->d.p->x[i]/4.0; }
+   if(n->d.c->nc[w]) 
+    {
+    for(i=0;i<3;i++)
+     { d1.x[i]=n->d.c->p[wallpts[w][2]]->d.p->x[i]-
+        n->d.c->p[wallpts[w][0]]->d.p->x[i];
+       d2.x[i]=n->d.c->p[wallpts[w][3]]->d.p->x[i]-
+        n->d.c->p[wallpts[w][1]]->d.p->x[i]; }
+    VECTOR(&nv,&d1,&d2); normalize(&nv);
+    for(i=0;i<3;i++) p.x[i]+=nv.x[i]*view.dsize;
+    }
    if((ch=checkclick(&p,clickradius,x,y,n,w))!=NULL)
     add_clickhit(hits,ch);
    }

@@ -39,3 +39,10 @@ void dec_savepos(int ec);
 void dec_gotopos(int ec);
 void init_rendercube(void);
 void movecorr_mouse(struct w_window *w,int wx,int wy,struct track *t);
+void move_texture_with_mouse(int sx,int sy,struct corner *cs,
+ struct node *cube,int wall,int withtagged,float angle,
+ void (*refresh_func)(void));
+void move_texture(struct corner *cs,int dx,int dy);
+void stretch_texture(struct corner *cs,int sx,int sy);
+void rotate_texture(struct corner *cs,float angle);
+

@@ -81,19 +81,16 @@ int dsc_set_t2_dir(struct infoitem *i,void *d,struct node *n,int wallno,
  int pntno,int tagged)
  { int r=setno(i,d,n,wallno,pntno); if(!tagged) drawopt(in_wall); return r; }
  
-int dsc_change_pnt_coord(struct infoitem *i,void *d,struct node *n,
+int dsc_change_pnt_coord(struct infoitem *i,void *d,struct node *p,
  int wallno,int pntno,int tagged)
  {
  float oldx,oldy,oldz;
- struct node *p;
- if(n==NULL || wallno<0 || pntno<0 || wallno>5 || pntno>3) return 0;
- my_assert((p=n->d.c->p[wallpts[wallno][pntno]])!=NULL);
+ if(p==NULL) return 0;
  oldx=p->d.p->x[0]; oldy=p->d.p->x[1]; oldz=p->d.p->x[2];
- setno(i,d,n,wallno,pntno);
- if(!testpnt(n->d.c->p[wallpts[wallno][pntno]]))
+ setno(i,d,p);
+ if(!testpnt(p))
   { p->d.p->x[0]=oldx; p->d.p->x[1]=oldy; p->d.p->x[2]=oldz; }
- else
-  newcorners(n->d.c->p[wallpts[wallno][pntno]]);
+ else newcorners(p);
  if(!tagged) { plotlevel(); drawopt(in_pnt); }
  return 1;
  }
@@ -103,7 +100,7 @@ int dsc_set_uvl(struct infoitem *i,void *d,struct node *n,int wallno,
  { 
  int r=setno(i,d,n,wallno,pntno);
  if(!r) return 0;
- initfilledside(n->d.c,wallno); 
+ n->d.c->recalc_polygons[wallno]=1;
  if(!tagged) 
   { plotlevel(); drawopt(in_wall); drawopt(in_cube); }  
  return 1; 

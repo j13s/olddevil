@@ -22,6 +22,9 @@ struct txt_list_win
  int num_usertxtlist,num_leveltxtlist;
  struct ham_txt **usertxtlist,**leveltxtlist;
  };
+struct fitbitmap_savedata
+ { int xpos,ypos,xsize,ysize; };
+extern struct fitbitmap_savedata fb_savedata;
 extern struct txt_list_win tl_win[tlw_num];    
 struct fl_savedata { int data_ok,old_xpos,old_ypos; } ;
 extern struct fl_savedata fl_savedata;
@@ -38,3 +41,8 @@ void b_l_enddooranim(struct w_button *b);
 void drawtxtlines(struct w_button *b,struct wall *w);
 void drawdooranim(struct w_button *b,struct ham_txt *t,int anim,int t1,int t2,
  int t2_d);
+void fb_refreshall(void);
+void fb_move_texture(int axis,int dir);
+void fb_turn_texture(int x,int y,int z,int dir);
+int fb_isactive(void);
+void fb_tofront(void);

@@ -16,6 +16,8 @@ int w_xscreencoord(struct w_window *w,int x);
 int w_yscreencoord(struct w_window *w,int y);
 int w_xwinspacecoord(int x);
 int w_ywinspacecoord(int y);
+int w_xscrspacecoord(int x);
+int w_yscrspacecoord(int y);
 char *w_copystr(const char *str);
 int w_makecolor(int r,int g,int b);
 int w_titlebarheight(void);

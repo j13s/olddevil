@@ -147,6 +147,8 @@
 #define TXT_NOTURNOBJECT "You can't turn this object."
 #define TXT_POSSAVED "Position %d saved."
 #define TXT_NOCORR "No corridor is active."
+#define TXT_CANTSEETXTWALL "You can't see this texture,\n"\
+ "so why do you want to change it?"
 /* macros.c */
 #define TXT_DEFAULTMACRONAME "Group %d"
 #define TXT_NOCURRSIDE "No current side."
@@ -420,3 +422,9 @@
 #define TXT_TLW_CANTSAVETL "Can't save texture list %s."
 #define TXT_TLW_CANTLOADTL "Can't read texture list %s."
 #define TXT_TLW_TLSAVED "Texture list saved as %s."
+#define TXT_FB_CLOSEWIN "Discard changes?"
+#define TXT_FB_STDSHAPE "Make standard shape?"
+#define TXT_FB_RECALCUV "Recalculate uv-coords?"
+#define TXT_FB_RESETUV "Reset uv-coords with current side?"
+#define TXT_FB_TITLE "Fit texture"
+#define TXT_FB_SAVE "Save changes?"

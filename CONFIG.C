@@ -71,8 +71,8 @@ int savelvlconfig(FILE *f,struct leveldata *ld,int no)
   for(n=ld->tagged[i].head;n->next!=NULL;n=n->next)
    switch(i)
     {
-    case tt_edge: if(fprintf(f,"%d ",(n->d.n->no)*24+(n->no%24)/4+
-     (n->no%24)%4)<0) return 0; break;
+    case tt_edge: if(fprintf(f,"%d ",(n->d.n->no)*24+n->no%24)<0) return 0;
+     break;
     case tt_wall: if(fprintf(f,"%d ",(n->d.n->no)*6+n->no%6)<0) return 0;
      break;
     default: if(fprintf(f,"%d ",n->d.n->no)<0) return 0;
@@ -104,10 +104,11 @@ int savestatus(int playlevel)
   view.movefactor,view.pmovefactor,view.rotangle,view.protangle,
   view.bm_movefactor,view.flatsideangle,view.bm_stretchfactor)<0)
   ERRORSAVECFG(f);
- if(fprintf(f,"%g %g %g %g %g %g %g %d\n",
+ if(fprintf(f,"%g %g %g %g %g %g %g %d %d %d %d %d\n",
   view.gridlength,view.maxconndist,view.maxuserconnect,view.illum_quarterway,
   view.illum_brightness,view.distcenter,view.minclicksodist,
-  (int)view.illum_minvalue)<0) ERRORSAVECFG(f);
+  (int)view.illum_minvalue,fb_savedata.xpos,fb_savedata.ypos,
+  fb_savedata.xsize,fb_savedata.ysize)<0) ERRORSAVECFG(f);
  for(i=0;i<tlw_num;i++)
   if(fprintf(f,"%d ",tl_win[i].zoom.selected)<0) ERRORSAVECFG(f);
  fprintf(f,"\n");
@@ -140,7 +141,8 @@ int savestatus(int playlevel)
     init.levelext);
    else sprintf(fname,"%s/"CFG_FNAME".%s",init.cfgpath,i++,init.levelext);
    i=n->d.lev->levelsaved;
-   if(!savelevel(fname,n->d.lev,n->d.lev==l,0,init.d_ver)) ERRORSAVECFG(f);
+   if(!savelevel(fname,n->d.lev,playlevel>0 ? n->d.lev==l : -1,0,init.d_ver))
+    ERRORSAVECFG(f);
    n->d.lev->levelsaved=i;
    fprintf(f,"%s\n",fname);
    }
@@ -265,10 +267,11 @@ void readstatus(void)
   &view.bm_stretchfactor)!=9)
   ERRORREADCFG(f);
  skipline(f);
- if(fscanf(f,"%g%g%g%g%g%g%g%hd",&view.gridlength,&view.maxconndist,
+ if(fscanf(f,"%g%g%g%g%g%g%g%hd%d%d%d%d",&view.gridlength,&view.maxconndist,
   &view.maxuserconnect,&view.illum_quarterway,&new_brightness,
-  &view.distcenter,&view.minclicksodist,&view.illum_minvalue)
-  !=8) ERRORREADCFG(f);
+  &view.distcenter,&view.minclicksodist,&view.illum_minvalue,
+  &fb_savedata.xpos,&fb_savedata.ypos,&fb_savedata.xsize,&fb_savedata.ysize)
+  !=12) ERRORREADCFG(f);
  for(i=0;i<tlw_num;i++)
   {
   if(fscanf(f,"%d",&tl_win[i].zoom.selected)!=1) ERRORREADCFG(f);
